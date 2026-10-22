@@ -1120,6 +1120,22 @@ public class RetroActivityCommon extends NativeActivity
     return false;
   }
 
+  /**
+   * OpenEmux: a gamepad key or stick event offered while the content is
+   * paused under the activity's own menu. True when it was used.
+   */
+  public boolean onExternalMenuInput(int type, int keycode, int action, float x, float y)
+  {
+    return false;
+  }
+
+  /**
+   * OpenEmux: the overlay now shown, by its name in the overlay config.
+   */
+  public void onOverlayChanged(String name)
+  {
+  }
+
   public int getVolumeCount()
   {
     int ret = 0;

@@ -3653,6 +3653,10 @@ static void frontend_unix_init(void *data)
          "doHapticFeedback", "(I)V");
    GET_METHOD_ID(env, android_app->onExternalMenuRequested, class,
          "onExternalMenuRequested", "()Z");
+   GET_METHOD_ID(env, android_app->onExternalMenuInput, class,
+         "onExternalMenuInput", "(IIIFF)Z");
+   GET_METHOD_ID(env, android_app->onOverlayChanged, class,
+         "onOverlayChanged", "(Ljava/lang/String;)V");
    GET_METHOD_ID(env, android_app->getUserLanguageString, class,
          "getUserLanguageString", "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->isPlayStoreBuild, class,
@@ -4232,6 +4236,43 @@ bool android_app_external_menu(void)
    return handled == JNI_TRUE;
 #else
    return false;
+#endif
+}
+
+bool android_app_external_menu_input(int type, int keycode, int action,
+      float x, float y)
+{
+#ifdef ANDROID
+   jboolean handled = JNI_FALSE;
+   JNIEnv *env      = jni_thread_getenv();
+
+   if (!env || !g_android || !g_android->onExternalMenuInput)
+      return false;
+
+   CALL_BOOLEAN_METHOD_PARAM(env, handled, g_android->activity->clazz,
+         g_android->onExternalMenuInput, (jint)type, (jint)keycode,
+         (jint)action, (jfloat)x, (jfloat)y);
+   return handled == JNI_TRUE;
+#else
+   return false;
+#endif
+}
+
+void android_app_overlay_changed(const char *name)
+{
+#ifdef ANDROID
+   jstring jname;
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android || !g_android->onOverlayChanged || !name)
+      return;
+
+   jname = (*env)->NewStringUTF(env, name);
+   if (!jname)
+      return;
+   CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+         g_android->onOverlayChanged, jname);
+   (*env)->DeleteLocalRef(env, jname);
 #endif
 }
 

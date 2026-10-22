@@ -7512,6 +7512,16 @@ static bool config_load_file(const char *path, settings_t *settings)
 
    config_sanitize_turbo_binds(settings);
 
+   /* Not in the menu: a frontend that drives turbo itself opts in. */
+   settings->bools.input_turbo_locked = false;
+   config_get_bool(conf, "input_turbo_locked",
+         &settings->bools.input_turbo_locked);
+
+   /* Not in the menu: a frontend that tells the player itself opts out. */
+   settings->bools.notification_show_autoload_state = true;
+   config_get_bool(conf, "notification_show_autoload_state",
+         &settings->bools.notification_show_autoload_state);
+
    /* Menu Frame Rate took over from Throttle Menu Framerate, which
     * only acted with Sync to Exact Content Framerate on, where its
     * default held the menu to the content's rate. A configuration

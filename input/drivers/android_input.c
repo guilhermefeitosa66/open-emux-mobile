@@ -2600,6 +2600,46 @@ static bool android_input_back_to_menu(AInputEvent *event, int type_event)
 #endif
 }
 
+/* OpenEmux: while the content is paused (the activity's own menu is up),
+ * gamepad keys and sticks are offered to the activity first. */
+static bool android_input_to_external_menu(AInputEvent *event,
+      int type_event, int source)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   int keycode                 = 0;
+   int action                  = 0;
+   float x                     = 0.0f;
+   float y                     = 0.0f;
+
+   if (     !(runloop_st->flags & RUNLOOP_FLAG_PAUSED)
+         || !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+         || !(source & (AINPUT_SOURCE_GAMEPAD | AINPUT_SOURCE_DPAD
+               | AINPUT_SOURCE_JOYSTICK)))
+      return false;
+
+   if (type_event == AINPUT_EVENT_TYPE_KEY)
+   {
+      keycode = AKeyEvent_getKeyCode(event);
+      action  = AKeyEvent_getAction(event);
+   }
+   else if (type_event == AINPUT_EVENT_TYPE_MOTION
+         && (source & AINPUT_SOURCE_JOYSTICK)
+         && p_AMotionEvent_getAxisValue)
+   {
+      x = AMotionEvent_getAxisValue(event, AXIS_HAT_X, 0);
+      y = AMotionEvent_getAxisValue(event, AXIS_HAT_Y, 0);
+      if (x == 0.0f && y == 0.0f)
+      {
+         x = AMotionEvent_getAxisValue(event, AXIS_X, 0);
+         y = AMotionEvent_getAxisValue(event, AXIS_Y, 0);
+      }
+   }
+   else
+      return false;
+
+   return android_app_external_menu_input(type_event, keycode, action, x, y);
+}
+
 static void android_input_poll_input_gingerbread(
       android_input_t *android)
 {
@@ -2624,7 +2664,8 @@ static void android_input_poll_input_gingerbread(
          return;
       source            = AInputEvent_getSource(event);
       type_event        = AInputEvent_getType(event);
-      if (android_input_back_to_menu(event, type_event))
+      if (     android_input_back_to_menu(event, type_event)
+            || android_input_to_external_menu(event, type_event, source))
       {
          AInputQueue_finishEvent(android_app->inputQueue, event, 1);
          return;
@@ -2715,7 +2756,8 @@ static void android_input_poll_input_default(android_input_t *android)
          handled    = 1;
          source     = AInputEvent_getSource(event);
          type_event = AInputEvent_getType(event);
-         if (android_input_back_to_menu(event, type_event))
+         if (     android_input_back_to_menu(event, type_event)
+               || android_input_to_external_menu(event, type_event, source))
          {
             AInputQueue_finishEvent(android_app->inputQueue, event, 1);
             continue;

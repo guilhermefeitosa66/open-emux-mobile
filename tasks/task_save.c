@@ -2239,7 +2239,8 @@ bool content_load_state_notify(const char *path,
    if (settings->bools.savestate_file_compression)
       state->flags             |= SAVE_TASK_FLAG_COMPRESS_FILES;
 #endif
-   if (!settings->bools.notification_show_save_state)
+   if (     !settings->bools.notification_show_save_state
+         || (autoload && !settings->bools.notification_show_autoload_state))
       state->flags             |= SAVE_TASK_FLAG_MUTE;
 
    state->frame_count           = &video_state_get_ptr()->frame_count;

@@ -174,6 +174,8 @@ struct android_app
    jmethodID doHapticFeedback;
    /* OpenEmux: lets the Java frontend show its own in-game menu. */
    jmethodID onExternalMenuRequested;
+   jmethodID onExternalMenuInput;
+   jmethodID onOverlayChanged;
 
    jmethodID isPlayStoreBuild;
    jmethodID isMetaQuestBuild;
@@ -402,6 +404,15 @@ void android_show_saf_tree_picker(void);
 /* OpenEmux: asks the activity to show its own in-game menu instead of
  * the RetroArch one. True when the activity took it. */
 bool android_app_external_menu(void);
+
+/* OpenEmux: offers a gamepad key or stick event to the activity's menu
+ * while the content is paused. True when the activity used it. */
+bool android_app_external_menu_input(int type, int keycode, int action,
+      float x, float y);
+
+/* OpenEmux: tells the activity which overlay is now shown, so it can
+ * match the core to it (the NDS screen layout of each overlay). */
+void android_app_overlay_changed(const char *name);
 bool android_get_vfs_authorized_locations(
       struct retro_vfs_authorized_locations *locations);
 #endif

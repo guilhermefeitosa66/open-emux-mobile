@@ -7940,6 +7940,15 @@ static enum runloop_state_enum runloop_check_state(
                input_st->overlay_ptr->flags |=  INPUT_OVERLAY_GAMEPAD_HIDDEN;
             else
                input_st->overlay_ptr->flags &= ~INPUT_OVERLAY_GAMEPAD_HIDDEN;
+
+            /* OpenEmux: the overlay's viewport override follows it,
+             * so a gamepad gets the whole screen */
+            if (controller_connected != last_controller_connected)
+            {
+               video_driver_set_overlay_viewport(controller_connected
+                     ? NULL : input_st->overlay_ptr->active);
+               command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+            }
          }
          else if (controller_connected != last_controller_connected)
          {

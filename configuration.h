@@ -789,6 +789,8 @@ typedef struct settings
       bool input_keyboard_background;
       bool input_turbo_enable;
       bool input_turbo_allow_dpad;
+      /* Config only: turbo, once toggled on, acts as if its bind were held. */
+      bool input_turbo_locked;
       bool input_hotkey_device_merge;
       bool input_hotkey_follows_player1;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
@@ -819,6 +821,8 @@ typedef struct settings
       bool notification_show_set_initial_disk;
       bool notification_show_disk_control;
       bool notification_show_save_state;
+      /* Config only: the message when a state loads automatically. */
+      bool notification_show_autoload_state;
       bool notification_show_fast_forward;
 #ifdef HAVE_SCREENSHOTS
       bool notification_show_screenshot;

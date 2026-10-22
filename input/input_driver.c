@@ -11253,7 +11253,9 @@ static void input_overlay_enable_(bool enable)
 static void input_overlay_viewport_publish(void)
 {
    input_overlay_t *ol = input_driver_st.overlay_ptr;
-   video_driver_set_overlay_viewport(ol ? ol->active : NULL);
+   /* OpenEmux: hidden for a gamepad, the overlay leaves the game the whole screen */
+   video_driver_set_overlay_viewport(
+         (ol && !(ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)) ? ol->active : NULL);
 }
 
 static void input_overlay_deinit(void)
@@ -15587,6 +15589,7 @@ void input_driver_poll(void)
     * in L1 across all per-user work, and the loop overhead is halved. */
    {
       bool turbo_enable              = settings->bools.input_turbo_enable;
+      bool turbo_locked              = settings->bools.input_turbo_locked;
       uint16_t turbo_btn_id          = RARCH_TURBO_ENABLE;
       bool kb_blocked                = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
 #ifdef HAVE_MENU
@@ -15650,6 +15653,10 @@ void input_driver_poll(void)
                   kb_blocked,
                   (unsigned)i,
                   RETRO_DEVICE_JOYPAD, 0, turbo_btn_id) : 0;
+
+         /* Locked turbo: on, it is the turbo bind held down. */
+         if (turbo_enable && turbo_locked)
+            input_st->turbo_btns.frame_enable[i] = true;
 
 #ifdef HAVE_OVERLAY
          if (     (i == 0)

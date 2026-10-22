@@ -4969,7 +4969,9 @@ bool command_event(enum event_command cmd, void *data)
 
             ol->index                      = ol->next_index;
             ol->active                     = &ol->overlays[ol->index];
-            video_driver_set_overlay_viewport(ol->active);
+            /* OpenEmux: hidden for a gamepad, no viewport override */
+            video_driver_set_overlay_viewport(
+                  (ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN) ? NULL : ol->active);
 
             input_overlay_opacity          = (ol->flags & INPUT_OVERLAY_IS_OSK)
                   ? settings->floats.input_osk_overlay_opacity
@@ -4982,6 +4984,10 @@ bool command_event(enum event_command cmd, void *data)
 
             /* Trigger viewport recalculation - overlay may have viewport override */
             command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
+#if defined(ANDROID)
+            /* OpenEmux: the frontend follows the overlay shown */
+            android_app_overlay_changed(ol->active->name);
+#endif
 
             /* Check orientation, if required */
             output_size = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
