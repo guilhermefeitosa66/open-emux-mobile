@@ -59,12 +59,28 @@ areas bound to RetroPad buttons and hotkeys (`menu_toggle`,
 into the portrait skin, sitting in a slot under the picture. The picture is
 pinned to the top with `video_viewport_bias_portrait_y = 0`.
 
-### Cartridges
+### Cartridges, labels and box art
 
-The frames are the desktop app's art (`OpenEmux/.../images/cartridges`);
-the color variants, a colorize filter in the SVG, are baked into PNGs. The
-cover is box art from the `openemux-artwork` mirror, matched by name
-against the No-Intro list shipped in `assets/covers`.
+Two different assets, as on the desktop app:
+
+- **Labels** go inside the cartridge frame (the desktop app's art,
+  `OpenEmux/.../images/cartridges`; the color variants, a colorize filter in
+  the SVG, are baked into PNGs). They come from ScreenScraper's
+  `support-texture` media, looked up by ROM hash, one request a second, and
+  are kept in `files/labels/<console>/` (a `.none` file marks a game with no
+  label). A cartridge without one shows a blank label with the title.
+- **Box art** is shown in the covers and list modes, at its own aspect ratio.
+  It comes from the `openemux-artwork` mirror, matched by name against the
+  No-Intro list shipped in `assets/covers`, and is prefetched into the image
+  cache.
+
+Both syncs run in the background with a progress pill on the shelf and the
+library (`ui/ArtworkSync.kt`); they pause without a connection or when the
+ScreenScraper quota runs out, and resume on their own.
+
+ScreenScraper needs a developer credential: put `screenscraper.devid` and
+`screenscraper.devpassword` in `local.properties` (untracked). Without it,
+cartridges keep blank labels.
 
 ### Shaders
 

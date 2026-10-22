@@ -116,7 +116,7 @@ fun DetailScreen(key: String) {
             }
 
             Column(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Cartridge(rom.console, a.app.covers.urlFor(rom), rom.title, color, Modifier.width(264.dp))
+                Cartridge(rom.console, labelFor(rom), rom.title, color, Modifier.width(264.dp), pending = labelPending(rom))
                 Box(Modifier.padding(top = 6.dp).size(220.dp, 10.dp).blur(6.dp).clip(CircleShape).background(Color(0x8C000000)))
             }
 

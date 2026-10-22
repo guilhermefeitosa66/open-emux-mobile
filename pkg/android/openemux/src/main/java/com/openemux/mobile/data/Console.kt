@@ -61,8 +61,7 @@ enum class Console(
     val cores: List<CoreDef>,
     val defaultShader: String,
     val faceButtons: Int,
-    /** Share of the box art's left edge to drop (GBA boxes carry a white band there). */
-    val coverTrimLeft: Float = 0f,
+    val screenScraperId: Int,
 ) {
     GBA(
         id = "GBA",
@@ -81,7 +80,7 @@ enum class Console(
         ),
         defaultShader = "dot",
         faceButtons = 2,
-        coverTrimLeft = 0.12f,
+        screenScraperId = 12,
     ),
     SFC(
         id = "SFC",
@@ -100,6 +99,7 @@ enum class Console(
         ),
         defaultShader = "zfast",
         faceButtons = 4,
+        screenScraperId = 4,
     );
 
     fun core(id: String?): CoreDef = cores.firstOrNull { it.id == id } ?: cores[0]

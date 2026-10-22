@@ -26,6 +26,7 @@ class Paths(context: Context) {
     val launch = File(internal, "launch")
     val meta = File(internal, "meta.json")
     val carts = File(internal, "carts")
+    val labels = File(internal, "labels")
 }
 
 data class Rom(

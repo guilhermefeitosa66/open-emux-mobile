@@ -2,8 +2,21 @@ package com.openemux.mobile.data
 
 import android.content.Context
 import android.net.Uri
+import coil.imageLoader
+import coil.request.ErrorResult
+import coil.request.ImageRequest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import java.io.IOException
 import java.text.Normalizer
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Box art from the openemux-artwork mirror, matched by name against the
@@ -13,6 +26,36 @@ class Covers(private val context: Context) {
     private val indexes = ConcurrentHashMap<Console, Index>()
     /** "" marks a ROM with no match: ConcurrentHashMap takes no nulls. */
     private val cache = ConcurrentHashMap<String, String>()
+
+    private val _progress = MutableStateFlow(SyncProgress())
+    val progress: StateFlow<SyncProgress> = _progress.asStateFlow()
+
+    /** Warms the image cache with every ROM's box art, so the library fills in without waiting. */
+    suspend fun prefetch(roms: List<Rom>) = coroutineScope {
+        val withArt = roms.mapNotNull { rom -> urlFor(rom)?.let { rom to it } }
+        val missing = roms.size - withArt.size
+        val cached = withArt.filter { (_, url) -> context.imageLoader.diskCache?.openSnapshot(url)?.use { true } == true }
+        val todo = withArt - cached.toSet()
+        val done = AtomicInteger(missing + cached.size)
+        val offline = AtomicInteger()
+        _progress.value = SyncProgress(running = todo.isNotEmpty(), total = roms.size, done = done.get(), missing = missing)
+        if (todo.isEmpty()) return@coroutineScope
+        val gate = Semaphore(4)
+        todo.map { (rom, url) ->
+            async {
+                gate.withPermit {
+                    val result = context.imageLoader.execute(ImageRequest.Builder(context).data(url).build())
+                    if ((result as? ErrorResult)?.throwable is IOException) offline.incrementAndGet()
+                    _progress.value = _progress.value.copy(done = done.incrementAndGet(), current = rom.title)
+                }
+            }
+        }.awaitAll()
+        _progress.value = SyncProgress(
+            total = roms.size, done = done.get(), missing = missing,
+            paused = if (offline.get() > 0) SyncPause.Offline else null,
+            finishedAt = if (offline.get() > 0) 0L else System.currentTimeMillis(),
+        )
+    }
 
     private class Index(val exact: Map<String, List<String>>, val tokens: List<Pair<Set<String>, String>>)
 

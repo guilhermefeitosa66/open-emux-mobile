@@ -26,13 +26,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -56,7 +55,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.SubcomposeAsyncImage
 import com.openemux.mobile.data.Console
+import com.openemux.mobile.data.Rom
 import com.openemux.mobile.launch.CartArt
+import java.io.File
 
 /** Stroke icons from the design, as SVG path data on a 24-unit grid. */
 object Icons {
@@ -107,15 +108,23 @@ fun Icon(path: String, color: Color, size: Dp = 20.dp, stroke: Float = 2f, fille
     Image(vector, contentDescription = null, modifier = modifier.size(size))
 }
 
-/** The cartridge: cover cropped into the label window, frame art on top. */
+/** The ROM's cartridge label, once [com.openemux.mobile.data.Labels] has it. */
+@Composable
+fun labelFor(rom: Rom): File? {
+    val found by LocalActions.current.app.labels.found.collectAsState()
+    return found[rom.key]
+}
+
+/** The cartridge: label art cropped into the label window, frame art on top. */
 @Composable
 fun Cartridge(
     console: Console,
-    coverUrl: String?,
+    label: File?,
     title: String,
     color: String,
     modifier: Modifier = Modifier,
     shadow: Boolean = true,
+    pending: Boolean = false,
 ) {
     val context = LocalContext.current
     val frame = CartArt.frameRes(context, console, color)
@@ -129,20 +138,17 @@ fun Cartridge(
                 .size(w * l.width, h * l.height)
                 .background(Color(0xFFDEDBD4))
         ) {
-            if (coverUrl != null) {
-                val zoom = 1f / (1f - console.coverTrimLeft)
+            if (label != null) {
                 SubcomposeAsyncImage(
-                    model = coverUrl,
+                    model = label,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    alignment = BiasAlignment(0f, -0.4f),
-                    modifier = Modifier.fillMaxSize().clipToBounds().graphicsLayer {
-                        scaleX = zoom; scaleY = zoom
-                        transformOrigin = TransformOrigin(1f, 0.3f)
-                    },
+                    modifier = Modifier.fillMaxSize().clipToBounds(),
                     error = { BlankLabel(title) },
                     loading = { Box(Modifier.fillMaxSize().background(Color(0xFFDEDBD4))) },
                 )
+            } else if (pending) {
+                LabelShimmer()
             } else {
                 BlankLabel(title)
             }

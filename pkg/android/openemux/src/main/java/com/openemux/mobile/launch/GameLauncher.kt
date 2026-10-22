@@ -3,6 +3,7 @@ package com.openemux.mobile.launch
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
@@ -13,11 +14,8 @@ import android.graphics.drawable.BitmapDrawable
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.core.content.res.ResourcesCompat
-import coil.imageLoader
-import coil.request.ImageRequest
-import coil.request.SuccessResult
 import com.openemux.mobile.data.Console
-import com.openemux.mobile.data.Covers
+import com.openemux.mobile.data.Labels
 import com.openemux.mobile.data.Library
 import com.openemux.mobile.data.Rom
 import com.openemux.mobile.game.GameActivity
@@ -27,7 +25,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 
-/** Composes the cartridge art the way the desktop does: cover under the frame. */
+/** Composes the cartridge art the way the desktop does: label under the frame. */
 object CartArt {
     fun frameRes(context: Context, console: Console, color: String): Int {
         val res = context.resources
@@ -38,34 +36,27 @@ object CartArt {
         return res.getIdentifier(console.frameName, "drawable", context.packageName)
     }
 
-    suspend fun loadCover(context: Context, url: String?): Bitmap? {
-        if (url == null) return null
-        val request = ImageRequest.Builder(context).data(url).allowHardware(false).build()
-        val result = context.imageLoader.execute(request)
-        return ((result as? SuccessResult)?.drawable as? BitmapDrawable)?.bitmap
-    }
+    fun loadLabel(file: File?): Bitmap? = file?.let { BitmapFactory.decodeFile(it.path) }
 
-    fun compose(context: Context, console: Console, colorId: String, cover: Bitmap?, title: String): Bitmap {
+    fun compose(context: Context, console: Console, colorId: String, label: Bitmap?, title: String): Bitmap {
         val frame = (ResourcesCompat.getDrawable(context.resources, frameRes(context, console, colorId), null) as BitmapDrawable).bitmap
         val out = Bitmap.createBitmap(frame.width, frame.height, Bitmap.Config.ARGB_8888)
         val c = Canvas(out)
         val l = console.label
         val dst = RectF(l.left * frame.width, l.top * frame.height, (l.left + l.width) * frame.width, (l.top + l.height) * frame.height)
-        if (cover != null) {
-            // Crop the box art to the label's shape, keeping its upper part (the logo).
+        if (label != null) {
+            // Crop-to-fill, centred, like the desktop compositor.
             val target = dst.width() / dst.height()
-            val trim = (cover.width * console.coverTrimLeft).toInt()
-            val usableW = cover.width - trim
             val srcW: Int
             val srcH: Int
-            if (usableW.toFloat() / cover.height > target) {
-                srcH = cover.height; srcW = (cover.height * target).toInt()
+            if (label.width.toFloat() / label.height > target) {
+                srcH = label.height; srcW = (label.height * target).toInt()
             } else {
-                srcW = usableW; srcH = (usableW / target).toInt()
+                srcW = label.width; srcH = (label.width / target).toInt()
             }
-            val sx = trim + (usableW - srcW) / 2
-            val sy = ((cover.height - srcH) * 0.3f).toInt()
-            c.drawBitmap(cover, Rect(sx, sy, sx + srcW, sy + srcH), dst, Paint(Paint.FILTER_BITMAP_FLAG))
+            val sx = (label.width - srcW) / 2
+            val sy = (label.height - srcH) / 2
+            c.drawBitmap(label, Rect(sx, sy, sx + srcW, sy + srcH), dst, Paint(Paint.FILTER_BITMAP_FLAG))
         } else {
             val p = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.rgb(222, 219, 212) }
             c.drawRect(dst, p)
@@ -91,7 +82,7 @@ object CartArt {
     }
 }
 
-class GameLauncher(private val context: Context, private val library: Library, private val covers: Covers) {
+class GameLauncher(private val context: Context, private val library: Library, private val labels: Labels) {
     private val paths = library.paths
 
     /** Cores, core info and shaders, copied out of the APK once per install. */
@@ -126,9 +117,9 @@ class GameLauncher(private val context: Context, private val library: Library, p
     }
 
     suspend fun cartBitmap(rom: Rom): Bitmap {
-        val cover = CartArt.loadCover(context, covers.urlFor(rom))
         return withContext(Dispatchers.Default) {
-            CartArt.compose(context, rom.console, library.effectiveColor(rom), cover, rom.title)
+            val label = CartArt.loadLabel(labels.found.value[rom.key])
+            CartArt.compose(context, rom.console, library.effectiveColor(rom), label, rom.title)
         }
     }
 

@@ -121,6 +121,7 @@ fun OpenEmuxRoot() {
                 }
                 if (showTabs) {
                     TabBar(route, Modifier.align(Alignment.BottomCenter))
+                    ArtworkDoneToast(Modifier.align(Alignment.BottomCenter).padding(bottom = TabBarHeight + 12.dp))
                 }
                 launching?.let { LaunchingOverlay(it) }
             }
@@ -182,7 +183,7 @@ private fun LaunchingOverlay(rom: Rom) {
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Cartridge(
-                rom.console, app.covers.urlFor(rom), rom.title, app.library.effectiveColor(rom),
+                rom.console, labelFor(rom), rom.title, app.library.effectiveColor(rom),
                 Modifier.size(width = 220.dp, height = 140.dp),
             )
             Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically) {

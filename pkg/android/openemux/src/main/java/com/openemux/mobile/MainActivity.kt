@@ -16,4 +16,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent { OpenEmuxRoot() }
     }
+
+    override fun onStart() {
+        super.onStart()
+        (application as OpenEmuxApp).retryArtwork()
+    }
 }

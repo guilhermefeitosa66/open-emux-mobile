@@ -1,3 +1,5 @@
+import java.util.Properties
+
 // OpenEmux Mobile: a native Android frontend (Kotlin + Compose) on top of
 // the RetroArch engine. The RetroArch Java glue and the prebuilt native
 // library come straight from the phoenix project next door; only the
@@ -8,6 +10,12 @@ plugins {
 }
 
 val retroarchAndroid = file("..")
+
+// ScreenScraper developer credential, from the untracked local.properties.
+val localProps = Properties().apply {
+    file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) }
+}
+fun localProp(key: String) = "\"" + localProps.getProperty(key, "") + "\""
 
 android {
     // The RetroArch Java sources import com.retroarch.R / BuildConfig.
@@ -25,6 +33,8 @@ android {
         }
         buildConfigField("boolean", "PLAY_STORE_BUILD", "false")
         buildConfigField("boolean", "META_QUEST_BUILD", "false")
+        buildConfigField("String", "SS_DEVID", localProp("screenscraper.devid"))
+        buildConfigField("String", "SS_DEVPASSWORD", localProp("screenscraper.devpassword"))
         resValue("string", "app_name", "OpenEmux")
     }
 

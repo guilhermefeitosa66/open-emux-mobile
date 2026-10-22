@@ -23,10 +23,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
+import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
+import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -55,6 +55,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -81,6 +82,7 @@ fun ShelfScreen() {
                 val consoles = Console.entries.count { c -> roms.any { it.console == c } }
                 Text("$consoles ${if (consoles == 1) "console" else "consoles"} · ${roms.size} jogos", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 6.dp))
             }
+            ArtworkSyncPill(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
         }
         if (roms.isEmpty()) {
             item {
@@ -133,7 +135,7 @@ private fun ShelfCard(short: String, name: String, count: String, roms: List<Rom
             val (right, top, angle) = placements[i + (3 - fan.size)]
             val w = if (rom.console.frameAspect < 1.65f) 100.dp else 118.dp
             Box(Modifier.align(Alignment.TopEnd).padding(end = right, top = top).width(w).rotate(angle)) {
-                Cartridge(rom.console, a.app.covers.urlFor(rom), rom.title, a.app.library.effectiveColor(rom), Modifier.fillMaxWidth())
+                Cartridge(rom.console, labelFor(rom), rom.title, a.app.library.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom))
             }
         }
         Column(Modifier.align(Alignment.CenterStart).padding(start = 18.dp).width(150.dp)) {
@@ -178,14 +180,15 @@ fun LibraryScreen(filter: String) {
     }
 
     val columns = when (mode) { ViewMode.Carts -> 2; ViewMode.Covers -> 3; ViewMode.List -> 1 }
-    LazyVerticalGrid(
-        GridCells.Fixed(columns),
+    // Staggered, so each box art keeps its own proportions in the covers mode.
+    LazyVerticalStaggeredGrid(
+        StaggeredGridCells.Fixed(columns),
         Modifier.fillMaxSize().statusBarsPadding(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 10.dp, bottom = TabBarHeight + 24.dp),
         horizontalArrangement = Arrangement.spacedBy(if (mode == ViewMode.Covers) 12.dp else 16.dp),
-        verticalArrangement = Arrangement.spacedBy(if (mode == ViewMode.List) 0.dp else 18.dp),
+        verticalItemSpacing = if (mode == ViewMode.List) 0.dp else 18.dp,
     ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
+        item(span = StaggeredGridItemSpan.FullLine) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { BackLink("Estante") { a.nav.popBackStack(Routes.SHELF, false) } }
@@ -214,6 +217,7 @@ fun LibraryScreen(filter: String) {
                     }
                     Text("${list.size} ${if (list.size == 1) "jogo" else "jogos"}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(bottom = 4.dp))
                 }
+                ArtworkSyncPill(Modifier.padding(top = 16.dp))
                 Row(
                     Modifier.padding(top = 14.dp).fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -255,7 +259,7 @@ fun LibraryScreen(filter: String) {
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Box {
-                        Cartridge(rom.console, a.app.covers.urlFor(rom), rom.title, lib.effectiveColor(rom), Modifier.fillMaxWidth())
+                        Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom))
                         if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
                     }
                     Text(
@@ -265,8 +269,8 @@ fun LibraryScreen(filter: String) {
                     )
                 }
                 ViewMode.Covers -> Column(Modifier.combinedClickable(onClick = open, onLongClick = open)) {
-                    Box(Modifier.fillMaxWidth().aspectRatio(0.72f).clip(RoundedCornerShape(10.dp)).background(Oe.Surface)) {
-                        AsyncImage(a.app.covers.urlFor(rom), rom.title, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    Box {
+                        BoxArt(rom, Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)))
                         if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
                     }
                     Text(rom.title, style = Type.Caption.copy(color = Color(0xFFE6E6EC)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
@@ -275,7 +279,9 @@ fun LibraryScreen(filter: String) {
                     Modifier.fillMaxWidth().clickable(onClick = open).padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Cartridge(rom.console, a.app.covers.urlFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(84.dp))
+                    Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
+                        BoxArt(rom, Modifier.clip(RoundedCornerShape(6.dp)), maxHeight = 64.dp)
+                    }
                     Column(Modifier.weight(1f).padding(start = 14.dp)) {
                         Text(rom.title, style = Type.BodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(rom.console.displayName, style = Type.Small)
@@ -286,6 +292,38 @@ fun LibraryScreen(filter: String) {
         }
     }
 }
+
+/** Box art at its own aspect ratio; a placeholder of the usual box shape until it loads. */
+@Composable
+private fun BoxArt(rom: Rom, modifier: Modifier, maxHeight: Dp? = null) {
+    val url = LocalActions.current.app.covers.urlFor(rom)
+    var aspect by remember(url) { mutableStateOf(boxAspects[url]) }
+    val shape = Modifier.let { if (maxHeight != null) it.height(maxHeight) else it.fillMaxWidth() }
+        .aspectRatio(aspect ?: 0.72f, matchHeightConstraintsFirst = maxHeight != null)
+    Box(modifier.then(shape).background(Oe.Surface), contentAlignment = Alignment.Center) {
+        if (url != null) {
+            AsyncImage(
+                url, rom.title, Modifier.fillMaxSize(), contentScale = ContentScale.Fit,
+                onSuccess = { state ->
+                    val size = state.painter.intrinsicSize
+                    if (size.width > 0f && size.height > 0f) {
+                        aspect = size.width / size.height
+                        boxAspects[url] = aspect!!
+                    }
+                },
+            )
+        }
+        if (url == null || aspect == null) {
+            Text(
+                rom.title, style = Type.Caption.copy(color = Oe.Muted, fontSize = if (maxHeight != null) 9.sp else 12.sp),
+                textAlign = TextAlign.Center, maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(6.dp),
+            )
+        }
+    }
+}
+
+/** Loaded box art proportions, so scrolling back does not reflow the grid. */
+private val boxAspects = HashMap<String, Float>()
 
 @Composable
 private fun SearchField(value: String, autoFocus: Boolean, onChange: (String) -> Unit) {
@@ -350,7 +388,7 @@ private fun ContinueCard(rom: Rom) {
         Box(Modifier.size(108.dp, 72.dp).clip(RoundedCornerShape(12.dp)).background(Color.Black)) {
             val thumb = remember(auto) { auto?.thumbnail?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
             if (thumb != null) Image(thumb, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-            else Cartridge(rom.console, a.app.covers.urlFor(rom), rom.title, lib.effectiveColor(rom), Modifier.align(Alignment.Center).width(96.dp))
+            else Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.align(Alignment.Center).width(96.dp))
         }
         Column(Modifier.weight(1f)) {
             Text("CONTINUAR", style = Type.Tag.copy(color = Oe.Muted, fontSize = 12.sp, letterSpacing = 0.8.sp))
@@ -386,7 +424,7 @@ fun RecentScreen() {
                 Modifier.fillMaxWidth().clickable { a.nav.navigate(Routes.rom(rom.key)) }.padding(horizontal = 20.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Cartridge(rom.console, a.app.covers.urlFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(96.dp))
+                Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(96.dp))
                 Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
                     Text(rom.title, style = Type.BodyMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     Text("${rom.console.short} · ${formatAgo(meta.roms[rom.key]!!.lastPlayed)}", style = Type.Small, modifier = Modifier.padding(top = 2.dp))

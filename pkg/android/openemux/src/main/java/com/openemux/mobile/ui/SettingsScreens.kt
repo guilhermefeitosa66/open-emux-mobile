@@ -151,7 +151,7 @@ fun ConsoleSettingsScreen(id: String) {
                 }
                 Box(Modifier.width(92.dp).rotate(6f)) {
                     Cartridge(
-                        console, sample?.let { a.app.covers.urlFor(it) }, sample?.title ?: console.displayName,
+                        console, sample?.let { labelFor(it) }, sample?.title ?: console.displayName,
                         settings.color, Modifier.fillMaxWidth(),
                     )
                 }
@@ -226,7 +226,7 @@ fun ConsoleSettingsScreen(id: String) {
                 Text("Cor dos cartuchos", style = Type.Title.copy(fontSize = 22.sp))
                 Text("Vale para os jogos do ${console.short} que não têm cor própria.", style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
                 if (sample != null) {
-                    Cartridge(console, a.app.covers.urlFor(sample), sample.title, settings.color, Modifier.align(Alignment.CenterHorizontally).width(220.dp))
+                    Cartridge(console, labelFor(sample), sample.title, settings.color, Modifier.align(Alignment.CenterHorizontally).width(220.dp))
                     Spacer(Modifier.height(16.dp))
                 }
                 ColorSwatches(settings.color) { c -> lib.updateConsole(console) { it.copy(color = c) } }
