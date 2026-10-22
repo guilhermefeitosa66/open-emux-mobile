@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pause sheet (game process) -->
+    <string name="game_back">返回</string>
+    <string name="game_back_to_game">返回游戏</string>
+    <string name="game_choose">选择</string>
+    <string name="game_save_states">即时存档</string>
+    <string name="game_shader">着色器</string>
+    <string name="game_playing_now">正在游玩 · %1$s</string>
+    <string name="game_playing_for">已玩 %1$d 分钟 · %2$s</string>
+    <string name="game_tap_to_load">点按读取</string>
+    <string name="game_shader_this_session">仅本次会话</string>
+    <string name="game_toast_saved_slot">已保存到存档位 %1$d</string>
+    <string name="game_toast_fast_forward_on">继续时快进</string>
+    <string name="game_toast_fast_forward_off">正常速度</string>
+    <string name="game_toast_screenshot">截图已保存</string>
+    <string name="game_toast_sound_off">声音已关闭</string>
+    <string name="game_toast_sound_on">声音已开启</string>
+    <string name="game_toast_shader">着色器：%1$s</string>
+    <string name="game_toast_state_other_core">此存档来自另一个内核</string>
+    <string name="game_toast_state_saved_other_core">此存档是用另一个内核保存的</string>
+    <string name="game_save_state">保存存档</string>
+    <string name="game_load">读取</string>
+    <string name="game_fast_forward">快进</string>
+    <string name="game_screenshot">截图</string>
+    <string name="game_audio">声音</string>
+    <string name="game_muted">静音</string>
+    <string name="game_restart">重启游戏</string>
+    <string name="game_quit">退出游戏</string>
+    <string name="game_no_states">还没有即时存档。</string>
+    <string name="game_state_auto">自动</string>
+    <string name="game_state_slot">存档位 %1$d</string>
+    <string name="game_shader_blurb_none">纯净像素，无效果。</string>
+    <string name="game_shader_blurb_dot">掌机屏幕的点阵效果。</string>
+    <string name="game_shader_blurb_sharp">清晰像素，无锯齿。</string>
+    <string name="game_shader_blurb_zfast">轻量 CRT 扫描线。</string>
+    <string name="game_shader_blurb_geom">带辉光和遮罩的曲面 CRT。</string>
+
+    <!-- Game detail screen -->
+    <string name="detail_continue">继续</string>
+    <string name="detail_play">开始游戏</string>
+    <string name="detail_favorite">收藏</string>
+    <string name="detail_menu">菜单 ⋯</string>
+    <string name="detail_back">返回</string>
+    <string name="detail_favorite_remove">移出收藏</string>
+    <string name="detail_favorite_add">加入收藏</string>
+    <string name="detail_more_options">更多选项</string>
+    <string name="detail_remove_from_library">从游戏库移除</string>
+    <string name="detail_restart">重启</string>
+    <string name="detail_save_states">即时存档</string>
+    <string name="detail_see_all">查看全部（%1$d）</string>
+    <string name="detail_no_states">还没有。可在游戏内菜单中保存。</string>
+    <string name="detail_cart_color">卡带颜色</string>
+    <string name="detail_default_suffix">" · 默认"</string>
+    <string name="detail_core">内核</string>
+    <string name="detail_shader">着色器</string>
+    <string name="detail_default_tag">默认</string>
+    <string name="detail_controller_skin">手柄皮肤</string>
+    <string name="detail_cheats">金手指</string>
+    <string name="detail_coming_soon">即将推出</string>
+    <string name="detail_remove_title">移除 %1$s？</string>
+    <string name="detail_remove_message">ROM 文件将从设备中删除。游戏存档和即时存档会保留，以便你再次导入。</string>
+    <string name="detail_remove">移除</string>
+    <string name="detail_cancel">取消</string>
+    <string name="detail_core_sheet_title">此 ROM 的内核</string>
+    <string name="detail_console_default">主机默认</string>
+    <string name="detail_core_default_desc">当前为 %1$s。如果 %2$s 的默认内核改变，此 ROM 也会随之改变。</string>
+    <string name="detail_pin_for_rom">或仅固定到此 ROM</string>
+    <string name="detail_core_pinned_desc">即使默认内核改变，也会保持 %1$s。</string>
+    <plurals name="detail_core_states_warning">
+        <item quantity="other">即时存档只能在创建它的内核中打开。此 ROM 的 %1$d 个即时存档来自 %2$s。游戏存档（.srm）仍可正常使用。</item>
+    </plurals>
+    <string name="detail_done">完成</string>
+    <string name="detail_shader_sheet_title">此 ROM 的着色器</string>
+    <string name="detail_shader_default_desc">当前为 %1$s。跟随 %2$s 的默认设置。</string>
+    <string name="detail_states_sheet_hint">点按即可从该时刻打开游戏</string>
+    <!-- NDS screen layouts, chosen from the pause sheet with a gamepad. -->
+    <string name="game_screens">屏幕</string>
+    <string name="game_screens_top">仅上屏</string>
+    <string name="game_screens_bottom">仅下屏</string>
+    <string name="game_screens_stacked">上下排列</string>
+    <string name="game_screens_side">左右排列</string>
+</resources>

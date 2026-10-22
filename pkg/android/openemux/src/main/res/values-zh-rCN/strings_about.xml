@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_hint_open">打开</string>
+    <string name="about_version">版本 %1$s</string>
+    <string name="about_comments">一个受 OpenEmu 启发的 Android 模拟器前端。</string>
+    <string name="about_section_project">项目</string>
+    <string name="about_site">OpenEmux 官网</string>
+    <string name="about_releases">发布版本</string>
+    <string name="about_report_issue">报告问题</string>
+    <string name="about_section_license">许可证</string>
+    <string name="about_license_title">GNU GPL v3</string>
+    <string name="about_license_body">本应用包含经过修改的 RetroArch，因此以 GPLv3 发布。应用自身的 Kotlin 代码也以 MIT 许可证提供。</string>
+    <string name="about_source">本应用的源代码</string>
+    <string name="about_licenses">许可证</string>
+    <string name="about_authors">由 OpenEmux 及贡献者开发。</string>
+    <string name="about_licenses_note">本应用自带或下载的所有内容及其许可证。许可证文本保留英文原文。</string>
+    <string name="about_section_app">应用与库</string>
+    <string name="about_section_cores">模拟器（内核）</string>
+</resources>

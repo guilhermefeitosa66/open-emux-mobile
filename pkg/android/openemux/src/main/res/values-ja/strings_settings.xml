@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gamepad hints -->
+    <string name="settings_hint_open">開く</string>
+    <string name="settings_hint_back">戻る</string>
+    <string name="settings_hint_tabs">タブ</string>
+    <string name="settings_hint_choose">選択</string>
+    <string name="settings_hint_import">取り込み</string>
+
+    <!-- Tab bar -->
+    <string name="settings_tab_library">ライブラリ</string>
+    <string name="settings_tab_recent">最近</string>
+    <string name="settings_tab_import">取り込み</string>
+    <string name="settings_tab_settings">設定</string>
+    <string name="settings_launching">カートリッジを差し込んでいます...</string>
+
+    <!-- Settings -->
+    <string name="settings_title">設定</string>
+    <plurals name="settings_bios_consoles_missing">
+        <item quantity="other">%d 台のコンソールにファイルが必要です</item>
+    </plurals>
+    <plurals name="settings_bios_optional_missing">
+        <item quantity="other">任意のファイルが %d 個ありません</item>
+    </plurals>
+    <string name="settings_bios_all_ready">準備完了</string>
+    <string name="settings_import">取り込み</string>
+    <string name="settings_section_appearance">外観</string>
+    <string name="settings_theme">テーマ</string>
+    <string name="settings_theme_system">システム</string>
+    <string name="settings_theme_system_desc">デバイスのライト/ダークモードに従います。</string>
+    <string name="settings_theme_light">ライト</string>
+    <string name="settings_theme_light_desc">常に明るい背景。</string>
+    <string name="settings_theme_dark">ダーク</string>
+    <string name="settings_theme_dark_desc">常に暗い背景。</string>
+    <string name="settings_language">言語</string>
+    <string name="settings_language_system_desc">デバイスの言語を使います。</string>
+    <string name="settings_section_consoles">コンソール</string>
+    <string name="settings_section_consoles_trailing">コア · シェーダー</string>
+    <string name="settings_section_general">全般</string>
+    <string name="settings_rom_folder">ROM フォルダー</string>
+    <string name="settings_controls">操作</string>
+    <string name="settings_controls_value">タッチ + 物理コントローラー</string>
+    <string name="settings_about">このアプリについて</string>
+
+    <!-- Console defaults -->
+    <string name="settings_console_defaults">コンソールの既定</string>
+    <string name="settings_default_core">既定のコア</string>
+    <string name="settings_recommended">おすすめ</string>
+    <string name="settings_default_shader">既定のシェーダー</string>
+    <string name="settings_bios_required">必須</string>
+    <string name="settings_bios_optional">任意</string>
+    <string name="settings_bios_found">あり</string>
+    <string name="settings_bios_missing">なし</string>
+    <string name="settings_bios_not_needed">このコンソールには不要です</string>
+    <string name="settings_default_skin">既定のスキン</string>
+    <string name="settings_cart_color">カートリッジの色</string>
+    <plurals name="settings_applies_all">
+        <item quantity="other">%2$s のゲーム %1$d 本すべてに適用されます。</item>
+    </plurals>
+    <plurals name="settings_applies_except">
+        <item quantity="other">%1$d 本すべてに適用されます。独自のコアを持つ %2$d 本を除きます。</item>
+    </plurals>
+    <string name="settings_see_which">どれか見る</string>
+    <string name="settings_cart_color_desc">独自の色が設定されていない %1$s のゲームに適用されます。</string>
+    <string name="settings_own_core_title">独自のコアを使用</string>
+
+    <!-- BIOS -->
+    <string name="settings_bios_intro">一部のコンソールは、オリジナルのシステムファイルがないと起動しません。自分の本体から吸い出したものを使ってください。</string>
+    <string name="settings_bios_checking">ファイルを確認しています...</string>
+    <string name="settings_bios_import_from_device">デバイスから取り込む</string>
+    <string name="settings_bios_pick_help">ファイルが入っているフォルダー（ダウンロード、SD カードなど）を選んでください。OpenEmux は名前で、わかる場合はハッシュでも各ファイルを認識し、システムフォルダーにインストールします。</string>
+    <plurals name="settings_bios_imported">
+        <item quantity="other">%d 個のファイルを認識してインストールしました。</item>
+    </plurals>
+    <plurals name="settings_bios_skipped">
+        <item quantity="other">%d 個をスキップ。</item>
+    </plurals>
+    <plurals name="settings_bios_none_found">
+        <item quantity="other">そのフォルダーに既知の BIOS はありません。%d 個のファイルを確認しました。</item>
+    </plurals>
+    <string name="settings_bios_consoles">BIOS が必要なコンソール</string>
+    <string name="settings_bios_ready_count">%2$d 件中 %1$d 件準備完了</string>
+    <string name="settings_count_of">%1$d / %2$d</string>
+    <string name="settings_bios_one_of">次のいずれか</string>
+    <string name="settings_bios_tag_required">必須</string>
+    <string name="settings_bios_tag_optional">任意</string>
+    <string name="settings_bios_footer">ここにないコンソールは BIOS なしで動きます。</string>
+
+    <!-- Import -->
+    <string name="settings_import_ext_title">.%1$s ファイル</string>
+    <string name="settings_import_ext_question">この拡張子は複数のコンソールで使われています。今回取り込む .%1$s ファイルはどのコンソールのものですか？</string>
+    <string name="settings_import_intro">持っているゲームの ROM を取り込みましょう。OpenEmux は拡張子からコンソールを判別し、.zip ファイルも自動で開きます。</string>
+    <string name="settings_import_copying">コピーしています...</string>
+    <string name="settings_import_pick_files">ファイルを選択</string>
+    <string name="settings_import_pick_folder">フォルダーごと選択</string>
+    <plurals name="settings_import_games">
+        <item quantity="other">%d 本のゲームを取り込みました。</item>
+    </plurals>
+    <plurals name="settings_import_skipped">
+        <item quantity="other">%d 個のファイルをスキップしました。</item>
+    </plurals>
+    <string name="settings_import_none">ROM が認識されませんでした。</string>
+    <string name="settings_import_view">表示</string>
+    <string name="settings_import_formats">対応形式</string>
+    <string name="settings_import_where">保存先</string>
+    <string name="settings_import_where_desc">Android/data/%1$s/files/roms。パソコンから直接ここにコピーすることもできます。</string>
+
+    <!-- First-run setup -->
+    <string name="settings_setup_start">開始</string>
+    <string name="settings_setup_retry">再試行</string>
+    <string name="settings_setup_title">OpenEmux を準備しています</string>
+    <string name="settings_setup_intro">初回はエミュレーターとそれが使うファイルをダウンロードします（デバイス上で約 160 MB）。実行中はインターネット接続が必要で、Wi-Fi がおすすめです。その後はすべてオフラインで動きます。</string>
+    <string name="settings_setup_percent">%1$d%%</string>
+    <string name="settings_setup_downloading">%1$s をダウンロード中</string>
+    <string name="settings_setup_dont_close">完了するまでアプリを閉じないでください。</string>
+    <string name="settings_setup_resume_note">ダウンロード済みの分は残ります。再試行すると中断したところから続きます。</string>
+    <string name="settings_setup_source">ファイルは libretro 公式の buildbot から取得します。</string>
+</resources>

@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gamepad hints -->
+    <string name="settings_hint_open">திற</string>
+    <string name="settings_hint_back">பின்</string>
+    <string name="settings_hint_tabs">தாவல்கள்</string>
+    <string name="settings_hint_choose">தேர்ந்தெடு</string>
+    <string name="settings_hint_import">இறக்குமதி</string>
+
+    <!-- Tab bar -->
+    <string name="settings_tab_library">நூலகம்</string>
+    <string name="settings_tab_recent">சமீபத்தியவை</string>
+    <string name="settings_tab_import">இறக்குமதி</string>
+    <string name="settings_tab_settings">அமைப்புகள்</string>
+    <string name="settings_launching">கார்ட்ரிட்ஜ் செருகப்படுகிறது...</string>
+
+    <!-- Settings -->
+    <string name="settings_title">அமைப்புகள்</string>
+    <plurals name="settings_bios_consoles_missing">
+        <item quantity="one">%d கன்சோலுக்குக் கோப்புகள் தேவை</item>
+        <item quantity="other">%d கன்சோல்களுக்குக் கோப்புகள் தேவை</item>
+    </plurals>
+    <plurals name="settings_bios_optional_missing">
+        <item quantity="one">%d விருப்பக் கோப்பு இல்லை</item>
+        <item quantity="other">%d விருப்பக் கோப்புகள் இல்லை</item>
+    </plurals>
+    <string name="settings_bios_all_ready">எல்லாம் தயார்</string>
+    <string name="settings_import">இறக்குமதி</string>
+    <string name="settings_section_appearance">தோற்றம்</string>
+    <string name="settings_theme">தீம்</string>
+    <string name="settings_theme_system">அமைப்பு</string>
+    <string name="settings_theme_system_desc">சாதனத்தின் வெளிர்/கரும் பயன்முறையைப் பின்பற்றும்.</string>
+    <string name="settings_theme_light">வெளிர்</string>
+    <string name="settings_theme_light_desc">எப்போதும் வெளிர் பின்னணி.</string>
+    <string name="settings_theme_dark">கரும்</string>
+    <string name="settings_theme_dark_desc">எப்போதும் கரும் பின்னணி.</string>
+    <string name="settings_language">மொழி</string>
+    <string name="settings_language_system_desc">சாதனத்தின் மொழியைப் பயன்படுத்தும்.</string>
+    <string name="settings_section_consoles">கன்சோல்கள்</string>
+    <string name="settings_section_consoles_trailing">கோர் · ஷேடர்</string>
+    <string name="settings_section_general">பொது</string>
+    <string name="settings_rom_folder">ROM கோப்புறை</string>
+    <string name="settings_controls">கட்டுப்பாடுகள்</string>
+    <string name="settings_controls_value">தொடுதிரை + கன்ட்ரோலர்</string>
+    <string name="settings_about">பற்றி</string>
+
+    <!-- Console defaults -->
+    <string name="settings_console_defaults">கன்சோல் இயல்புகள்</string>
+    <string name="settings_default_core">இயல்புக் கோர்</string>
+    <string name="settings_recommended">பரிந்துரைக்கப்பட்டது</string>
+    <string name="settings_default_shader">இயல்பு ஷேடர்</string>
+    <string name="settings_bios_required">தேவை</string>
+    <string name="settings_bios_optional">விருப்பம்</string>
+    <string name="settings_bios_found">கிடைத்தது</string>
+    <string name="settings_bios_missing">இல்லை</string>
+    <string name="settings_bios_not_needed">இந்தக் கன்சோலுக்கு இது தேவையில்லை</string>
+    <string name="settings_default_skin">இயல்புத் தோற்றம்</string>
+    <string name="settings_cart_color">கார்ட்ரிட்ஜ் நிறம்</string>
+    <plurals name="settings_applies_all">
+        <item quantity="one">%2$s விளையாட்டுக்குப் பொருந்தும்.</item>
+        <item quantity="other">அனைத்து %1$d %2$s விளையாட்டுகளுக்கும் பொருந்தும்.</item>
+    </plurals>
+    <plurals name="settings_applies_except">
+        <item quantity="one">சொந்தக் கோர் உள்ள %2$d தவிர, அனைத்து %1$d விளையாட்டுகளுக்கும் பொருந்தும்.</item>
+        <item quantity="other">சொந்தக் கோர் உள்ள %2$d தவிர, அனைத்து %1$d விளையாட்டுகளுக்கும் பொருந்தும்.</item>
+    </plurals>
+    <string name="settings_see_which">எவை எனப் பார்</string>
+    <string name="settings_cart_color_desc">சொந்த நிறம் இல்லாத %1$s விளையாட்டுகளுக்குப் பொருந்தும்.</string>
+    <string name="settings_own_core_title">சொந்தக் கோருடன்</string>
+
+    <!-- BIOS -->
+    <string name="settings_bios_intro">சில கன்சோல்கள் அசல் சிஸ்டம் கோப்புடன் மட்டுமே தொடங்கும். உங்கள் சொந்தச் சாதனத்திலிருந்து நீங்கள் எடுத்தவற்றைப் பயன்படுத்துங்கள்.</string>
+    <string name="settings_bios_checking">கோப்புகள் சரிபார்க்கப்படுகின்றன...</string>
+    <string name="settings_bios_import_from_device">சாதனத்திலிருந்து இறக்குமதி செய்</string>
+    <string name="settings_bios_pick_help">கோப்புகள் உள்ள கோப்புறையைத் தேர்ந்தெடுங்கள் (Downloads, SD கார்டு...). OpenEmux ஒவ்வொன்றையும் பெயரால், அல்லது தெரிந்தால் ஹாஷால் அடையாளம் கண்டு, சிஸ்டம் கோப்புறையில் நிறுவும்.</string>
+    <plurals name="settings_bios_imported">
+        <item quantity="one">%d கோப்பு அடையாளம் காணப்பட்டு நிறுவப்பட்டது.</item>
+        <item quantity="other">%d கோப்புகள் அடையாளம் காணப்பட்டு நிறுவப்பட்டன.</item>
+    </plurals>
+    <plurals name="settings_bios_skipped">
+        <item quantity="one">%d தவிர்க்கப்பட்டது.</item>
+        <item quantity="other">%d தவிர்க்கப்பட்டன.</item>
+    </plurals>
+    <plurals name="settings_bios_none_found">
+        <item quantity="one">அந்தக் கோப்புறையில் அறியப்பட்ட BIOS இல்லை. %d கோப்பு சரிபார்க்கப்பட்டது.</item>
+        <item quantity="other">அந்தக் கோப்புறையில் அறியப்பட்ட BIOS இல்லை. %d கோப்புகள் சரிபார்க்கப்பட்டன.</item>
+    </plurals>
+    <string name="settings_bios_consoles">BIOS உள்ள கன்சோல்கள்</string>
+    <string name="settings_bios_ready_count">%2$d இல் %1$d தயார்</string>
+    <string name="settings_count_of">%2$d இல் %1$d</string>
+    <string name="settings_bios_one_of">இவற்றில் ஒன்று</string>
+    <string name="settings_bios_tag_required">தேவை</string>
+    <string name="settings_bios_tag_optional">விருப்பம்</string>
+    <string name="settings_bios_footer">இங்கே பட்டியலிடப்படாத கன்சோல்கள் BIOS இல்லாமலேயே இயங்கும்.</string>
+
+    <!-- Import -->
+    <string name="settings_import_ext_title">.%1$s கோப்புகள்</string>
+    <string name="settings_import_ext_question">பல கன்சோல்கள் இந்த நீட்டிப்பைப் பயன்படுத்துகின்றன. இந்த இறக்குமதியில் உள்ள .%1$s கோப்புகள் எந்தக் கன்சோலுக்கானவை?</string>
+    <string name="settings_import_intro">உங்களிடம் உள்ள விளையாட்டுகளின் ROM-களைக் கொண்டு வாருங்கள். OpenEmux நீட்டிப்பைக் கொண்டு கன்சோலை அடையாளம் கண்டு, .zip கோப்புகளைத் தானாகவே திறக்கும்.</string>
+    <string name="settings_import_copying">நகலெடுக்கிறது...</string>
+    <string name="settings_import_pick_files">கோப்புகளைத் தேர்ந்தெடு</string>
+    <string name="settings_import_pick_folder">முழுக் கோப்புறையைத் தேர்ந்தெடு</string>
+    <plurals name="settings_import_games">
+        <item quantity="one">%d விளையாட்டு இறக்குமதி செய்யப்பட்டது.</item>
+        <item quantity="other">%d விளையாட்டுகள் இறக்குமதி செய்யப்பட்டன.</item>
+    </plurals>
+    <plurals name="settings_import_skipped">
+        <item quantity="one">%d கோப்பு தவிர்க்கப்பட்டது.</item>
+        <item quantity="other">%d கோப்புகள் தவிர்க்கப்பட்டன.</item>
+    </plurals>
+    <string name="settings_import_none">எந்த ROM-உம் அடையாளம் காணப்படவில்லை.</string>
+    <string name="settings_import_view">பார்</string>
+    <string name="settings_import_formats">ஏற்கப்படும் வடிவங்கள்</string>
+    <string name="settings_import_where">அவை எங்கே செல்கின்றன</string>
+    <string name="settings_import_where_desc">Android/data/%1$s/files/roms. கணினியிலிருந்து நேரடியாக அங்கே நகலெடுக்கவும் முடியும்.</string>
+
+    <!-- First-run setup -->
+    <string name="settings_setup_start">தொடங்கு</string>
+    <string name="settings_setup_retry">மீண்டும் முயல்</string>
+    <string name="settings_setup_title">OpenEmux தயாராகிறது</string>
+    <string name="settings_setup_intro">முதல் முறை, ஆப் எமுலேட்டர்களையும் அவை பயன்படுத்தும் கோப்புகளையும் பதிவிறக்கும், சாதனத்தில் சுமார் 160 MB. இது இயங்கும்போது இணையம் தேவை; Wi-Fi சிறந்தது. அதன் பிறகு, அனைத்தும் இணையமின்றி இயங்கும்.</string>
+    <string name="settings_setup_percent">%1$d%%</string>
+    <string name="settings_setup_downloading">%1$s பதிவிறக்கப்படுகிறது</string>
+    <string name="settings_setup_dont_close">முடியும் வரை ஆப்பை மூட வேண்டாம்.</string>
+    <string name="settings_setup_resume_note">ஏற்கனவே பதிவிறக்கியவை வைக்கப்படும்; மீண்டும் முயன்றால் நின்ற இடத்திலிருந்து தொடரும்.</string>
+    <string name="settings_setup_source">கோப்புகள் அதிகாரப்பூர்வ libretro buildbot இலிருந்து வருகின்றன.</string>
+</resources>

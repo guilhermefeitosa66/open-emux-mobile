@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shaders: only "none" is translated; the others keep their own names. -->
+    <string name="data_shader_none">なし</string>
+
+    <!-- Cartridge colors -->
+    <string name="data_color_default">オリジナル</string>
+    <string name="data_color_black">ブラック</string>
+    <string name="data_color_white">ホワイト</string>
+    <string name="data_color_red">レッド</string>
+    <string name="data_color_orange">オレンジ</string>
+    <string name="data_color_yellow">イエロー</string>
+    <string name="data_color_green">グリーン</string>
+    <string name="data_color_teal">ティール</string>
+    <string name="data_color_blue">ブルー</string>
+    <string name="data_color_purple">パープル</string>
+    <string name="data_color_pink">ピンク</string>
+    <string name="data_color_gold">ゴールド</string>
+    <string name="data_color_clear">クリア</string>
+
+    <!-- First-run download. %1$s is the item being downloaded, %2$s a detail. -->
+    <string name="data_setup_step_cores">エミュレーター</string>
+    <string name="data_setup_step_info">エミュレーター情報</string>
+    <string name="data_setup_step_system">システムファイル</string>
+    <string name="data_setup_unsupported">このデバイスには対応していません（%2$s）。</string>
+    <string name="data_setup_no_internet">インターネットに接続されていません。</string>
+    <string name="data_setup_timeout">%1$s のダウンロード中に接続が切れたか、遅くなりすぎました。</string>
+    <string name="data_setup_http">%1$s のダウンロード中に RetroArch のサーバーが %2$s を返しました。</string>
+    <string name="data_setup_failed">%1$s をダウンロードできませんでした: %2$s。</string>
+
+    <!-- Joins the alternative file names of one BIOS entry: "a.bin or b.bin". -->
+    <string name="data_bios_or">" または "</string>
+
+    <!-- Save-state button drawn on the on-screen controller (landscape). -->
+    <!-- Console keys on the controller skin, drawn in capitals. -->
+    <string name="data_skin_keypad">テンキー</string>
+    <string name="data_skin_disk">ディスク</string>
+
+    <!-- Core descriptions -->
+    <string name="data_core_stella">定番の 2600 エミュレーター。</string>
+    <string name="data_core_atari800">Atari の 8 ビット機と 5200。</string>
+    <string name="data_core_prosystem">軽くて全タイトルが動きます。</string>
+    <string name="data_core_beetle_lynx">Mednafen 系、高精度。</string>
+    <string name="data_core_bluemsx">MSX と ColecoVision。</string>
+    <string name="data_core_gearcoleco">ColecoVision 専用。</string>
+    <string name="data_core_nestopia">高精度で安定。</string>
+    <string name="data_core_fceumm">軽く、多くのマッパーに対応。</string>
+    <string name="data_core_max_accuracy">最高の精度。高性能なデバイスが必要です。</string>
+    <string name="data_core_gambatte">高精度で軽い。</string>
+    <string name="data_core_mgba_gb">Game Boy も動きます。</string>
+    <string name="data_core_mgba_gbc">Game Boy Color も動きます。</string>
+    <string name="data_core_mgba">より高精度。公式 BIOS を使えます。</string>
+    <string name="data_core_gpsp">より軽く、控えめなデバイス向け。</string>
+    <string name="data_core_genesis_plus_gx">セガの 8 ビット機と 16 ビット機、高精度。</string>
+    <string name="data_core_gearsystem">セガの 8 ビット機専用。</string>
+    <string name="data_core_freeintv">Intellivision のエミュレーター。</string>
+    <string name="data_core_beetle_ngp">Pocket と Pocket Color。</string>
+    <string name="data_core_mupen64plus">スマートフォンで最も互換性が高い。</string>
+    <string name="data_core_parallel_n64">もう一方で動かないゲーム向けの代替。</string>
+    <string name="data_core_desmume">互換性が高く安定。</string>
+    <string name="data_core_melonds">高精度。公式 BIOS とファームウェアを使えます。</string>
+    <string name="data_core_dolphin">非常に高性能なデバイスが必要です。</string>
+    <string name="data_core_o2em">Odyssey2 と Videopac。</string>
+    <string name="data_core_picodrive">Mega Drive、32X、Sega CD。</string>
+    <string name="data_core_lighter">より軽い。</string>
+    <string name="data_core_accurate_compatible">高精度で互換性も高い。</string>
+    <string name="data_core_beetle_saturn">高精度。非常に高性能なデバイスが必要です。</string>
+    <string name="data_core_accurate">高精度。</string>
+    <string name="data_core_pcsx_rearmed">軽く、スマートフォン向け。</string>
+    <string name="data_core_ppsspp">PSP のエミュレーター。</string>
+    <string name="data_core_snes9x">高速で、ほぼすべてに対応。</string>
+    <string name="data_core_beetle_pce_fast">PC Engine と TurboGrafx。</string>
+    <string name="data_core_beetle_supergrafx">PC Engine CD と SuperGrafx。</string>
+    <string name="data_core_vecx">Vectrex のエミュレーター。</string>
+    <string name="data_core_beetle_vb">Virtual Boy のエミュレーター。</string>
+    <string name="data_core_beetle_wswan">WonderSwan と WonderSwan Color。</string>
+</resources>

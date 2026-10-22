@@ -1,5 +1,6 @@
 package com.openemux.mobile.ui
 
+import android.app.Activity
 import android.net.Uri
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -22,6 +23,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +48,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.openemux.mobile.OpenEmuxApp
 import com.openemux.mobile.data.Rom
+import com.openemux.mobile.data.Setup
+import com.retroarch.R
 import kotlinx.coroutines.launch
 
 object Routes {
@@ -56,10 +61,14 @@ object Routes {
     const val SETTINGS = "settings"
     const val CONSOLE = "settings/{console}"
     const val BIOS = "bios"
+    const val ABOUT = "about"
+    const val LICENSES = "about/licenses"
+    const val LICENSE = "about/license/{id}"
 
     fun library(filter: String) = "library/$filter"
     fun rom(key: String) = "rom/${Uri.encode(key)}"
     fun console(id: String) = "settings/$id"
+    fun license(id: String) = "about/license/$id"
 }
 
 /** What every screen needs: the app's data, navigation and the game launcher. */
@@ -90,7 +99,7 @@ fun OpenEmuxRoot() {
             if (launching == null) {
                 launching = rom
                 scope.launch {
-                    runCatching { app.launcher.launch(rom, resume, slot) }
+                    runCatching { app.launcher.launch(context as Activity, rom, resume, slot) }
                         .onFailure { launching = null }
                 }
             }
@@ -98,9 +107,28 @@ fun OpenEmuxRoot() {
     }
 
     OpenEmuxTheme {
-        CompositionLocalProvider(LocalActions provides actions) {
+        val setup by app.setup.state.collectAsState()
+        // Nothing opens until the cores are on the device.
+        if (setup !is Setup.State.Done) SetupScreen(setup) { scope.launch { app.setup.run() } }
+        else CompositionLocalProvider(LocalActions provides actions) {
             val entry by nav.currentBackStackEntryAsState()
             val route = entry?.destination?.route
+            // App-wide buttons: Start opens Ajustes, L1/R1 walk the main tabs where a screen does not use them.
+            fun tab(step: Int) {
+                val i = (MAIN_TABS.indexOf(if (route == Routes.LIBRARY) Routes.SHELF else route).coerceAtLeast(0) + step)
+                    .coerceIn(0, MAIN_TABS.lastIndex)
+                if (MAIN_TABS[i] == Routes.SHELF) nav.popBackStack(Routes.SHELF, inclusive = false)
+                else nav.navigate(MAIN_TABS[i]) {
+                    popUpTo(Routes.SHELF) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
+            GamepadButtons(
+                l1 = { if (route in MAIN_TABS || route == Routes.LIBRARY) tab(-1) },
+                r1 = { if (route in MAIN_TABS || route == Routes.LIBRARY) tab(1) },
+                start = { if (route != Routes.SETTINGS) nav.navigate(Routes.SETTINGS) { launchSingleTop = true } },
+            )
             val showTabs = route in setOf(Routes.SHELF, Routes.LIBRARY, Routes.RECENT, Routes.IMPORT, Routes.SETTINGS)
             Box(Modifier.fillMaxSize().background(Oe.Bg)) {
                 NavHost(
@@ -118,10 +146,16 @@ fun OpenEmuxRoot() {
                     composable(Routes.SETTINGS) { SettingsScreen() }
                     composable(Routes.CONSOLE) { ConsoleSettingsScreen(it.arguments?.getString("console") ?: "GBA") }
                     composable(Routes.BIOS) { BiosScreen() }
+                    composable(Routes.ABOUT) { AboutScreen() }
+                    composable(Routes.LICENSES) { LicensesScreen() }
+                    composable(Routes.LICENSE) { LicenseTextScreen(it.arguments?.getString("id").orEmpty()) }
                 }
                 if (showTabs) {
                     TabBar(route, Modifier.align(Alignment.BottomCenter))
                     ArtworkDoneToast(Modifier.align(Alignment.BottomCenter).padding(bottom = TabBarHeight + 12.dp))
+                    HintBar(GamepadBus.hints, Modifier.align(Alignment.BottomCenter).padding(bottom = TabBarHeight))
+                } else {
+                    HintBar(GamepadBus.hints, Modifier.align(Alignment.BottomCenter).navigationBarsPadding(), tall = true)
                 }
                 launching?.let { LaunchingOverlay(it) }
             }
@@ -133,13 +167,13 @@ fun OpenEmuxRoot() {
 private fun TabBar(route: String?, modifier: Modifier) {
     val nav = LocalActions.current.nav
     val tabs = listOf(
-        Triple("Biblioteca", Icons.Cart, Routes.SHELF),
-        Triple("Recentes", Icons.Clock, Routes.RECENT),
-        Triple("Importar", Icons.Download, Routes.IMPORT),
-        Triple("Ajustes", Icons.Sliders, Routes.SETTINGS),
+        Triple(R.string.settings_tab_library, Icons.Cart, Routes.SHELF),
+        Triple(R.string.settings_tab_recent, Icons.Clock, Routes.RECENT),
+        Triple(R.string.settings_tab_import, Icons.Download, Routes.IMPORT),
+        Triple(R.string.settings_tab_settings, Icons.Sliders, Routes.SETTINGS),
     )
-    Column(modifier.fillMaxWidth().background(Color(0xF0121216))) {
-        HorizontalDivider(color = Color(0xFF24242C), thickness = 1.dp)
+    Column(modifier.fillMaxWidth().background(Oe.Bg.copy(alpha = 0.94f))) {
+        HorizontalDivider(color = Oe.Surface2, thickness = 1.dp)
         Row(
             Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 12.dp, vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceAround,
@@ -152,9 +186,13 @@ private fun TabBar(route: String?, modifier: Modifier) {
                 Column(
                     Modifier
                         .widthIn(min = 64.dp)
+                        .gamepadFocus(corner = 12.dp)
                         .clip(RoundedCornerShape(12.dp))
                         .clickable(role = Role.Tab) {
-                            if (!active || target != route) {
+                            if (target == Routes.SHELF) {
+                                // The library tab always lands on the shelf, wherever the library was left.
+                                nav.popBackStack(Routes.SHELF, inclusive = false)
+                            } else if (target != route) {
                                 nav.navigate(target) {
                                     popUpTo(Routes.SHELF) { saveState = true }
                                     launchSingleTop = true
@@ -167,7 +205,7 @@ private fun TabBar(route: String?, modifier: Modifier) {
                 ) {
                     val color = if (active) Oe.AccentText else Oe.Muted
                     Icon(icon, color, 24.dp)
-                    Text(label, style = Type.Caption.copy(color = color, fontSize = 11.sp), modifier = Modifier.padding(top = 4.dp))
+                    Text(stringResource(label), style = Type.Caption.copy(color = color, fontSize = 11.sp), modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }
@@ -178,17 +216,17 @@ private fun TabBar(route: String?, modifier: Modifier) {
 private fun LaunchingOverlay(rom: Rom) {
     val app = LocalActions.current.app
     Box(
-        Modifier.fillMaxSize().background(Color(0xE6121216)).clickable(enabled = true, onClick = {}),
+        Modifier.fillMaxSize().background(Oe.Bg.copy(alpha = 0.9f)).clickable(enabled = true, onClick = {}),
         contentAlignment = Alignment.Center,
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Cartridge(
                 rom.console, labelFor(rom), rom.title, app.library.effectiveColor(rom),
-                Modifier.size(width = 220.dp, height = 140.dp),
+                Modifier.size(width = 220.dp, height = 140.dp), cover = app.covers.urlFor(rom),
             )
             Row(Modifier.padding(top = 24.dp), verticalAlignment = Alignment.CenterVertically) {
                 CircularProgressIndicator(Modifier.size(18.dp), color = Oe.AccentText, strokeWidth = 2.dp)
-                Text("  Encaixando o cartucho...", style = Type.Small)
+                Text("  " + stringResource(R.string.settings_launching), style = Type.Small)
             }
         }
     }
@@ -203,4 +241,6 @@ fun ConsoleBadge(text: String) {
 }
 
 val TabBarHeight = 86.dp
+
+private val MAIN_TABS = listOf(Routes.SHELF, Routes.RECENT, Routes.IMPORT, Routes.SETTINGS)
 val BottomSpace = Modifier.height(TabBarHeight + 24.dp)

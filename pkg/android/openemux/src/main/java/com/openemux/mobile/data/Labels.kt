@@ -58,8 +58,10 @@ class Labels(private val paths: Paths) {
     private fun none(rom: Rom) = File(dir(rom.console), "${rom.baseName}.none")
 
     /** Fetches what is missing, one ROM at a time; quota and network errors pause the run. */
-    suspend fun sync(roms: List<Rom>) = mutex.withLock {
+    suspend fun sync(all: List<Rom>) = mutex.withLock {
         withContext(Dispatchers.IO) {
+            // Only cartridges have a label window; the rest show box art.
+            val roms = all.filter { it.console.frame != null }
             _found.value = roms.mapNotNull { rom -> file(rom).takeIf { it.exists() }?.let { rom.key to it } }.toMap()
             val todo = roms.filter { !file(it).exists() && !none(it).exists() && it.file.exists() }
             _pending.value = todo.map { it.key }.toSet()

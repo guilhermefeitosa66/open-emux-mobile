@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shaders: only "none" is translated; the others keep their own names. -->
+    <string name="data_shader_none">无</string>
+
+    <!-- Cartridge colors -->
+    <string name="data_color_default">原装</string>
+    <string name="data_color_black">黑色</string>
+    <string name="data_color_white">白色</string>
+    <string name="data_color_red">红色</string>
+    <string name="data_color_orange">橙色</string>
+    <string name="data_color_yellow">黄色</string>
+    <string name="data_color_green">绿色</string>
+    <string name="data_color_teal">青绿色</string>
+    <string name="data_color_blue">蓝色</string>
+    <string name="data_color_purple">紫色</string>
+    <string name="data_color_pink">粉色</string>
+    <string name="data_color_gold">金色</string>
+    <string name="data_color_clear">透明</string>
+
+    <!-- First-run download. %1$s is the item being downloaded, %2$s a detail. -->
+    <string name="data_setup_step_cores">模拟器</string>
+    <string name="data_setup_step_info">模拟器信息</string>
+    <string name="data_setup_step_system">系统文件</string>
+    <string name="data_setup_unsupported">不支持此设备（%2$s）。</string>
+    <string name="data_setup_no_internet">没有网络连接。</string>
+    <string name="data_setup_timeout">下载 %1$s 时连接中断或速度过慢。</string>
+    <string name="data_setup_http">下载 %1$s 时 RetroArch 服务器返回了 %2$s。</string>
+    <string name="data_setup_failed">无法下载 %1$s：%2$s。</string>
+
+    <!-- Joins the alternative file names of one BIOS entry: "a.bin or b.bin". -->
+    <string name="data_bios_or">" 或 "</string>
+
+    <!-- Save-state button drawn on the on-screen controller (landscape). -->
+    <!-- Console keys on the controller skin, drawn in capitals. -->
+    <string name="data_skin_keypad">键盘</string>
+    <string name="data_skin_disk">磁盘</string>
+
+    <!-- Core descriptions -->
+    <string name="data_core_stella">2600 的标杆模拟器。</string>
+    <string name="data_core_atari800">Atari 8 位家族与 5200。</string>
+    <string name="data_core_prosystem">轻量，能运行全部游戏。</string>
+    <string name="data_core_beetle_lynx">Mednafen 系，精准。</string>
+    <string name="data_core_bluemsx">MSX 与 ColecoVision。</string>
+    <string name="data_core_gearcoleco">专为 ColecoVision 打造。</string>
+    <string name="data_core_nestopia">精准且稳定。</string>
+    <string name="data_core_fceumm">轻量，支持大量 Mapper。</string>
+    <string name="data_core_max_accuracy">精准度最高。需要性能强劲的设备。</string>
+    <string name="data_core_gambatte">精准且轻量。</string>
+    <string name="data_core_mgba_gb">也能运行 Game Boy。</string>
+    <string name="data_core_mgba_gbc">也能运行 Game Boy Color。</string>
+    <string name="data_core_mgba">更精准。可使用官方 BIOS。</string>
+    <string name="data_core_gpsp">更轻量，适合性能一般的设备。</string>
+    <string name="data_core_genesis_plus_gx">世嘉 8 位与 16 位主机，精准。</string>
+    <string name="data_core_gearsystem">专为世嘉 8 位主机打造。</string>
+    <string name="data_core_freeintv">Intellivision 模拟器。</string>
+    <string name="data_core_beetle_ngp">Pocket 与 Pocket Color。</string>
+    <string name="data_core_mupen64plus">在手机上兼容性最好。</string>
+    <string name="data_core_parallel_n64">备选方案，用于在另一个内核上出错的游戏。</string>
+    <string name="data_core_desmume">兼容且稳定。</string>
+    <string name="data_core_melonds">精准。可使用官方 BIOS 与固件。</string>
+    <string name="data_core_dolphin">需要性能非常强劲的设备。</string>
+    <string name="data_core_o2em">Odyssey2 与 Videopac。</string>
+    <string name="data_core_picodrive">Mega Drive、32X 与 Sega CD。</string>
+    <string name="data_core_lighter">更轻量。</string>
+    <string name="data_core_accurate_compatible">精准且兼容。</string>
+    <string name="data_core_beetle_saturn">精准。需要性能非常强劲的设备。</string>
+    <string name="data_core_accurate">精准。</string>
+    <string name="data_core_pcsx_rearmed">轻量，专为手机打造。</string>
+    <string name="data_core_ppsspp">PSP 模拟器。</string>
+    <string name="data_core_snes9x">快速，几乎兼容所有游戏。</string>
+    <string name="data_core_beetle_pce_fast">PC Engine 与 TurboGrafx。</string>
+    <string name="data_core_beetle_supergrafx">PC Engine CD 与 SuperGrafx。</string>
+    <string name="data_core_vecx">Vectrex 模拟器。</string>
+    <string name="data_core_beetle_vb">Virtual Boy 模拟器。</string>
+    <string name="data_core_beetle_wswan">WonderSwan 与 WonderSwan Color。</string>
+</resources>

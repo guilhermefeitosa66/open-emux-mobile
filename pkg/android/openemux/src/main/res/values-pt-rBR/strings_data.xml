@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="data_shader_none">Nenhum</string>
+
+    <string name="data_color_default">Original</string>
+    <string name="data_color_black">Preto</string>
+    <string name="data_color_white">Branco</string>
+    <string name="data_color_red">Vermelho</string>
+    <string name="data_color_orange">Laranja</string>
+    <string name="data_color_yellow">Amarelo</string>
+    <string name="data_color_green">Verde</string>
+    <string name="data_color_teal">Turquesa</string>
+    <string name="data_color_blue">Azul</string>
+    <string name="data_color_purple">Roxo</string>
+    <string name="data_color_pink">Rosa</string>
+    <string name="data_color_gold">Dourado</string>
+    <string name="data_color_clear">Transparente</string>
+
+    <string name="data_setup_step_cores">Emuladores</string>
+    <string name="data_setup_step_info">Informações dos emuladores</string>
+    <string name="data_setup_step_system">Arquivos de sistema</string>
+    <string name="data_setup_unsupported">Este aparelho não é compatível (%2$s).</string>
+    <string name="data_setup_no_internet">Sem conexão com a internet.</string>
+    <string name="data_setup_timeout">A conexão caiu ou ficou lenta demais ao baixar %1$s.</string>
+    <string name="data_setup_http">O servidor do RetroArch respondeu %2$s ao baixar %1$s.</string>
+    <string name="data_setup_failed">Falha ao baixar %1$s: %2$s.</string>
+
+    <string name="data_bios_or">" ou "</string>
+
+    <!-- Console keys on the controller skin, drawn in capitals. -->
+    <string name="data_skin_keypad">Teclado</string>
+    <string name="data_skin_disk">Disco</string>
+
+    <string name="data_core_stella">O emulador de referência do 2600.</string>
+    <string name="data_core_atari800">Família 8-bit da Atari e o 5200.</string>
+    <string name="data_core_prosystem">Leve e compatível com o catálogo.</string>
+    <string name="data_core_beetle_lynx">Mednafen, preciso.</string>
+    <string name="data_core_bluemsx">MSX e ColecoVision.</string>
+    <string name="data_core_gearcoleco">Dedicado ao ColecoVision.</string>
+    <string name="data_core_nestopia">Preciso e estável.</string>
+    <string name="data_core_fceumm">Leve, com muitos mappers.</string>
+    <string name="data_core_max_accuracy">Precisão máxima. Pede um aparelho forte.</string>
+    <string name="data_core_gambatte">Preciso e leve.</string>
+    <string name="data_core_mgba_gb">Também roda Game Boy.</string>
+    <string name="data_core_mgba_gbc">Também roda Game Boy Color.</string>
+    <string name="data_core_mgba">Mais preciso. Aceita BIOS oficial.</string>
+    <string name="data_core_gpsp">Mais leve, para aparelhos modestos.</string>
+    <string name="data_core_genesis_plus_gx">Os 8 e 16 bits da Sega, preciso.</string>
+    <string name="data_core_gearsystem">Dedicado aos 8 bits da Sega.</string>
+    <string name="data_core_freeintv">O emulador do Intellivision.</string>
+    <string name="data_core_beetle_ngp">Pocket e Pocket Color.</string>
+    <string name="data_core_mupen64plus">O mais compatível no celular.</string>
+    <string name="data_core_parallel_n64">Alternativa, para jogos que falham no outro.</string>
+    <string name="data_core_desmume">Compatível e estável.</string>
+    <string name="data_core_melonds">Preciso. Aceita BIOS e firmware oficiais.</string>
+    <string name="data_core_dolphin">Pede um aparelho muito forte.</string>
+    <string name="data_core_o2em">Odyssey2 e Videopac.</string>
+    <string name="data_core_picodrive">Mega Drive, 32X e Sega CD.</string>
+    <string name="data_core_lighter">Mais leve.</string>
+    <string name="data_core_accurate_compatible">Preciso e compatível.</string>
+    <string name="data_core_beetle_saturn">Preciso. Pede um aparelho muito forte.</string>
+    <string name="data_core_accurate">Preciso.</string>
+    <string name="data_core_pcsx_rearmed">Leve, feito para celular.</string>
+    <string name="data_core_ppsspp">O emulador de PSP.</string>
+    <string name="data_core_snes9x">Rápido e compatível com quase tudo.</string>
+    <string name="data_core_beetle_pce_fast">PC Engine e TurboGrafx.</string>
+    <string name="data_core_beetle_supergrafx">PC Engine CD e SuperGrafx.</string>
+    <string name="data_core_vecx">O emulador do Vectrex.</string>
+    <string name="data_core_beetle_vb">O emulador do Virtual Boy.</string>
+    <string name="data_core_beetle_wswan">WonderSwan e WonderSwan Color.</string>
+</resources>

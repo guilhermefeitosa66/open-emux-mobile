@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shaders: only "none" is translated; the others keep their own names. -->
+    <string name="data_shader_none">Ninguno</string>
+
+    <!-- Cartridge colors -->
+    <string name="data_color_default">Original</string>
+    <string name="data_color_black">Negro</string>
+    <string name="data_color_white">Blanco</string>
+    <string name="data_color_red">Rojo</string>
+    <string name="data_color_orange">Naranja</string>
+    <string name="data_color_yellow">Amarillo</string>
+    <string name="data_color_green">Verde</string>
+    <string name="data_color_teal">Verde azulado</string>
+    <string name="data_color_blue">Azul</string>
+    <string name="data_color_purple">Morado</string>
+    <string name="data_color_pink">Rosa</string>
+    <string name="data_color_gold">Dorado</string>
+    <string name="data_color_clear">Transparente</string>
+
+    <!-- First-run download. %1$s is the item being downloaded, %2$s a detail. -->
+    <string name="data_setup_step_cores">Emuladores</string>
+    <string name="data_setup_step_info">Info. de emuladores</string>
+    <string name="data_setup_step_system">Archivos del sistema</string>
+    <string name="data_setup_unsupported">Este dispositivo no es compatible (%2$s).</string>
+    <string name="data_setup_no_internet">No hay conexión a internet.</string>
+    <string name="data_setup_timeout">La conexión se cortó o se volvió muy lenta al descargar %1$s.</string>
+    <string name="data_setup_http">El servidor de RetroArch respondió %2$s al descargar %1$s.</string>
+    <string name="data_setup_failed">No se pudo descargar %1$s: %2$s.</string>
+
+    <!-- Joins the alternative file names of one BIOS entry: "a.bin or b.bin". -->
+    <string name="data_bios_or">" o "</string>
+
+    <!-- Save-state button drawn on the on-screen controller (landscape). -->
+    <!-- Console keys on the controller skin, drawn in capitals. -->
+    <string name="data_skin_keypad">Teclado</string>
+    <string name="data_skin_disk">Disco</string>
+
+    <!-- Core descriptions -->
+    <string name="data_core_stella">El emulador de referencia de la 2600.</string>
+    <string name="data_core_atari800">La familia de 8 bits de Atari y la 5200.</string>
+    <string name="data_core_prosystem">Ligero y ejecuta todo el catálogo.</string>
+    <string name="data_core_beetle_lynx">Mednafen, preciso.</string>
+    <string name="data_core_bluemsx">MSX y ColecoVision.</string>
+    <string name="data_core_gearcoleco">Hecho para la ColecoVision.</string>
+    <string name="data_core_nestopia">Preciso y estable.</string>
+    <string name="data_core_fceumm">Ligero, con muchos mappers.</string>
+    <string name="data_core_max_accuracy">Máxima precisión. Requiere un dispositivo potente.</string>
+    <string name="data_core_gambatte">Preciso y ligero.</string>
+    <string name="data_core_mgba_gb">También ejecuta Game Boy.</string>
+    <string name="data_core_mgba_gbc">También ejecuta Game Boy Color.</string>
+    <string name="data_core_mgba">Más preciso. Acepta la BIOS oficial.</string>
+    <string name="data_core_gpsp">Más ligero, para dispositivos modestos.</string>
+    <string name="data_core_genesis_plus_gx">Los 8 y 16 bits de Sega, preciso.</string>
+    <string name="data_core_gearsystem">Hecho para los 8 bits de Sega.</string>
+    <string name="data_core_freeintv">El emulador de Intellivision.</string>
+    <string name="data_core_beetle_ngp">Pocket y Pocket Color.</string>
+    <string name="data_core_mupen64plus">El más compatible en móviles.</string>
+    <string name="data_core_parallel_n64">Una alternativa para los juegos que fallan en el otro.</string>
+    <string name="data_core_desmume">Compatible y estable.</string>
+    <string name="data_core_melonds">Preciso. Acepta la BIOS y el firmware oficiales.</string>
+    <string name="data_core_dolphin">Requiere un dispositivo muy potente.</string>
+    <string name="data_core_o2em">Odyssey2 y Videopac.</string>
+    <string name="data_core_picodrive">Mega Drive, 32X y Sega CD.</string>
+    <string name="data_core_lighter">Más ligero.</string>
+    <string name="data_core_accurate_compatible">Preciso y compatible.</string>
+    <string name="data_core_beetle_saturn">Preciso. Requiere un dispositivo muy potente.</string>
+    <string name="data_core_accurate">Preciso.</string>
+    <string name="data_core_pcsx_rearmed">Ligero, hecho para móviles.</string>
+    <string name="data_core_ppsspp">El emulador de PSP.</string>
+    <string name="data_core_snes9x">Rápido y compatible con casi todo.</string>
+    <string name="data_core_beetle_pce_fast">PC Engine y TurboGrafx.</string>
+    <string name="data_core_beetle_supergrafx">PC Engine CD y SuperGrafx.</string>
+    <string name="data_core_vecx">El emulador de Vectrex.</string>
+    <string name="data_core_beetle_vb">El emulador de Virtual Boy.</string>
+    <string name="data_core_beetle_wswan">WonderSwan y WonderSwan Color.</string>
+</resources>

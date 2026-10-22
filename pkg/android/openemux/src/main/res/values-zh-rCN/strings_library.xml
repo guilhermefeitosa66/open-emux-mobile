@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shelf -->
+    <string name="library_shelf_title">陈列架</string>
+    <string name="library_search_all_consoles">搜索所有主机</string>
+    <plurals name="library_consoles_count">
+        <item quantity="other">%1$d 台主机</item>
+    </plurals>
+    <plurals name="library_games_count">
+        <item quantity="other">%1$d 款游戏</item>
+    </plurals>
+    <string name="library_shelf_empty_title">你的陈列架还是空的</string>
+    <string name="library_shelf_empty_body">导入你拥有的游戏的 ROM，可以是单独文件或 .zip。支持的格式列在“导入”标签页中。</string>
+    <string name="library_shelf_empty_action">导入 ROM</string>
+
+    <!-- Gamepad hints -->
+    <string name="library_hint_open">打开</string>
+    <string name="library_hint_tabs">标签页</string>
+    <string name="library_hint_detail">详情</string>
+    <string name="library_hint_favorite">收藏</string>
+    <string name="library_hint_options">选项</string>
+
+    <!-- Console library -->
+    <string name="library_favorites">收藏</string>
+    <string name="library_favorites_eyebrow">收藏</string>
+    <string name="library_all_games">全部游戏</string>
+    <string name="library_all_consoles_eyebrow">全部主机</string>
+    <string name="library_chip_all">全部</string>
+    <string name="library_search">搜索</string>
+    <string name="library_close_search">关闭搜索</string>
+    <string name="library_search_hint">搜索游戏</string>
+    <string name="library_sort_by">排序：%1$s</string>
+    <string name="library_sort_az">A–Z</string>
+    <string name="library_sort_recent">最近</string>
+    <string name="library_section_carts">卡带</string>
+    <string name="library_section_recent">最近游玩</string>
+    <string name="library_no_results">没有找到与“%1$s”相关的内容。</string>
+    <string name="library_empty_list">这里还没有游戏。</string>
+
+    <!-- Recent -->
+    <string name="library_recent_title">最近</string>
+    <string name="library_recent_empty_title">还没有玩过任何游戏</string>
+    <string name="library_recent_empty_body">你打开的游戏会显示在这里，并附上最后保存的存档。</string>
+    <string name="library_continue_game">继续 %1$s</string>
+
+    <!-- Artwork sync -->
+    <string name="library_sync_paused_offline">没有网络连接。网络恢复后会继续。</string>
+    <string name="library_sync_paused_quota">ScreenScraper 今日额度已用完。明天再试。</string>
+    <string name="library_sync_fetching_covers">正在获取封面</string>
+    <string name="library_sync_fetching_labels">正在获取贴纸</string>
+    <string name="library_sync_paused_covers">封面已暂停</string>
+    <string name="library_sync_paused_labels">贴纸已暂停</string>
+    <string name="library_sync_progress">%1$d / %2$d</string>
+    <string name="library_sync_sheet_title">游戏封面</string>
+    <string name="library_sync_sheet_subtitle">在后台运行。期间你可以照常游玩。</string>
+    <string name="library_sync_covers">封面</string>
+    <string name="library_sync_labels">卡带贴纸</string>
+    <string name="library_sync_labels_note">贴纸来自 ScreenScraper，它按哈希识别 ROM。受该服务限制，每秒一个。</string>
+    <string name="library_sync_close">关闭</string>
+    <string name="library_sync_now">当前：%1$s</string>
+    <string name="library_sync_eta_minutes">约 %1$d 分钟</string>
+    <string name="library_sync_labels_done">贴纸已就绪</string>
+    <string name="library_sync_labels_done_all">%1$d 款有图</string>
+    <string name="library_sync_labels_done_missing">%1$d 款有图，%2$d 款没有</string>
+
+    <!-- Time formatting -->
+    <string name="library_playtime_never">从未玩过</string>
+    <string name="library_playtime_under_minute">已玩不到 1 分钟</string>
+    <string name="library_playtime_minutes">已玩 %1$d 分钟</string>
+    <string name="library_playtime_hours">已玩 %1$d 小时 %2$d 分钟</string>
+    <string name="library_ago_now">刚刚</string>
+    <string name="library_ago_minutes">%1$d 分钟前</string>
+    <string name="library_ago_hours">%1$d 小时前</string>
+    <string name="library_ago_yesterday">昨天</string>
+    <string name="library_powered_by">技术支持</string>
+    <string name="library_hint_order">顺序</string>
+    <string name="library_shelf_move_up">上移</string>
+    <string name="library_shelf_move_down">下移</string>
+    <string name="library_shelf_reset_order">恢复默认顺序</string>
+    <string name="library_shelf_order_tip">长按并拖动陈列架即可调整顺序，整个应用都会使用此顺序。</string>
+</resources>

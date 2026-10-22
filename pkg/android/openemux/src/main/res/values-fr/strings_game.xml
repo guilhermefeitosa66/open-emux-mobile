@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pause sheet (game process) -->
+    <string name="game_back">Retour</string>
+    <string name="game_back_to_game">Retour au jeu</string>
+    <string name="game_choose">Choisir</string>
+    <string name="game_save_states">États sauvegardés</string>
+    <string name="game_shader">Shader</string>
+    <string name="game_playing_now">En cours · %1$s</string>
+    <string name="game_playing_for">En jeu depuis %1$d min · %2$s</string>
+    <string name="game_tap_to_load">Toucher pour charger</string>
+    <string name="game_shader_this_session">Seulement pour cette session</string>
+    <string name="game_toast_saved_slot">État sauvegardé dans l’emplacement %1$d</string>
+    <string name="game_toast_fast_forward_on">Avance rapide à la reprise</string>
+    <string name="game_toast_fast_forward_off">Vitesse normale</string>
+    <string name="game_toast_screenshot">Capture d’écran enregistrée</string>
+    <string name="game_toast_sound_off">Son coupé</string>
+    <string name="game_toast_sound_on">Son activé</string>
+    <string name="game_toast_shader">Shader : %1$s</string>
+    <string name="game_toast_state_other_core">Cet état vient d’un autre cœur</string>
+    <string name="game_toast_state_saved_other_core">Cet état a été sauvegardé avec un autre cœur</string>
+    <string name="game_save_state">Sauvegarder l’état</string>
+    <string name="game_load">Charger</string>
+    <string name="game_fast_forward">Avance rapide</string>
+    <string name="game_screenshot">Capture d’écran</string>
+    <string name="game_audio">Audio</string>
+    <string name="game_muted">Muet</string>
+    <string name="game_restart">Redémarrer le jeu</string>
+    <string name="game_quit">Quitter le jeu</string>
+    <string name="game_no_states">Aucun état sauvegardé pour l’instant.</string>
+    <string name="game_state_auto">AUTO</string>
+    <string name="game_state_slot">EMPL. %1$d</string>
+    <string name="game_shader_blurb_none">Pixels purs, sans effet.</string>
+    <string name="game_shader_blurb_dot">Matrice de points d’écran portable.</string>
+    <string name="game_shader_blurb_sharp">Pixels nets, sans crénelage.</string>
+    <string name="game_shader_blurb_zfast">Scanlines CRT légères.</string>
+    <string name="game_shader_blurb_geom">CRT incurvé avec lueur et masque.</string>
+
+    <!-- Game detail screen -->
+    <string name="detail_continue">Continuer</string>
+    <string name="detail_play">Jouer</string>
+    <string name="detail_favorite">Favori</string>
+    <string name="detail_menu">Menu ⋯</string>
+    <string name="detail_back">Retour</string>
+    <string name="detail_favorite_remove">Retirer des favoris</string>
+    <string name="detail_favorite_add">Ajouter aux favoris</string>
+    <string name="detail_more_options">Plus d’options</string>
+    <string name="detail_remove_from_library">Retirer de la bibliothèque</string>
+    <string name="detail_restart">Redémarrer</string>
+    <string name="detail_save_states">États sauvegardés</string>
+    <string name="detail_see_all">Tout voir (%1$d)</string>
+    <string name="detail_no_states">Aucun pour l’instant. Sauvegardez depuis le menu en jeu.</string>
+    <string name="detail_cart_color">Couleur de la cartouche</string>
+    <string name="detail_default_suffix">" · par défaut"</string>
+    <string name="detail_core">Cœur</string>
+    <string name="detail_shader">Shader</string>
+    <string name="detail_default_tag">PAR DÉFAUT</string>
+    <string name="detail_controller_skin">Skin de manette</string>
+    <string name="detail_cheats">Codes de triche</string>
+    <string name="detail_coming_soon">Bientôt disponible</string>
+    <string name="detail_remove_title">Retirer %1$s ?</string>
+    <string name="detail_remove_message">Le fichier ROM est supprimé de l’appareil. Les sauvegardes et les états sont conservés au cas où vous l’importeriez à nouveau.</string>
+    <string name="detail_remove">Retirer</string>
+    <string name="detail_cancel">Annuler</string>
+    <string name="detail_core_sheet_title">Cœur pour cette ROM</string>
+    <string name="detail_console_default">Par défaut de la console</string>
+    <string name="detail_core_default_desc">Actuellement %1$s. Si le cœur par défaut de %2$s change, cette ROM suit.</string>
+    <string name="detail_pin_for_rom">OU FIXER POUR CETTE ROM UNIQUEMENT</string>
+    <string name="detail_core_pinned_desc">Reste sur %1$s même si le cœur par défaut change.</string>
+    <plurals name="detail_core_states_warning">
+        <item quantity="one">Les états sauvegardés ne s’ouvrent que dans le cœur qui les a créés. L’état sauvegardé de cette ROM vient de %2$s. La sauvegarde du jeu (.srm) fonctionne toujours.</item>
+        <item quantity="many">Les états sauvegardés ne s’ouvrent que dans le cœur qui les a créés. Les %1$d états sauvegardés de cette ROM viennent de %2$s. La sauvegarde du jeu (.srm) fonctionne toujours.</item>
+        <item quantity="other">Les états sauvegardés ne s’ouvrent que dans le cœur qui les a créés. Les %1$d états sauvegardés de cette ROM viennent de %2$s. La sauvegarde du jeu (.srm) fonctionne toujours.</item>
+    </plurals>
+    <string name="detail_done">Terminé</string>
+    <string name="detail_shader_sheet_title">Shader pour cette ROM</string>
+    <string name="detail_shader_default_desc">Actuellement %1$s. Suit le réglage par défaut de %2$s.</string>
+    <string name="detail_states_sheet_hint">Touchez pour ouvrir le jeu à ce moment-là</string>
+    <!-- NDS screen layouts, chosen from the pause sheet with a gamepad. -->
+    <string name="game_screens">Écrans</string>
+    <string name="game_screens_top">Écran du haut seul</string>
+    <string name="game_screens_bottom">Écran du bas seul</string>
+    <string name="game_screens_stacked">L’un au-dessus de l’autre</string>
+    <string name="game_screens_side">Côte à côte</string>
+</resources>

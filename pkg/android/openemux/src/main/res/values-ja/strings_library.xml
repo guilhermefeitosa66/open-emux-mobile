@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shelf -->
+    <string name="library_shelf_title">棚</string>
+    <string name="library_search_all_consoles">すべてのコンソールを検索</string>
+    <plurals name="library_consoles_count">
+        <item quantity="other">%1$d 台のコンソール</item>
+    </plurals>
+    <plurals name="library_games_count">
+        <item quantity="other">%1$d 本</item>
+    </plurals>
+    <string name="library_shelf_empty_title">棚は空です</string>
+    <string name="library_shelf_empty_body">持っているゲームの ROM を、そのままでも .zip でも取り込めます。対応形式は「取り込み」タブに一覧があります。</string>
+    <string name="library_shelf_empty_action">ROM を取り込む</string>
+
+    <!-- Gamepad hints -->
+    <string name="library_hint_open">開く</string>
+    <string name="library_hint_tabs">タブ</string>
+    <string name="library_hint_detail">詳細</string>
+    <string name="library_hint_favorite">お気に入り</string>
+    <string name="library_hint_options">オプション</string>
+
+    <!-- Console library -->
+    <string name="library_favorites">お気に入り</string>
+    <string name="library_favorites_eyebrow">お気に入り</string>
+    <string name="library_all_games">すべてのゲーム</string>
+    <string name="library_all_consoles_eyebrow">すべてのコンソール</string>
+    <string name="library_chip_all">すべて</string>
+    <string name="library_search">検索</string>
+    <string name="library_close_search">検索を閉じる</string>
+    <string name="library_search_hint">ゲームを検索</string>
+    <string name="library_sort_by">並び順: %1$s</string>
+    <string name="library_sort_az">A–Z</string>
+    <string name="library_sort_recent">最近</string>
+    <string name="library_section_carts">カートリッジ</string>
+    <string name="library_section_recent">最近プレイしたゲーム</string>
+    <string name="library_no_results">「%1$s」に一致するものはありません。</string>
+    <string name="library_empty_list">ここにはまだゲームがありません。</string>
+
+    <!-- Recent -->
+    <string name="library_recent_title">最近</string>
+    <string name="library_recent_empty_title">まだ何もプレイしていません</string>
+    <string name="library_recent_empty_body">開いたゲームが、最後に保存したステートと一緒にここに表示されます。</string>
+    <string name="library_continue_game">%1$s を続ける</string>
+
+    <!-- Artwork sync -->
+    <string name="library_sync_paused_offline">接続がありません。ネットワークが戻ると再開します。</string>
+    <string name="library_sync_paused_quota">ScreenScraper の 1 日の上限に達しました。明日もう一度試します。</string>
+    <string name="library_sync_fetching_covers">カバーを取得中</string>
+    <string name="library_sync_fetching_labels">ラベルを取得中</string>
+    <string name="library_sync_paused_covers">カバーの取得を一時停止中</string>
+    <string name="library_sync_paused_labels">ラベルの取得を一時停止中</string>
+    <string name="library_sync_progress">%1$d / %2$d</string>
+    <string name="library_sync_sheet_title">ゲームのアートワーク</string>
+    <string name="library_sync_sheet_subtitle">バックグラウンドで動作します。その間もプレイできます。</string>
+    <string name="library_sync_covers">カバー</string>
+    <string name="library_sync_labels">カートリッジラベル</string>
+    <string name="library_sync_labels_note">ラベルは ScreenScraper から取得します。ROM はハッシュで照合されます。サービスの制限により 1 秒に 1 件です。</string>
+    <string name="library_sync_close">閉じる</string>
+    <string name="library_sync_now">現在: %1$s</string>
+    <string name="library_sync_eta_minutes">約 %1$d 分</string>
+    <string name="library_sync_labels_done">ラベルの準備完了</string>
+    <string name="library_sync_labels_done_all">%1$d 本にアートあり</string>
+    <string name="library_sync_labels_done_missing">アートあり %1$d 本、なし %2$d 本</string>
+
+    <!-- Time formatting -->
+    <string name="library_playtime_never">未プレイ</string>
+    <string name="library_playtime_under_minute">プレイ時間 1 分未満</string>
+    <string name="library_playtime_minutes">プレイ時間 %1$d 分</string>
+    <string name="library_playtime_hours">プレイ時間 %1$d 時間 %2$d 分</string>
+    <string name="library_ago_now">たった今</string>
+    <string name="library_ago_minutes">%1$d 分前</string>
+    <string name="library_ago_hours">%1$d 時間前</string>
+    <string name="library_ago_yesterday">昨日</string>
+    <string name="library_powered_by">Powered by</string>
+    <string name="library_hint_order">並び順</string>
+    <string name="library_shelf_move_up">上へ移動</string>
+    <string name="library_shelf_move_down">下へ移動</string>
+    <string name="library_shelf_reset_order">既定の並び順に戻す</string>
+    <string name="library_shelf_order_tip">棚を長押ししてドラッグすると並び順を変えられます。アプリ全体に反映されます。</string>
+</resources>

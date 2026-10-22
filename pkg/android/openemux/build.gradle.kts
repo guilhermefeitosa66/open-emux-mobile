@@ -17,6 +17,8 @@ val localProps = Properties().apply {
 }
 fun localProp(key: String) = "\"" + localProps.getProperty(key, "") + "\""
 
+val openemuxVersion = providers.gradleProperty("openemuxVersion").get()
+
 android {
     // The RetroArch Java sources import com.retroarch.R / BuildConfig.
     namespace = "com.retroarch"
@@ -26,8 +28,8 @@ android {
         applicationId = "com.openemux.mobile"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0-poc"
+        versionCode = openemuxVersion.split('.').map(String::toInt).let { (major, minor, patch) -> major * 10000 + minor * 100 + patch }
+        versionName = openemuxVersion
         ndk {
             abiFilters += listOf("arm64-v8a", "x86_64")
         }
@@ -55,11 +57,10 @@ android {
             res.directories += listOf(
                 "$retroarchAndroid/phoenix/res",
             )
-            // libretroarch-activity.so, built with ndk-build in phoenix-common,
-            // plus the libretro cores we ship for GBA and SNES.
+            // libretroarch-activity.so, built with ndk-build in phoenix-common.
+            // The libretro cores are not shipped: the first-run setup downloads them.
             jniLibs.directories += listOf(
                 "$retroarchAndroid/phoenix-common/libs",
-                "corelibs",
             )
         }
     }

@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shaders: only "none" is translated; the others keep their own names. -->
+    <string name="data_shader_none">None</string>
+
+    <!-- Cartridge colors -->
+    <string name="data_color_default">Original</string>
+    <string name="data_color_black">Black</string>
+    <string name="data_color_white">White</string>
+    <string name="data_color_red">Red</string>
+    <string name="data_color_orange">Orange</string>
+    <string name="data_color_yellow">Yellow</string>
+    <string name="data_color_green">Green</string>
+    <string name="data_color_teal">Teal</string>
+    <string name="data_color_blue">Blue</string>
+    <string name="data_color_purple">Purple</string>
+    <string name="data_color_pink">Pink</string>
+    <string name="data_color_gold">Gold</string>
+    <string name="data_color_clear">Clear</string>
+
+    <!-- First-run download. %1$s is the item being downloaded, %2$s a detail. -->
+    <string name="data_setup_step_cores">Emulators</string>
+    <string name="data_setup_step_info">Emulator info</string>
+    <string name="data_setup_step_system">System files</string>
+    <string name="data_setup_unsupported">This device isn\'t supported (%2$s).</string>
+    <string name="data_setup_no_internet">No internet connection.</string>
+    <string name="data_setup_timeout">The connection dropped or got too slow while downloading %1$s.</string>
+    <string name="data_setup_http">The RetroArch server answered %2$s while downloading %1$s.</string>
+    <string name="data_setup_failed">Couldn\'t download %1$s: %2$s.</string>
+
+    <!-- Joins the alternative file names of one BIOS entry: "a.bin or b.bin". -->
+    <string name="data_bios_or">" or "</string>
+
+    <!-- Save-state button drawn on the on-screen controller (landscape). -->
+    <!-- Console keys on the controller skin, drawn in capitals. -->
+    <string name="data_skin_keypad">Keypad</string>
+    <string name="data_skin_disk">Disk</string>
+
+    <!-- Core descriptions -->
+    <string name="data_core_stella">The reference 2600 emulator.</string>
+    <string name="data_core_atari800">Atari\'s 8-bit family and the 5200.</string>
+    <string name="data_core_prosystem">Light and runs the whole library.</string>
+    <string name="data_core_beetle_lynx">Mednafen, accurate.</string>
+    <string name="data_core_bluemsx">MSX and ColecoVision.</string>
+    <string name="data_core_gearcoleco">Made for the ColecoVision.</string>
+    <string name="data_core_nestopia">Accurate and stable.</string>
+    <string name="data_core_fceumm">Light, with lots of mappers.</string>
+    <string name="data_core_max_accuracy">Top accuracy. Needs a powerful device.</string>
+    <string name="data_core_gambatte">Accurate and light.</string>
+    <string name="data_core_mgba_gb">Also runs Game Boy.</string>
+    <string name="data_core_mgba_gbc">Also runs Game Boy Color.</string>
+    <string name="data_core_mgba">More accurate. Takes the official BIOS.</string>
+    <string name="data_core_gpsp">Lighter, for modest devices.</string>
+    <string name="data_core_genesis_plus_gx">Sega\'s 8 and 16 bits, accurate.</string>
+    <string name="data_core_gearsystem">Made for Sega\'s 8 bits.</string>
+    <string name="data_core_freeintv">The Intellivision emulator.</string>
+    <string name="data_core_beetle_ngp">Pocket and Pocket Color.</string>
+    <string name="data_core_mupen64plus">The most compatible on phones.</string>
+    <string name="data_core_parallel_n64">An alternative, for games that fail on the other one.</string>
+    <string name="data_core_desmume">Compatible and stable.</string>
+    <string name="data_core_melonds">Accurate. Takes the official BIOS and firmware.</string>
+    <string name="data_core_dolphin">Needs a very powerful device.</string>
+    <string name="data_core_o2em">Odyssey2 and Videopac.</string>
+    <string name="data_core_picodrive">Mega Drive, 32X and Sega CD.</string>
+    <string name="data_core_lighter">Lighter.</string>
+    <string name="data_core_accurate_compatible">Accurate and compatible.</string>
+    <string name="data_core_beetle_saturn">Accurate. Needs a very powerful device.</string>
+    <string name="data_core_accurate">Accurate.</string>
+    <string name="data_core_pcsx_rearmed">Light, made for phones.</string>
+    <string name="data_core_ppsspp">The PSP emulator.</string>
+    <string name="data_core_snes9x">Fast and compatible with almost everything.</string>
+    <string name="data_core_beetle_pce_fast">PC Engine and TurboGrafx.</string>
+    <string name="data_core_beetle_supergrafx">PC Engine CD and SuperGrafx.</string>
+    <string name="data_core_vecx">The Vectrex emulator.</string>
+    <string name="data_core_beetle_vb">The Virtual Boy emulator.</string>
+    <string name="data_core_beetle_wswan">WonderSwan and WonderSwan Color.</string>
+</resources>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pause sheet (game process) -->
+    <string name="game_back">戻る</string>
+    <string name="game_back_to_game">ゲームに戻る</string>
+    <string name="game_choose">選択</string>
+    <string name="game_save_states">ステートセーブ</string>
+    <string name="game_shader">シェーダー</string>
+    <string name="game_playing_now">プレイ中 · %1$s</string>
+    <string name="game_playing_for">%1$d 分プレイ中 · %2$s</string>
+    <string name="game_tap_to_load">タップでロード</string>
+    <string name="game_shader_this_session">このセッションのみ</string>
+    <string name="game_toast_saved_slot">スロット %1$d にステートを保存しました</string>
+    <string name="game_toast_fast_forward_on">再開時に早送り</string>
+    <string name="game_toast_fast_forward_off">通常速度</string>
+    <string name="game_toast_screenshot">スクリーンショットを保存しました</string>
+    <string name="game_toast_sound_off">サウンドオフ</string>
+    <string name="game_toast_sound_on">サウンドオン</string>
+    <string name="game_toast_shader">シェーダー: %1$s</string>
+    <string name="game_toast_state_other_core">このステートは別のコアのものです</string>
+    <string name="game_toast_state_saved_other_core">このステートは別のコアで保存されました</string>
+    <string name="game_save_state">ステートセーブ</string>
+    <string name="game_load">ロード</string>
+    <string name="game_fast_forward">早送り</string>
+    <string name="game_screenshot">スクリーンショット</string>
+    <string name="game_audio">サウンド</string>
+    <string name="game_muted">ミュート</string>
+    <string name="game_restart">ゲームをリセット</string>
+    <string name="game_quit">ゲームを終了</string>
+    <string name="game_no_states">ステートセーブはまだありません。</string>
+    <string name="game_state_auto">オート</string>
+    <string name="game_state_slot">スロット %1$d</string>
+    <string name="game_shader_blurb_none">ピクセルそのまま、効果なし。</string>
+    <string name="game_shader_blurb_dot">携帯機の画面のドットマトリクス。</string>
+    <string name="game_shader_blurb_sharp">ギザギザのないくっきりしたピクセル。</string>
+    <string name="game_shader_blurb_zfast">軽い CRT の走査線。</string>
+    <string name="game_shader_blurb_geom">光とマスクのある湾曲 CRT。</string>
+
+    <!-- Game detail screen -->
+    <string name="detail_continue">続きから</string>
+    <string name="detail_play">プレイ</string>
+    <string name="detail_favorite">お気に入り</string>
+    <string name="detail_menu">メニュー ⋯</string>
+    <string name="detail_back">戻る</string>
+    <string name="detail_favorite_remove">お気に入りから削除</string>
+    <string name="detail_favorite_add">お気に入りに追加</string>
+    <string name="detail_more_options">その他のオプション</string>
+    <string name="detail_remove_from_library">ライブラリから削除</string>
+    <string name="detail_restart">リセット</string>
+    <string name="detail_save_states">ステートセーブ</string>
+    <string name="detail_see_all">すべて表示（%1$d）</string>
+    <string name="detail_no_states">まだありません。ゲーム内メニューから保存してください。</string>
+    <string name="detail_cart_color">カートリッジの色</string>
+    <string name="detail_default_suffix">" · 既定"</string>
+    <string name="detail_core">コア</string>
+    <string name="detail_shader">シェーダー</string>
+    <string name="detail_default_tag">既定</string>
+    <string name="detail_controller_skin">コントローラーのスキン</string>
+    <string name="detail_cheats">チート</string>
+    <string name="detail_coming_soon">近日対応</string>
+    <string name="detail_remove_title">%1$s を削除しますか？</string>
+    <string name="detail_remove_message">ROM ファイルはデバイスから削除されます。もう一度取り込んだときのために、セーブとステートは残ります。</string>
+    <string name="detail_remove">削除</string>
+    <string name="detail_cancel">キャンセル</string>
+    <string name="detail_core_sheet_title">この ROM のコア</string>
+    <string name="detail_console_default">コンソールの既定</string>
+    <string name="detail_core_default_desc">現在は %1$s。%2$s の既定が変わると、この ROM も合わせて変わります。</string>
+    <string name="detail_pin_for_rom">またはこの ROM だけに固定</string>
+    <string name="detail_core_pinned_desc">既定が変わっても %1$s のままです。</string>
+    <plurals name="detail_core_states_warning">
+        <item quantity="other">ステートセーブは作成したコアでしか開けません。この ROM の %1$d 件のステートセーブは %2$s のものです。ゲームのセーブ（.srm）はそのまま使えます。</item>
+    </plurals>
+    <string name="detail_done">完了</string>
+    <string name="detail_shader_sheet_title">この ROM のシェーダー</string>
+    <string name="detail_shader_default_desc">現在は %1$s。%2$s の既定に従います。</string>
+    <string name="detail_states_sheet_hint">タップするとその時点からゲームを開きます</string>
+    <!-- NDS screen layouts, chosen from the pause sheet with a gamepad. -->
+    <string name="game_screens">画面</string>
+    <string name="game_screens_top">上画面のみ</string>
+    <string name="game_screens_bottom">下画面のみ</string>
+    <string name="game_screens_stacked">上下に並べる</string>
+    <string name="game_screens_side">左右に並べる</string>
+</resources>

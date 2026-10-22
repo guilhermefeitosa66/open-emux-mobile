@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gamepad hints -->
+    <string name="settings_hint_open">Öffnen</string>
+    <string name="settings_hint_back">Zurück</string>
+    <string name="settings_hint_tabs">Tabs</string>
+    <string name="settings_hint_choose">Auswählen</string>
+    <string name="settings_hint_import">Importieren</string>
+
+    <!-- Tab bar -->
+    <string name="settings_tab_library">Bibliothek</string>
+    <string name="settings_tab_recent">Zuletzt</string>
+    <string name="settings_tab_import">Import</string>
+    <string name="settings_tab_settings">Einstellungen</string>
+    <string name="settings_launching">Modul wird eingesteckt...</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Einstellungen</string>
+    <plurals name="settings_bios_consoles_missing">
+        <item quantity="one">%d Konsole braucht Dateien</item>
+        <item quantity="other">%d Konsolen brauchen Dateien</item>
+    </plurals>
+    <plurals name="settings_bios_optional_missing">
+        <item quantity="one">%d optionale Datei fehlt</item>
+        <item quantity="other">%d optionale Dateien fehlen</item>
+    </plurals>
+    <string name="settings_bios_all_ready">Alles bereit</string>
+    <string name="settings_import">Importieren</string>
+    <string name="settings_section_appearance">Erscheinungsbild</string>
+    <string name="settings_theme">Design</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_system_desc">Folgt dem Hell-/Dunkelmodus des Geräts.</string>
+    <string name="settings_theme_light">Hell</string>
+    <string name="settings_theme_light_desc">Immer heller Hintergrund.</string>
+    <string name="settings_theme_dark">Dunkel</string>
+    <string name="settings_theme_dark_desc">Immer dunkler Hintergrund.</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_system_desc">Nutzt die Sprache des Geräts.</string>
+    <string name="settings_section_consoles">Konsolen</string>
+    <string name="settings_section_consoles_trailing">Kern · Shader</string>
+    <string name="settings_section_general">Allgemein</string>
+    <string name="settings_rom_folder">ROM-Ordner</string>
+    <string name="settings_controls">Steuerung</string>
+    <string name="settings_controls_value">Touch + physischer Controller</string>
+    <string name="settings_about">Über</string>
+
+    <!-- Console defaults -->
+    <string name="settings_console_defaults">KONSOLENSTANDARDS</string>
+    <string name="settings_default_core">Standardkern</string>
+    <string name="settings_recommended">EMPFOHLEN</string>
+    <string name="settings_default_shader">Standard-Shader</string>
+    <string name="settings_bios_required">erforderlich</string>
+    <string name="settings_bios_optional">optional</string>
+    <string name="settings_bios_found">Gefunden</string>
+    <string name="settings_bios_missing">Fehlt</string>
+    <string name="settings_bios_not_needed">Diese Konsole braucht keins</string>
+    <string name="settings_default_skin">Standard-Skin</string>
+    <string name="settings_cart_color">Modulfarbe</string>
+    <plurals name="settings_applies_all">
+        <item quantity="one">Gilt für das eine %2$s-Spiel.</item>
+        <item quantity="other">Gilt für alle %1$d %2$s-Spiele.</item>
+    </plurals>
+    <plurals name="settings_applies_except">
+        <item quantity="one">Gilt für alle %1$d Spiele außer %2$d mit eigenem Kern.</item>
+        <item quantity="other">Gilt für alle %1$d Spiele außer %2$d mit eigenem Kern.</item>
+    </plurals>
+    <string name="settings_see_which">Welche?</string>
+    <string name="settings_cart_color_desc">Gilt für %1$s-Spiele ohne eigene Farbe.</string>
+    <string name="settings_own_core_title">Mit eigenem Kern</string>
+
+    <!-- BIOS -->
+    <string name="settings_bios_intro">Manche Konsolen starten nur mit der originalen Systemdatei. Nutze die, die du aus deinem eigenen Gerät ausgelesen hast.</string>
+    <string name="settings_bios_checking">Dateien werden geprüft...</string>
+    <string name="settings_bios_import_from_device">Vom Gerät importieren</string>
+    <string name="settings_bios_pick_help">Wähle den Ordner mit den Dateien (Downloads, SD-Karte...). OpenEmux erkennt jede am Namen oder, wenn bekannt, an der Prüfsumme und installiert sie im Systemordner.</string>
+    <plurals name="settings_bios_imported">
+        <item quantity="one">%d Datei erkannt und installiert.</item>
+        <item quantity="other">%d Dateien erkannt und installiert.</item>
+    </plurals>
+    <plurals name="settings_bios_skipped">
+        <item quantity="one">%d übersprungen.</item>
+        <item quantity="other">%d übersprungen.</item>
+    </plurals>
+    <plurals name="settings_bios_none_found">
+        <item quantity="one">Kein bekanntes BIOS in diesem Ordner. %d Datei geprüft.</item>
+        <item quantity="other">Kein bekanntes BIOS in diesem Ordner. %d Dateien geprüft.</item>
+    </plurals>
+    <string name="settings_bios_consoles">Konsolen mit BIOS</string>
+    <string name="settings_bios_ready_count">%1$d von %2$d bereit</string>
+    <string name="settings_count_of">%1$d von %2$d</string>
+    <string name="settings_bios_one_of">Eine davon</string>
+    <string name="settings_bios_tag_required">Erforderlich</string>
+    <string name="settings_bios_tag_optional">Optional</string>
+    <string name="settings_bios_footer">Konsolen, die hier nicht stehen, laufen ohne BIOS.</string>
+
+    <!-- Import -->
+    <string name="settings_import_ext_title">.%1$s-Dateien</string>
+    <string name="settings_import_ext_question">Mehrere Konsolen nutzen diese Endung. Für welche sind die .%1$s-Dateien in diesem Import?</string>
+    <string name="settings_import_intro">Hol dir die ROMs der Spiele, die du besitzt. OpenEmux erkennt die Konsole an der Endung und öffnet .zip-Dateien selbst.</string>
+    <string name="settings_import_copying">Wird kopiert...</string>
+    <string name="settings_import_pick_files">Dateien wählen</string>
+    <string name="settings_import_pick_folder">Ganzen Ordner wählen</string>
+    <plurals name="settings_import_games">
+        <item quantity="one">%d Spiel importiert.</item>
+        <item quantity="other">%d Spiele importiert.</item>
+    </plurals>
+    <plurals name="settings_import_skipped">
+        <item quantity="one">%d Datei übersprungen.</item>
+        <item quantity="other">%d Dateien übersprungen.</item>
+    </plurals>
+    <string name="settings_import_none">Keine ROMs erkannt.</string>
+    <string name="settings_import_view">Ansehen</string>
+    <string name="settings_import_formats">Unterstützte Formate</string>
+    <string name="settings_import_where">Wo sie landen</string>
+    <string name="settings_import_where_desc">Android/data/%1$s/files/roms. Du kannst sie auch direkt vom Computer dorthin kopieren.</string>
+
+    <!-- First-run setup -->
+    <string name="settings_setup_start">Starten</string>
+    <string name="settings_setup_retry">Erneut versuchen</string>
+    <string name="settings_setup_title">OpenEmux wird vorbereitet</string>
+    <string name="settings_setup_intro">Beim ersten Start lädt die App die Emulatoren und ihre Dateien herunter, etwa 160 MB auf dem Gerät. Dafür braucht sie Internet, am besten WLAN. Danach funktioniert alles offline.</string>
+    <string name="settings_setup_percent">%1$d %%</string>
+    <string name="settings_setup_downloading">%1$s wird heruntergeladen</string>
+    <string name="settings_setup_dont_close">Schließ die App nicht, bevor alles fertig ist.</string>
+    <string name="settings_setup_resume_note">Bereits Heruntergeladenes bleibt erhalten. Ein neuer Versuch macht dort weiter, wo es aufgehört hat.</string>
+    <string name="settings_setup_source">Die Dateien stammen vom offiziellen libretro-Buildbot.</string>
+</resources>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pause sheet (game process) -->
+    <string name="game_back">பின்</string>
+    <string name="game_back_to_game">விளையாட்டுக்குத் திரும்பு</string>
+    <string name="game_choose">தேர்ந்தெடு</string>
+    <string name="game_save_states">சேமிப்பு நிலைகள்</string>
+    <string name="game_shader">ஷேடர்</string>
+    <string name="game_playing_now">இப்போது விளையாடுகிறது · %1$s</string>
+    <string name="game_playing_for">%1$d நிமி விளையாடுகிறது · %2$s</string>
+    <string name="game_tap_to_load">ஏற்றத் தட்டவும்</string>
+    <string name="game_shader_this_session">இந்த அமர்வுக்கு மட்டும்</string>
+    <string name="game_toast_saved_slot">நிலை ஸ்லாட் %1$d இல் சேமிக்கப்பட்டது</string>
+    <string name="game_toast_fast_forward_on">தொடரும்போது வேகமாக்கல் இயக்கத்தில்</string>
+    <string name="game_toast_fast_forward_off">இயல்பான வேகம்</string>
+    <string name="game_toast_screenshot">திரைப்பிடிப்பு சேமிக்கப்பட்டது</string>
+    <string name="game_toast_sound_off">ஒலி அணைக்கப்பட்டது</string>
+    <string name="game_toast_sound_on">ஒலி இயக்கப்பட்டது</string>
+    <string name="game_toast_shader">ஷேடர்: %1$s</string>
+    <string name="game_toast_state_other_core">இந்த நிலை வேறொரு கோருக்குரியது</string>
+    <string name="game_toast_state_saved_other_core">இந்த நிலை வேறொரு கோருடன் சேமிக்கப்பட்டது</string>
+    <string name="game_save_state">நிலையைச் சேமி</string>
+    <string name="game_load">ஏற்று</string>
+    <string name="game_fast_forward">வேகமாக்கல்</string>
+    <string name="game_screenshot">திரைப்பிடிப்பு</string>
+    <string name="game_audio">ஒலி</string>
+    <string name="game_muted">ஒலியடக்கம்</string>
+    <string name="game_restart">மீண்டும் தொடங்கு</string>
+    <string name="game_quit">விளையாட்டிலிருந்து வெளியேறு</string>
+    <string name="game_no_states">இன்னும் சேமிப்பு நிலைகள் இல்லை.</string>
+    <string name="game_state_auto">தானியங்கி</string>
+    <string name="game_state_slot">ஸ்லாட் %1$d</string>
+    <string name="game_shader_blurb_none">தூய பிக்சல்கள், விளைவு இல்லை.</string>
+    <string name="game_shader_blurb_dot">கையடக்கத் திரையின் புள்ளி அணி.</string>
+    <string name="game_shader_blurb_sharp">கூர்மையான பிக்சல்கள், கரடுமுரடு இல்லாமல்.</string>
+    <string name="game_shader_blurb_zfast">இலேசான CRT ஸ்கேன்லைன்கள்.</string>
+    <string name="game_shader_blurb_geom">ஒளிர்வும் மாஸ்க்கும் கொண்ட வளைந்த CRT.</string>
+
+    <!-- Game detail screen -->
+    <string name="detail_continue">தொடர்</string>
+    <string name="detail_play">விளையாடு</string>
+    <string name="detail_favorite">பிடித்தது</string>
+    <string name="detail_menu">மெனு ⋯</string>
+    <string name="detail_back">பின்</string>
+    <string name="detail_favorite_remove">பிடித்தவற்றிலிருந்து நீக்கு</string>
+    <string name="detail_favorite_add">பிடித்தவற்றில் சேர்</string>
+    <string name="detail_more_options">மேலும் விருப்பங்கள்</string>
+    <string name="detail_remove_from_library">நூலகத்திலிருந்து நீக்கு</string>
+    <string name="detail_restart">மீண்டும் தொடங்கு</string>
+    <string name="detail_save_states">சேமிப்பு நிலைகள்</string>
+    <string name="detail_see_all">அனைத்தும் (%1$d)</string>
+    <string name="detail_no_states">இன்னும் இல்லை. விளையாட்டு மெனுவிலிருந்து சேமிக்கவும்.</string>
+    <string name="detail_cart_color">கார்ட்ரிட்ஜ் நிறம்</string>
+    <string name="detail_default_suffix">" · இயல்பு"</string>
+    <string name="detail_core">கோர்</string>
+    <string name="detail_shader">ஷேடர்</string>
+    <string name="detail_default_tag">இயல்பு</string>
+    <string name="detail_controller_skin">கன்ட்ரோலர் தோற்றம்</string>
+    <string name="detail_cheats">ஏமாற்றுகள்</string>
+    <string name="detail_coming_soon">விரைவில்</string>
+    <string name="detail_remove_title">%1$s ஐ நீக்கவா?</string>
+    <string name="detail_remove_message">ROM கோப்பு சாதனத்திலிருந்து அழிக்கப்படும். மீண்டும் இறக்குமதி செய்தால் பயன்பட, சேமிப்புகளும் நிலைகளும் வைக்கப்படும்.</string>
+    <string name="detail_remove">நீக்கு</string>
+    <string name="detail_cancel">ரத்து</string>
+    <string name="detail_core_sheet_title">இந்த ROM-க்கான கோர்</string>
+    <string name="detail_console_default">கன்சோல் இயல்பு</string>
+    <string name="detail_core_default_desc">தற்போது %1$s. %2$s இயல்பு மாறினால், இந்த ROM அதைப் பின்பற்றும்.</string>
+    <string name="detail_pin_for_rom">அல்லது இந்த ROM-க்கு மட்டும் நிலைநிறுத்து</string>
+    <string name="detail_core_pinned_desc">இயல்பு மாறினாலும் %1$s இலேயே இருக்கும்.</string>
+    <plurals name="detail_core_states_warning">
+        <item quantity="one">சேமிப்பு நிலைகள் அவற்றை உருவாக்கிய கோரில் மட்டுமே திறக்கும். இந்த ROM-இன் சேமிப்பு நிலை %2$s-க்குரியது. விளையாட்டுச் சேமிப்பு (.srm) தொடர்ந்து வேலை செய்யும்.</item>
+        <item quantity="other">சேமிப்பு நிலைகள் அவற்றை உருவாக்கிய கோரில் மட்டுமே திறக்கும். இந்த ROM-இன் %1$d சேமிப்பு நிலைகள் %2$s-க்குரியவை. விளையாட்டுச் சேமிப்பு (.srm) தொடர்ந்து வேலை செய்யும்.</item>
+    </plurals>
+    <string name="detail_done">முடிந்தது</string>
+    <string name="detail_shader_sheet_title">இந்த ROM-க்கான ஷேடர்</string>
+    <string name="detail_shader_default_desc">தற்போது %1$s. %2$s இயல்பைப் பின்பற்றும்.</string>
+    <string name="detail_states_sheet_hint">அந்த இடத்திலிருந்து விளையாட்டைத் திறக்கத் தட்டவும்</string>
+    <!-- NDS screen layouts, chosen from the pause sheet with a gamepad. -->
+    <string name="game_screens">திரைகள்</string>
+    <string name="game_screens_top">மேல் திரை மட்டும்</string>
+    <string name="game_screens_bottom">கீழ் திரை மட்டும்</string>
+    <string name="game_screens_stacked">ஒன்றன் மேல் ஒன்று</string>
+    <string name="game_screens_side">அருகருகே</string>
+</resources>

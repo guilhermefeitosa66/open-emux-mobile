@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_hint_open">Abrir</string>
+    <string name="about_version">Versión %1$s</string>
+    <string name="about_comments">Una interfaz de Android para emuladores, inspirada en OpenEmu.</string>
+    <string name="about_section_project">Proyecto</string>
+    <string name="about_site">Web de OpenEmux</string>
+    <string name="about_releases">Versiones publicadas</string>
+    <string name="about_report_issue">Informar de un problema</string>
+    <string name="about_section_license">Licencia</string>
+    <string name="about_license_title">GNU GPL v3</string>
+    <string name="about_license_body">Esta app se distribuye bajo la GPLv3 porque incluye RetroArch con cambios. El código Kotlin propio de la app también está disponible bajo la licencia MIT.</string>
+    <string name="about_source">Código fuente de esta app</string>
+    <string name="about_licenses">Licencias</string>
+    <string name="about_authors">Por OpenEmux y colaboradores.</string>
+    <string name="about_licenses_note">Todo lo que esta app incluye o descarga, con su licencia. Los textos de las licencias se mantienen en su inglés original.</string>
+    <string name="about_section_app">App y bibliotecas</string>
+    <string name="about_section_cores">Emuladores (núcleos)</string>
+</resources>

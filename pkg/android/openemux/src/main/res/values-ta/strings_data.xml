@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shaders: only "none" is translated; the others keep their own names. -->
+    <string name="data_shader_none">எதுவுமில்லை</string>
+
+    <!-- Cartridge colors -->
+    <string name="data_color_default">அசல்</string>
+    <string name="data_color_black">கருப்பு</string>
+    <string name="data_color_white">வெள்ளை</string>
+    <string name="data_color_red">சிவப்பு</string>
+    <string name="data_color_orange">ஆரஞ்சு</string>
+    <string name="data_color_yellow">மஞ்சள்</string>
+    <string name="data_color_green">பச்சை</string>
+    <string name="data_color_teal">நீலப்பச்சை</string>
+    <string name="data_color_blue">நீலம்</string>
+    <string name="data_color_purple">ஊதா</string>
+    <string name="data_color_pink">இளஞ்சிவப்பு</string>
+    <string name="data_color_gold">தங்கம்</string>
+    <string name="data_color_clear">ஒளிபுகும்</string>
+
+    <!-- First-run download. %1$s is the item being downloaded, %2$s a detail. -->
+    <string name="data_setup_step_cores">எமுலேட்டர்கள்</string>
+    <string name="data_setup_step_info">எமுலேட்டர் தகவல்</string>
+    <string name="data_setup_step_system">சிஸ்டம் கோப்புகள்</string>
+    <string name="data_setup_unsupported">இந்தச் சாதனம் ஆதரிக்கப்படவில்லை (%2$s).</string>
+    <string name="data_setup_no_internet">இணைய இணைப்பு இல்லை.</string>
+    <string name="data_setup_timeout">%1$s பதிவிறக்கும்போது இணைப்பு துண்டிக்கப்பட்டது அல்லது மிக மெதுவானது.</string>
+    <string name="data_setup_http">%1$s பதிவிறக்கும்போது RetroArch சேவையகம் %2$s என்று பதிலளித்தது.</string>
+    <string name="data_setup_failed">%1$s ஐப் பதிவிறக்க முடியவில்லை: %2$s.</string>
+
+    <!-- Joins the alternative file names of one BIOS entry: "a.bin or b.bin". -->
+    <string name="data_bios_or">" அல்லது "</string>
+
+    <!-- Save-state button drawn on the on-screen controller (landscape). -->
+    <!-- Console keys on the controller skin, drawn in capitals. -->
+    <string name="data_skin_keypad">விசைப்பலகை</string>
+    <string name="data_skin_disk">வட்டு</string>
+
+    <!-- Core descriptions -->
+    <string name="data_core_stella">2600-க்கான தரநிலை எமுலேட்டர்.</string>
+    <string name="data_core_atari800">Atari-யின் 8-பிட் குடும்பமும் 5200-உம்.</string>
+    <string name="data_core_prosystem">இலகுவானது, முழு நூலகத்தையும் இயக்கும்.</string>
+    <string name="data_core_beetle_lynx">Mednafen, துல்லியமானது.</string>
+    <string name="data_core_bluemsx">MSX மற்றும் ColecoVision.</string>
+    <string name="data_core_gearcoleco">ColecoVision-க்காக உருவாக்கப்பட்டது.</string>
+    <string name="data_core_nestopia">துல்லியமானது, நிலையானது.</string>
+    <string name="data_core_fceumm">இலகுவானது, பல mapper-களுடன்.</string>
+    <string name="data_core_max_accuracy">உச்சத் துல்லியம். சக்திவாய்ந்த சாதனம் தேவை.</string>
+    <string name="data_core_gambatte">துல்லியமானது, இலகுவானது.</string>
+    <string name="data_core_mgba_gb">Game Boy-யையும் இயக்கும்.</string>
+    <string name="data_core_mgba_gbc">Game Boy Color-ஐயும் இயக்கும்.</string>
+    <string name="data_core_mgba">அதிகத் துல்லியம். அதிகாரப்பூர்வ BIOS-ஐ ஏற்கும்.</string>
+    <string name="data_core_gpsp">இன்னும் இலகுவானது, சாதாரண சாதனங்களுக்கு.</string>
+    <string name="data_core_genesis_plus_gx">Sega-வின் 8 மற்றும் 16 பிட், துல்லியமானது.</string>
+    <string name="data_core_gearsystem">Sega-வின் 8 பிட்டுக்காக உருவாக்கப்பட்டது.</string>
+    <string name="data_core_freeintv">Intellivision எமுலேட்டர்.</string>
+    <string name="data_core_beetle_ngp">Pocket மற்றும் Pocket Color.</string>
+    <string name="data_core_mupen64plus">போன்களில் மிக அதிக இணக்கம் கொண்டது.</string>
+    <string name="data_core_parallel_n64">மற்றதில் தோல்வியடையும் விளையாட்டுகளுக்கு ஒரு மாற்று.</string>
+    <string name="data_core_desmume">இணக்கமானது, நிலையானது.</string>
+    <string name="data_core_melonds">துல்லியமானது. அதிகாரப்பூர்வ BIOS மற்றும் firmware-ஐ ஏற்கும்.</string>
+    <string name="data_core_dolphin">மிகச் சக்திவாய்ந்த சாதனம் தேவை.</string>
+    <string name="data_core_o2em">Odyssey2 மற்றும் Videopac.</string>
+    <string name="data_core_picodrive">Mega Drive, 32X மற்றும் Sega CD.</string>
+    <string name="data_core_lighter">இன்னும் இலகுவானது.</string>
+    <string name="data_core_accurate_compatible">துல்லியமானது, இணக்கமானது.</string>
+    <string name="data_core_beetle_saturn">துல்லியமானது. மிகச் சக்திவாய்ந்த சாதனம் தேவை.</string>
+    <string name="data_core_accurate">துல்லியமானது.</string>
+    <string name="data_core_pcsx_rearmed">இலகுவானது, போன்களுக்காக உருவாக்கப்பட்டது.</string>
+    <string name="data_core_ppsspp">PSP எமுலேட்டர்.</string>
+    <string name="data_core_snes9x">வேகமானது, ஏறக்குறைய அனைத்துடனும் இணக்கமானது.</string>
+    <string name="data_core_beetle_pce_fast">PC Engine மற்றும் TurboGrafx.</string>
+    <string name="data_core_beetle_supergrafx">PC Engine CD மற்றும் SuperGrafx.</string>
+    <string name="data_core_vecx">Vectrex எமுலேட்டர்.</string>
+    <string name="data_core_beetle_vb">Virtual Boy எமுலேட்டர்.</string>
+    <string name="data_core_beetle_wswan">WonderSwan மற்றும் WonderSwan Color.</string>
+</resources>

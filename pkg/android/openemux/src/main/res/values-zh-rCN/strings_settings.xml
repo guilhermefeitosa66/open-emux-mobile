@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gamepad hints -->
+    <string name="settings_hint_open">打开</string>
+    <string name="settings_hint_back">返回</string>
+    <string name="settings_hint_tabs">标签页</string>
+    <string name="settings_hint_choose">选择</string>
+    <string name="settings_hint_import">导入</string>
+
+    <!-- Tab bar -->
+    <string name="settings_tab_library">游戏库</string>
+    <string name="settings_tab_recent">最近</string>
+    <string name="settings_tab_import">导入</string>
+    <string name="settings_tab_settings">设置</string>
+    <string name="settings_launching">正在插入卡带...</string>
+
+    <!-- Settings -->
+    <string name="settings_title">设置</string>
+    <plurals name="settings_bios_consoles_missing">
+        <item quantity="other">%d 台主机缺少文件</item>
+    </plurals>
+    <plurals name="settings_bios_optional_missing">
+        <item quantity="other">缺少 %d 个可选文件</item>
+    </plurals>
+    <string name="settings_bios_all_ready">全部就绪</string>
+    <string name="settings_import">导入</string>
+    <string name="settings_section_appearance">外观</string>
+    <string name="settings_theme">主题</string>
+    <string name="settings_theme_system">系统</string>
+    <string name="settings_theme_system_desc">跟随设备的浅色/深色模式。</string>
+    <string name="settings_theme_light">浅色</string>
+    <string name="settings_theme_light_desc">始终使用浅色背景。</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_theme_dark_desc">始终使用深色背景。</string>
+    <string name="settings_language">语言</string>
+    <string name="settings_language_system_desc">使用设备的语言。</string>
+    <string name="settings_section_consoles">主机</string>
+    <string name="settings_section_consoles_trailing">内核 · 着色器</string>
+    <string name="settings_section_general">常规</string>
+    <string name="settings_rom_folder">ROM 文件夹</string>
+    <string name="settings_controls">操控</string>
+    <string name="settings_controls_value">触屏 + 实体手柄</string>
+    <string name="settings_about">关于</string>
+
+    <!-- Console defaults -->
+    <string name="settings_console_defaults">主机默认设置</string>
+    <string name="settings_default_core">默认内核</string>
+    <string name="settings_recommended">推荐</string>
+    <string name="settings_default_shader">默认着色器</string>
+    <string name="settings_bios_required">必需</string>
+    <string name="settings_bios_optional">可选</string>
+    <string name="settings_bios_found">已找到</string>
+    <string name="settings_bios_missing">缺失</string>
+    <string name="settings_bios_not_needed">此主机不需要</string>
+    <string name="settings_default_skin">默认皮肤</string>
+    <string name="settings_cart_color">卡带颜色</string>
+    <plurals name="settings_applies_all">
+        <item quantity="other">应用于全部 %1$d 款 %2$s 游戏。</item>
+    </plurals>
+    <plurals name="settings_applies_except">
+        <item quantity="other">应用于全部 %1$d 款游戏，但有 %2$d 款使用自己的内核，不受影响。</item>
+    </plurals>
+    <string name="settings_see_which">查看是哪些</string>
+    <string name="settings_cart_color_desc">应用于没有单独设置颜色的 %1$s 游戏。</string>
+    <string name="settings_own_core_title">使用自己的内核</string>
+
+    <!-- BIOS -->
+    <string name="settings_bios_intro">部分主机只有在使用原版系统文件时才能启动。请使用从你自己的设备中提取的文件。</string>
+    <string name="settings_bios_checking">正在检查文件...</string>
+    <string name="settings_bios_import_from_device">从设备导入</string>
+    <string name="settings_bios_pick_help">选择存放这些文件的文件夹（下载、SD 卡等）。OpenEmux 会按文件名识别每个文件，已知时也会按哈希识别，并将其安装到系统文件夹。</string>
+    <plurals name="settings_bios_imported">
+        <item quantity="other">已识别并安装 %d 个文件。</item>
+    </plurals>
+    <plurals name="settings_bios_skipped">
+        <item quantity="other">已跳过 %d 个。</item>
+    </plurals>
+    <plurals name="settings_bios_none_found">
+        <item quantity="other">该文件夹中没有已知的 BIOS。已检查 %d 个文件。</item>
+    </plurals>
+    <string name="settings_bios_consoles">需要 BIOS 的主机</string>
+    <string name="settings_bios_ready_count">%1$d / %2$d 已就绪</string>
+    <string name="settings_count_of">%1$d / %2$d</string>
+    <string name="settings_bios_one_of">以下任一</string>
+    <string name="settings_bios_tag_required">必需</string>
+    <string name="settings_bios_tag_optional">可选</string>
+    <string name="settings_bios_footer">未在此列出的主机无需 BIOS 即可运行。</string>
+
+    <!-- Import -->
+    <string name="settings_import_ext_title">.%1$s 文件</string>
+    <string name="settings_import_ext_question">有多台主机使用此扩展名。本次导入的 .%1$s 文件属于哪台主机？</string>
+    <string name="settings_import_intro">导入你拥有的游戏的 ROM。OpenEmux 会根据扩展名识别主机，并自动打开 .zip 文件。</string>
+    <string name="settings_import_copying">正在复制...</string>
+    <string name="settings_import_pick_files">选择文件</string>
+    <string name="settings_import_pick_folder">选择整个文件夹</string>
+    <plurals name="settings_import_games">
+        <item quantity="other">已导入 %d 款游戏。</item>
+    </plurals>
+    <plurals name="settings_import_skipped">
+        <item quantity="other">已跳过 %d 个文件。</item>
+    </plurals>
+    <string name="settings_import_none">没有识别到 ROM。</string>
+    <string name="settings_import_view">查看</string>
+    <string name="settings_import_formats">支持的格式</string>
+    <string name="settings_import_where">存放位置</string>
+    <string name="settings_import_where_desc">Android/data/%1$s/files/roms。你也可以从电脑直接复制到这里。</string>
+
+    <!-- First-run setup -->
+    <string name="settings_setup_start">开始</string>
+    <string name="settings_setup_retry">重试</string>
+    <string name="settings_setup_title">正在准备 OpenEmux</string>
+    <string name="settings_setup_intro">首次使用时，应用会下载模拟器及其所需文件，在设备上约占 160 MB。下载期间需要联网，最好使用 Wi-Fi。之后一切都可离线使用。</string>
+    <string name="settings_setup_percent">%1$d%%</string>
+    <string name="settings_setup_downloading">正在下载 %1$s</string>
+    <string name="settings_setup_dont_close">完成前请不要关闭应用。</string>
+    <string name="settings_setup_resume_note">已下载的内容会保留，重试时会从中断处继续。</string>
+    <string name="settings_setup_source">文件来自 libretro 官方 buildbot。</string>
+</resources>

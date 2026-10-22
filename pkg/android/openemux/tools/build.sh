@@ -4,7 +4,6 @@
 set -eu
 cd "$(dirname "$0")/.."
 NDK=${NDK:-$HOME/Android/Sdk/ndk/28.2.13676358}
-[ -d corelibs/arm64-v8a ] || tools/fetch-cores.sh
 for abi in arm64-v8a x86_64; do
   (cd ../phoenix-common && "$NDK/ndk-build" APP_ABI=$abi -j"$(nproc)")
 done

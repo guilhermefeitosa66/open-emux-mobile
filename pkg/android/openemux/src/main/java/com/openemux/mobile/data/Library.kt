@@ -62,7 +62,12 @@ data class SaveState(val slot: Int, val file: File, val thumbnail: File?, val mo
 data class Meta(
     val roms: Map<String, RomMeta> = emptyMap(),
     val consoles: Map<String, ConsoleSettings> = emptyMap(),
+    /** The user's console order, as on the desktop (issue #386): ids, the rest follow in Console order. */
+    val consoleOrder: List<String> = emptyList(),
 )
+
+/** A cue sheet's FILE line: quoted or bare name. */
+internal val CUE_FILE = Regex("""(?im)^\s*FILE\s+(?:"([^"]+)"|(\S+))""")
 
 /** Clean title from a No-Intro style file name: tags and extension go. */
 fun titleFromFileName(name: String): String {
@@ -92,8 +97,13 @@ class Library(private val context: Context) {
         val found = Console.entries.flatMap { console ->
             val dir = paths.roms(console)
             dir.mkdirs()
-            dir.listFiles().orEmpty()
-                .filter { it.isFile && it.extension.lowercase() in console.extensions }
+            val files = dir.listFiles().orEmpty().filter { it.isFile }
+            // A disc's track files belong to its .cue, as in the desktop scanner.
+            val tracks = files.filter { it.extension.equals("cue", ignoreCase = true) }.flatMap { cue ->
+                CUE_FILE.findAll(cue.readText()).map { it.groupValues[1].ifEmpty { it.groupValues[2] }.trim() }.toList()
+            }.toSet()
+            files
+                .filter { it.extension.lowercase() in console.extensions && it.name !in tracks }
                 .map { Rom("${console.id}/${it.name}", console, it, titleFromFileName(it.name)) }
         }.sortedBy { it.title.lowercase() }
         _roms.value = found
@@ -130,6 +140,39 @@ class Library(private val context: Context) {
         _meta.value = current.copy(
             consoles = current.consoles + (console.id to change(consoleSettings(console)))
         )
+        saveMeta()
+    }
+
+    /**
+     * Every console in the user's order: the ids the stored order names first,
+     * then the others in Console order. One order feeds the shelf, the chips,
+     * L1/R1 and Ajustes. Unknown or repeated ids are dropped.
+     */
+    fun orderedConsoles(order: List<String> = _meta.value.consoleOrder): List<Console> {
+        val named = order.mapNotNull { Console.byId(it) }.distinct()
+        return named + Console.entries.filter { it !in named }
+    }
+
+    /** Moves [console] one place among [present] (the consoles on screen); false if it cannot go further. */
+    fun moveConsole(console: Console, present: List<Console>, step: Int): Boolean {
+        val shown = orderedConsoles().filter { it in present }
+        val target = shown.getOrNull(shown.indexOf(console) + step) ?: return false
+        val all = orderedConsoles().toMutableList()
+        val i = all.indexOf(console)
+        val j = all.indexOf(target)
+        all[i] = target
+        all[j] = console
+        setConsoleOrder(all)
+        return true
+    }
+
+    fun setConsoleOrder(order: List<Console>) {
+        _meta.value = _meta.value.copy(consoleOrder = order.map { it.id })
+        saveMeta()
+    }
+
+    fun resetConsoleOrder() {
+        _meta.value = _meta.value.copy(consoleOrder = emptyList())
         saveMeta()
     }
 
@@ -194,7 +237,8 @@ class Library(private val context: Context) {
                     ConsoleSettings(c.getString("core"), c.getString("shader"), c.optString("color", "default"))
                 }
             }.orEmpty()
-            Meta(roms, consoles)
+            val order = json.optJSONArray("consoleOrder")?.let { arr -> (0 until arr.length()).map { arr.optString(it) } }.orEmpty()
+            Meta(roms, consoles, order.filter { Console.byId(it) != null }.distinct())
         }.getOrDefault(Meta())
     }
 
@@ -221,6 +265,7 @@ class Library(private val context: Context) {
                 })
             }
         })
+        if (m.consoleOrder.isNotEmpty()) json.put("consoleOrder", org.json.JSONArray(m.consoleOrder))
         paths.meta.parentFile?.mkdirs()
         val tmp = File(paths.meta.path + ".tmp")
         tmp.writeText(json.toString())

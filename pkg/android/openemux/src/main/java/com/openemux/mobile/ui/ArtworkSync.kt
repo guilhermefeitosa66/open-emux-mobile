@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -62,13 +63,14 @@ import androidx.compose.ui.unit.sp
 import com.openemux.mobile.data.Rom
 import com.openemux.mobile.data.SyncPause
 import com.openemux.mobile.data.SyncProgress
+import com.retroarch.R
 import kotlinx.coroutines.delay
 
-private val PausedBg = Color(0xFF24201A)
-private val PausedBorder = Color(0xFF3D3424)
-private val PausedIcon = Color(0xFFF5B544)
-private val PausedText = Color(0xFFC9B892)
-private val Track = Color(0xFF2E2E38)
+private val PausedBg get() = Oe.WarnBg
+private val PausedBorder get() = if (Oe.dark) Color(0xFF3D3424) else Color(0xFFF0DDB8)
+private val PausedIcon get() = Oe.Warn
+private val PausedText get() = Oe.WarnText
+private val Track get() = Oe.Raised
 
 /** True while the ROM's label is still on its way (not while the sync is paused). */
 @Composable
@@ -80,8 +82,8 @@ fun labelPending(rom: Rom): Boolean {
 }
 
 private fun pauseMessage(pause: SyncPause) = when (pause) {
-    SyncPause.Offline -> "Sem conexão. Retoma quando a rede voltar."
-    SyncPause.Quota -> "Cota diária do ScreenScraper esgotada. Tenta de novo amanhã."
+    SyncPause.Offline -> R.string.library_sync_paused_offline
+    SyncPause.Quota -> R.string.library_sync_paused_quota
 }
 
 /** The non-blocking pill shown on the shelf and library while artwork is pending. */
@@ -93,23 +95,34 @@ fun ArtworkSyncPill(modifier: Modifier = Modifier) {
     var sheet by remember { mutableStateOf(false) }
 
     // Covers first: they are quick, labels take about a second each.
-    val shown: Pair<String, SyncProgress>? = when {
-        covers.running -> "capas" to covers
-        labels.running -> "rótulos" to labels
-        labels.paused != null -> "rótulos" to labels
-        covers.paused != null -> "capas" to covers
+    // First: true for labels, false for covers.
+    val shown: Pair<Boolean, SyncProgress>? = when {
+        covers.running -> false to covers
+        labels.running -> true to labels
+        labels.paused != null -> true to labels
+        covers.paused != null -> false to covers
         else -> null
     }
     var last by remember { mutableStateOf(shown) }
     if (shown != null) last = shown
 
     AnimatedVisibility(shown != null, enter = expandVertically() + fadeIn(), exit = shrinkVertically() + fadeOut()) {
-        val (kind, p) = last ?: return@AnimatedVisibility
+        val (isLabels, p) = last ?: return@AnimatedVisibility
         val paused = p.paused
+        val status = stringResource(
+            when {
+                paused != null && isLabels -> R.string.library_sync_paused_labels
+                paused != null -> R.string.library_sync_paused_covers
+                isLabels -> R.string.library_sync_fetching_labels
+                else -> R.string.library_sync_fetching_covers
+            },
+        )
+        val count = stringResource(R.string.library_sync_progress, p.done, p.total)
         Box(
             modifier
                 .fillMaxWidth()
                 .heightIn(min = 44.dp)
+                .gamepadFocus(corner = 14.dp)
                 .clip(RoundedCornerShape(14.dp))
                 .background(if (paused != null) PausedBg else Oe.Surface)
                 .border(1.dp, if (paused != null) PausedBorder else Oe.Border, RoundedCornerShape(14.dp))
@@ -125,23 +138,23 @@ fun ArtworkSyncPill(modifier: Modifier = Modifier) {
                     Text(
                         buildAnnotatedString {
                             withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Oe.Text)) {
-                                append(if (paused != null) "${kind.replaceFirstChar { it.uppercase() }} pausados" else "Buscando $kind")
+                                append(status)
                             }
-                            withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = Oe.Muted)) { append(" · ${p.done} de ${p.total}") }
+                            withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = Oe.Muted)) { append(" · $count") }
                         },
                         style = Type.Body.copy(fontSize = 14.sp),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
                     if (paused != null) {
-                        Text(pauseMessage(paused), style = Type.Small.copy(fontSize = 12.sp, lineHeight = 16.sp, color = PausedText))
+                        Text(stringResource(pauseMessage(paused)), style = Type.Small.copy(fontSize = 12.sp, lineHeight = 16.sp, color = PausedText))
                     }
                 }
                 Icon(Icons.Chevron, Oe.Chevron, 16.dp)
             }
             if (paused == null) {
                 val fraction by animateFloatAsState(if (p.total > 0) p.done.toFloat() / p.total else 0f, label = "sync")
-                Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(3.dp).background(Color.White.copy(alpha = 0.06f))) {
+                Box(Modifier.align(Alignment.BottomStart).fillMaxWidth().height(3.dp).background(Oe.Text.copy(alpha = 0.06f))) {
                     Box(Modifier.fillMaxHeight().fillMaxWidth(fraction).background(Oe.AccentBright))
                 }
             }
@@ -158,18 +171,18 @@ private fun ArtworkSheet(onClose: () -> Unit) {
     val labels by app.labels.progress.collectAsState()
     ModalBottomSheet(onClose, containerColor = Oe.Sheet, scrimColor = Color.Black.copy(alpha = 0.55f)) {
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 34.dp)) {
-            Text("Artes dos jogos", style = Type.Title.copy(fontSize = 22.sp))
-            Text("Segue em segundo plano. Dá para jogar enquanto isso.", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Color(0xFF22222A))) {
-                SyncRow("Capas", "openemux-artwork", Icons.Grid, Color(0xFF26262E), Oe.Muted, covers, eta = false)
+            Text(stringResource(R.string.library_sync_sheet_title), style = Type.Title.copy(fontSize = 22.sp))
+            Text(stringResource(R.string.library_sync_sheet_subtitle), style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Oe.Raised)) {
+                SyncRow(stringResource(R.string.library_sync_covers), "openemux-artwork", Icons.Grid, Oe.Surface2, Oe.Muted, covers, eta = false)
                 HorizontalDivider(color = Track, thickness = 1.dp)
-                SyncRow("Rótulos dos cartuchos", "ScreenScraper", Icons.Cart, Color(0xFF3B2A6B), Color(0xFFD4C4FF), labels, eta = true)
+                SyncRow(stringResource(R.string.library_sync_labels), "ScreenScraper", Icons.Cart, Oe.AccentSoft, Oe.AccentOnSoft, labels, eta = true)
             }
             Text(
-                "Os rótulos vêm do ScreenScraper, que reconhece a ROM pelo hash. Um por segundo, por limite do serviço.",
+                stringResource(R.string.library_sync_labels_note),
                 style = Type.Small, modifier = Modifier.padding(top = 14.dp, bottom = 18.dp),
             )
-            SecondaryButton("Fechar", onClose, Modifier.fillMaxWidth(), height = 50.dp)
+            SecondaryButton(stringResource(R.string.library_sync_close), onClose, Modifier.fillMaxWidth(), height = 50.dp)
         }
     }
 }
@@ -188,7 +201,7 @@ private fun SyncRow(title: String, source: String, icon: String, tile: Color, ti
             }
             val complete = !p.running && paused == null && p.total > 0
             Text(
-                "${p.done} de ${p.total}",
+                stringResource(R.string.library_sync_progress, p.done, p.total),
                 style = Type.Body.copy(fontSize = 14.sp, fontWeight = if (complete) FontWeight.Medium else FontWeight.SemiBold, color = if (complete) Oe.Muted else Oe.Text),
             )
             Spacer(Modifier.width(8.dp))
@@ -205,13 +218,13 @@ private fun SyncRow(title: String, source: String, icon: String, tile: Color, ti
             }
             Row(Modifier.padding(top = 8.dp)) {
                 if (paused != null) {
-                    Text(pauseMessage(paused), style = Type.Small.copy(color = PausedText))
+                    Text(stringResource(pauseMessage(paused)), style = Type.Small.copy(color = PausedText))
                 } else {
-                    Text("Agora: ${p.current ?: "..."}", style = Type.Small, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                    Text(stringResource(R.string.library_sync_now, p.current ?: "..."), style = Type.Small, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
                     if (eta) {
                         // About two requests a second apart per ROM: the lookup and the image.
                         val minutes = ((p.total - p.done) * 2 + 59) / 60
-                        Text(if (minutes <= 1) "~1 min" else "~$minutes min", style = Type.Small, modifier = Modifier.padding(start = 8.dp))
+                        Text(stringResource(R.string.library_sync_eta_minutes, minutes.coerceAtLeast(1)), style = Type.Small, modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
@@ -219,7 +232,7 @@ private fun SyncRow(title: String, source: String, icon: String, tile: Color, ti
     }
 }
 
-/** "Rótulos prontos" for 3 s when a label run ends. */
+/** "Labels ready" for 3 s when a label run ends. */
 @Composable
 fun ArtworkDoneToast(modifier: Modifier = Modifier) {
     val labels by LocalActions.current.app.labels.progress.collectAsState()
@@ -244,13 +257,17 @@ fun ArtworkDoneToast(modifier: Modifier = Modifier) {
         ) {
             Icon(Icons.Check, Oe.AccentText, 18.dp)
             Spacer(Modifier.width(10.dp))
+            val title = stringResource(R.string.library_sync_labels_done)
+            val withArt = shown.done - shown.missing
+            val detail = if (shown.missing > 0) {
+                stringResource(R.string.library_sync_labels_done_missing, withArt, shown.missing)
+            } else {
+                stringResource(R.string.library_sync_labels_done_all, withArt)
+            }
             Text(
                 buildAnnotatedString {
-                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Oe.Text)) { append("Rótulos prontos") }
-                    val withArt = shown.done - shown.missing
-                    withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = Oe.Muted)) {
-                        append(if (shown.missing > 0) " · $withArt com arte, ${shown.missing} sem" else " · $withArt com arte")
-                    }
+                    withStyle(SpanStyle(fontWeight = FontWeight.SemiBold, color = Oe.Text)) { append(title) }
+                    withStyle(SpanStyle(fontWeight = FontWeight.Medium, color = Oe.Muted)) { append(" · $detail") }
                 },
                 style = Type.Body.copy(fontSize = 14.sp),
             )

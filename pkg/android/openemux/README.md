@@ -1,8 +1,9 @@
-# OpenEmux Mobile (POC)
+# OpenEmux Mobile
 
 An Android frontend for the RetroArch engine, with the OpenEmux look:
 games as cartridges, a shelf per console, per-console defaults and a pause
-sheet of its own. This POC covers **Game Boy Advance** and **Super Nintendo**.
+sheet of its own. It covers the desktop app's 31 systems (`data/Console.kt`),
+each with its own controller skin (`data/Skin.kt`).
 
 This directory lives inside a local fork of RetroArch. It is not published
 anywhere; the `upstream` remote can fetch from libretro but its push URL is
@@ -25,7 +26,7 @@ mean writing a new menu driver in C. So the split is:
 The engine runs in its own process (`:game`): RetroArch exits the process
 when the content closes, and the library must survive that.
 
-### The two engine hooks (C)
+### The engine hooks (C)
 
 1. **Menu → frontend.** When RetroArch would open its menu during play
    (the skin's menu button, a gamepad's menu combo), it calls
@@ -37,9 +38,30 @@ when the content closes, and the library must survive that.
    during play instead of being registered as a gamepad, which used to
    hide the touch skin. `android_input_back_to_menu()` in
    `input/drivers/android_input.c`.
+3. **Gamepad in the pause sheet.** While the content is paused, gamepad
+   keys and sticks go to the activity's `onExternalMenuInput()` first; the
+   sheet's window cannot take focus (the engine must keep it), so the
+   activity drives the sheet with them. `android_input_to_external_menu()`
+   in `input/drivers/android_input.c`, `android_app_external_menu_input()`
+   in `frontend/drivers/platform_unix.c`.
+4. **Overlay shown.** When the overlay changes (a skin key, or turning the
+   phone), the activity's `onOverlayChanged()` gets its name. The NDS skin
+   has one overlay per screen layout (`portrait@side`...): the activity sets
+   DeSmuME's `desmume_screens_layout` to match through `SET_CORE_OPTION`
+   and keeps each orientation's last layout. `android_app_overlay_changed()`
+   in `frontend/drivers/platform_unix.c`, called from `CMD_EVENT_OVERLAY_NEXT`
+   in `retroarch.c`.
 
-Upstream behaviour is kept: the base `RetroActivityCommon` returns false,
-so the stock RetroArch app still opens its own menu.
+Upstream behaviour is kept: the base `RetroActivityCommon` returns false
+from the first two and ignores the overlay change, so the stock RetroArch
+app still opens and drives its own menu.
+
+Two config-only keys (not in the menu; their defaults keep upstream
+behaviour) are set by the generated `retroarch.cfg`:
+`input_turbo_locked = true` makes turbo, once toggled, act as if its bind
+were held (the skin's bolt), and `notification_show_autoload_state = false`
+mutes the message when Continuar loads the automatic state, while saving and
+loading from the action strip still report.
 
 ### Frontend → engine
 
@@ -52,12 +74,17 @@ not focusable, because an unfocused engine stops polling.
 
 ### Controller skin
 
-`SkinRenderer` draws the design's controller at the screen's exact pixel
-size (portrait and landscape) and writes a RetroArch overlay with the touch
-areas bound to RetroPad buttons and hotkeys (`menu_toggle`,
-`toggle_fast_forward`, `save_state`). The cartridge being played is drawn
-into the portrait skin, sitting in a slot under the picture. The picture is
-pinned to the top with `video_viewport_bias_portrait_y = 0`.
+`data/Skin.kt` holds each console's skin as the design draws it: a layout
+family (D-pad + A/B, + A/B/X/Y + L/R, 6 buttons, analog, two screens), the
+console's colors, its face buttons, shoulders and console keys, each bound to
+a RetroPad button, an analog stick or a hotkey. `SkinRenderer` draws it at
+the screen's exact pixel size (portrait and landscape) and writes a RetroArch
+overlay with those touch areas, plus `menu_toggle` and the quick actions
+(`save_state`, `load_state`, `turbo_fire_toggle`, `toggle_fast_forward`).
+Each overlay also sets where the game is drawn (`overlayN_viewport`, which
+RetroArch fits keeping the aspect): on top in portrait, capped like the
+design, and centred between the control sides in landscape, with the quick
+actions under the picture in both.
 
 ### Cartridges, labels and box art
 
@@ -96,16 +123,24 @@ Needs the Android SDK (platform 36), NDK 28 and JDK 17.
 tools/build.sh              # engine (arm64-v8a, x86_64) + APK
 ```
 
-`tools/fetch-cores.sh` downloads mGBA, gpSP, Snes9x and bsnes from the
-RetroArch buildbot into `corelibs/` (not committed).
+The APK ships no cores. On first open, `data/Setup.kt` downloads from the
+RetroArch buildbot every core `data/Console.kt` names (for the device's ABI),
+`info.zip` and the PPSSPP and Dolphin system files, and the app stays on that
+screen until it finishes. `tools/bake-frames.py` turns the desktop's cartridge
+SVGs into the PNGs in `res/drawable-nodpi`.
 
 Data lives in `Android/data/com.openemux.mobile/files/` (`roms/<console>`,
 `states`, `saves`, `system` for BIOS, `screenshots`).
 
-## Not in this POC
+## Versioning
 
-- Cheats (shown as "Em breve").
-- Downloading other cores; the four shipped are the choice.
+The version follows the OpenEmux desktop release it pairs with:
+`openemuxVersion` in `gradle.properties` sets `versionName`, and
+`versionCode` is `major * 10000 + minor * 100 + patch`.
+
+## Not yet supported
+
+- Cheats (shown as coming soon).
+- Picking cores other than the ones `data/Console.kt` names; the setup
+  downloads exactly those.
 - Skin editor or alternative skins; one skin per console.
-- Real-device testing: everything was exercised on an x86_64 emulator;
-  the arm64 build is produced but was not run on a phone.

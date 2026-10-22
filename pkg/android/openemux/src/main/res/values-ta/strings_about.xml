@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_hint_open">திற</string>
+    <string name="about_version">பதிப்பு %1$s</string>
+    <string name="about_comments">OpenEmu-வால் ஈர்க்கப்பட்ட, Android-க்கான எமுலேட்டர் முகப்பு.</string>
+    <string name="about_section_project">திட்டம்</string>
+    <string name="about_site">OpenEmux இணையதளம்</string>
+    <string name="about_releases">வெளியீடுகள்</string>
+    <string name="about_report_issue">சிக்கலைப் புகாரளி</string>
+    <string name="about_section_license">உரிமம்</string>
+    <string name="about_license_title">GNU GPL v3</string>
+    <string name="about_license_body">இந்த ஆப் மாற்றங்களுடன் RetroArch-ஐ உள்ளடக்கியிருப்பதால் GPLv3-இன் கீழ் விநியோகிக்கப்படுகிறது. ஆப்பின் சொந்த Kotlin குறியீடு MIT உரிமத்தின் கீழும் கிடைக்கிறது.</string>
+    <string name="about_source">இந்த ஆப்பின் மூலக் குறியீடு</string>
+    <string name="about_licenses">உரிமங்கள்</string>
+    <string name="about_authors">OpenEmux மற்றும் பங்களிப்பாளர்களால்.</string>
+    <string name="about_licenses_note">இந்த ஆப் உள்ளடக்கும் அல்லது பதிவிறக்கும் அனைத்தும், அவற்றின் உரிமத்துடன். உரிம உரைகள் மூல ஆங்கிலத்திலேயே இருக்கும்.</string>
+    <string name="about_section_app">ஆப் மற்றும் நூலகங்கள்</string>
+    <string name="about_section_cores">எமுலேட்டர்கள் (கோர்கள்)</string>
+</resources>

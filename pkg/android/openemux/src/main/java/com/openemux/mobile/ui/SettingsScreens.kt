@@ -1,5 +1,6 @@
 package com.openemux.mobile.ui
 
+import android.app.Activity
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,94 +42,158 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.openemux.mobile.AppLocale
 import com.openemux.mobile.data.CART_COLORS
 import com.openemux.mobile.data.Console
 import com.openemux.mobile.data.ImportResult
 import com.openemux.mobile.data.KNOWN_BIOS
 import com.openemux.mobile.data.SHADERS
 import com.openemux.mobile.data.shaderById
+import com.retroarch.BuildConfig
+import com.retroarch.R
 import kotlinx.coroutines.launch
 
 @Composable
-private fun SectionHeader(text: String, trailing: String? = null) {
+internal fun SectionHeader(text: String, trailing: String? = null) {
     Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 8.dp), verticalAlignment = Alignment.Bottom) {
         Text(text.uppercase(), style = Type.SectionCaps, modifier = Modifier.weight(1f))
         if (trailing != null) Text(trailing, style = Type.Caption.copy(color = Oe.Faint))
     }
 }
 
+private val THEMES = listOf(
+    Triple(ThemePref.SYSTEM, R.string.settings_theme_system, R.string.settings_theme_system_desc),
+    Triple(ThemePref.LIGHT, R.string.settings_theme_light, R.string.settings_theme_light_desc),
+    Triple(ThemePref.DARK, R.string.settings_theme_dark, R.string.settings_theme_dark_desc),
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen() {
+    var themeSheet by remember { mutableStateOf(false) }
+    var languageSheet by remember { mutableStateOf(false) }
+    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_open), "B" to stringResource(R.string.settings_hint_back), "L1 R1" to stringResource(R.string.settings_hint_tabs)))
     val a = LocalActions.current
     val lib = a.app.library
     // Recomposes the console rows when a default changes.
-    @Suppress("UNUSED_VARIABLE") val meta by lib.meta.collectAsState()
+    val meta by lib.meta.collectAsState()
     val roms by lib.roms.collectAsState()
     val context = LocalContext.current
-    val missingOptional = KNOWN_BIOS.count { !a.app.importer.biosPresent(it) }
-    val missingRequired = KNOWN_BIOS.count { it.required && !a.app.importer.biosPresent(it) }
+    // Only the consoles in the library: the others do not need their BIOS yet.
+    val owned = roms.map { it.console }.toSet()
+    val missing = KNOWN_BIOS.filter { it.console in owned && !a.app.importer.biosPresent(it) }
+    val missingOptional = missing.count { !it.required }
+    val missingRequired = missing.filter { it.required }.map { it.console }.distinct().size
 
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
-        Text("Ajustes", style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
+        Text(stringResource(R.string.settings_title), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
 
         Row(
-            Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp).fillMaxWidth().clip(RoundedCornerShape(20.dp)).background(Oe.Surface)
+            Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp).fillMaxWidth().gamepadFocus(corner = 20.dp).clip(RoundedCornerShape(20.dp)).background(Oe.Surface)
                 .border(1.dp, Oe.Border, RoundedCornerShape(20.dp)).clickable(role = Role.Button) { a.nav.navigate(Routes.BIOS) }.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val ok = missingOptional == 0
             Box(
-                Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(if (ok) Oe.OkBg else Color(0xFF3A2A12)),
+                Modifier.size(48.dp).clip(RoundedCornerShape(14.dp)).background(if (ok) Oe.OkBg else Oe.WarnBg),
                 contentAlignment = Alignment.Center,
             ) { Icon(Icons.Chip, if (ok) Oe.Ok else Oe.Warn, 24.dp) }
             Column(Modifier.weight(1f)) {
                 Text("BIOS", style = Type.Section.copy(fontSize = 16.sp))
                 Text(
                     when {
-                        missingRequired > 0 -> "$missingRequired ${if (missingRequired == 1) "console precisa" else "consoles precisam"} de arquivos"
-                        missingOptional > 0 -> "Opcional para o GBA: deixa o boot igual ao original"
-                        else -> "Tudo pronto"
+                        missingRequired > 0 -> countString(R.plurals.settings_bios_consoles_missing, missingRequired, missingRequired)
+                        missingOptional > 0 -> countString(R.plurals.settings_bios_optional_missing, missingOptional, missingOptional)
+                        else -> stringResource(R.string.settings_bios_all_ready)
                     },
                     style = Type.Small, modifier = Modifier.padding(top = 2.dp),
                 )
             }
             Box(Modifier.height(34.dp).clip(RoundedCornerShape(17.dp)).background(Oe.Accent).padding(horizontal = 12.dp), contentAlignment = Alignment.Center) {
-                Text("Importar", style = Type.Button.copy(fontSize = 13.sp))
+                Text(stringResource(R.string.settings_import), style = Type.Button.copy(fontSize = 13.sp))
             }
         }
 
-        SectionHeader("Consoles", "core · shader")
+        SectionHeader(stringResource(R.string.settings_section_appearance))
         Card(Modifier.padding(horizontal = 20.dp)) {
-            Console.entries.forEachIndexed { i, c ->
+            ListRow(stringResource(R.string.settings_theme), value = stringResource(THEMES.first { it.first == ThemePref.value }.second), onClick = { themeSheet = true })
+            val language = AppLocale.current(context)
+            ListRow(
+                stringResource(R.string.settings_language), divider = true, onClick = { languageSheet = true },
+                value = AppLocale.LANGUAGES.firstOrNull { it.first == language }?.let { "${it.third} ${it.second}" } ?: stringResource(R.string.settings_theme_system),
+            )
+        }
+
+        SectionHeader(stringResource(R.string.settings_section_consoles), stringResource(R.string.settings_section_consoles_trailing))
+        Card(Modifier.padding(horizontal = 20.dp)) {
+            lib.orderedConsoles(meta.consoleOrder).forEachIndexed { i, c ->
                 val s = lib.consoleSettings(c)
                 ListRow(
-                    c.displayName,
-                    subtitle = "${c.core(s.core).name} · ${shaderById(s.shader).name}",
+                    c.fullName,
+                    subtitle = "${c.core(s.core).name} · ${shaderById(s.shader).name()}",
                     divider = i > 0, minHeight = 60.dp,
-                    leading = { ConsoleChip(c) },
+                    leading = { ConsoleIcon(c) },
                     onClick = { a.nav.navigate(Routes.console(c.id)) },
                 )
             }
         }
 
-        SectionHeader("Geral")
+        SectionHeader(stringResource(R.string.settings_section_general))
         Card(Modifier.padding(horizontal = 20.dp)) {
-            ListRow("Pasta de ROMs", subtitle = "Android/data/${context.packageName}/files/roms", value = "${roms.size}")
-            ListRow("Controles", value = "Toque + controle físico", divider = true)
-            ListRow("Sobre", value = "OpenEmux 0.1 · RetroArch", divider = true)
+            ListRow(stringResource(R.string.settings_rom_folder), subtitle = "Android/data/${context.packageName}/files/roms", value = "${roms.size}")
+            ListRow(stringResource(R.string.settings_controls), value = stringResource(R.string.settings_controls_value), divider = true)
+            ListRow(stringResource(R.string.settings_about), value = "OpenEmux ${BuildConfig.VERSION_NAME}", divider = true, onClick = { a.nav.navigate(Routes.ABOUT) })
         }
         Spacer(BottomSpace)
+    }
+
+    if (themeSheet) {
+        ModalBottomSheet({ themeSheet = false }, containerColor = Oe.Sheet) {
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.settings_theme), style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(bottom = 6.dp))
+                THEMES.forEach { (id, name, blurb) ->
+                    RadioCard(ThemePref.value == id, stringResource(name), stringResource(blurb), onClick = { ThemePref.set(context, id) }, background = Oe.Raised)
+                }
+            }
+        }
+    }
+    if (languageSheet) {
+        val language = AppLocale.current(context)
+        ModalBottomSheet({ languageSheet = false }, containerColor = Oe.Sheet) {
+            Column(
+                Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(stringResource(R.string.settings_language), style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(bottom = 6.dp))
+                (listOf(Triple("", stringResource(R.string.settings_theme_system), "")) + AppLocale.LANGUAGES).forEach { (tag, name, flag) ->
+                    RadioCard(
+                        language == tag, name, if (tag.isEmpty()) stringResource(R.string.settings_language_system_desc) else "",
+                        onClick = { languageSheet = false; if (tag != language) AppLocale.set(context as Activity, tag) },
+                        background = Oe.Raised,
+                        leading = {
+                            // The system choice has no flag: a globe of the same size keeps the column aligned.
+                            Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+                                if (flag.isEmpty()) Icon(Icons.Globe, Oe.Muted, 22.dp, stroke = 1.6f)
+                                else Text(flag, fontSize = 22.sp)
+                            }
+                        },
+                    )
+                }
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConsoleSettingsScreen(id: String) {
+    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
     val a = LocalActions.current
     val lib = a.app.library
     val console = Console.byId(id) ?: return
@@ -143,62 +208,62 @@ fun ConsoleSettingsScreen(id: String) {
 
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
-            BackLink("Ajustes") { a.nav.popBackStack() }
+            BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text("PADRÕES DO CONSOLE", style = Type.Eyebrow)
+                    Text(stringResource(R.string.settings_console_defaults), style = Type.Eyebrow)
                     Text(console.displayName, style = Type.Display.copy(fontSize = 28.sp, lineHeight = 30.sp), modifier = Modifier.padding(top = 4.dp))
                 }
                 Box(Modifier.width(92.dp).rotate(6f)) {
                     Cartridge(
                         console, sample?.let { labelFor(it) }, sample?.title ?: console.displayName,
-                        settings.color, Modifier.fillMaxWidth(),
+                        settings.color, Modifier.fillMaxWidth(), cover = sample?.let { a.app.covers.urlFor(it) },
                     )
                 }
             }
         }
 
-        Text("Core padrão", style = Type.Section, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp))
+        Text(stringResource(R.string.settings_default_core), style = Type.Section, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp))
         Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             console.cores.forEach { c ->
                 RadioCard(
-                    settings.core == c.id, c.name, c.description,
+                    settings.core == c.id, c.name, stringResource(c.description),
                     onClick = { lib.updateConsole(console) { it.copy(core = c.id) } },
-                    badge = if (c.recommended) "RECOMENDADO" else null,
+                    badge = if (c.recommended) stringResource(R.string.settings_recommended) else null,
                 )
             }
         }
 
         Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 8.dp), verticalAlignment = Alignment.Bottom) {
-            Text("Shader padrão", style = Type.Section, modifier = Modifier.weight(1f))
-            Text(shaderById(settings.shader).name, style = Type.Small)
+            Text(stringResource(R.string.settings_default_shader), style = Type.Section, modifier = Modifier.weight(1f))
+            Text(shaderById(settings.shader).name(), style = Type.Small)
         }
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SHADERS.forEach { s ->
-                ShaderTile(s.id, s.name, settings.shader == s.id) { lib.updateConsole(console) { it.copy(shader = s.id) } }
+                ShaderTile(s.id, s.name(), settings.shader == s.id) { lib.updateConsole(console) { it.copy(shader = s.id) } }
             }
         }
 
         Card(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp)) {
-            val bios = KNOWN_BIOS.firstOrNull { it.console == console }
+            val bios = KNOWN_BIOS.filter { it.console == console }.sortedByDescending { it.required }.firstOrNull()
             if (bios != null) {
                 val present = a.app.importer.biosPresent(bios)
                 ListRow(
-                    "BIOS", subtitle = "${bios.fileName} · ${if (bios.required) "obrigatória" else "opcional"}",
+                    "BIOS", subtitle = "${bios.fileName()} · ${stringResource(if (bios.required) R.string.settings_bios_required else R.string.settings_bios_optional)}",
                     onClick = { a.nav.navigate(Routes.BIOS) },
                     trailing = {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                             Icon(if (present) Icons.Check else Icons.Alert, if (present) Oe.Ok else Oe.Muted, 16.dp, stroke = 2.4f)
-                            Text(if (present) "Encontrada" else "Faltando", style = Type.Section.copy(fontSize = 13.sp, color = if (present) Oe.Ok else Oe.Muted))
+                            Text(stringResource(if (present) R.string.settings_bios_found else R.string.settings_bios_missing), style = Type.Section.copy(fontSize = 13.sp, color = if (present) Oe.Ok else Oe.Muted))
                         }
                     },
                 )
             } else {
-                ListRow("BIOS", subtitle = "Este console não precisa", value = "—")
+                ListRow("BIOS", subtitle = stringResource(R.string.settings_bios_not_needed), value = "—")
             }
-            ListRow("Skin padrão", value = "OpenEmux ${console.short}", divider = true)
-            ListRow(
-                "Cor dos cartuchos", value = CART_COLORS.first { it.id == settings.color }.name, divider = true,
+            ListRow(stringResource(R.string.settings_default_skin), value = "OpenEmux ${console.short}", divider = true)
+            if (console.frame != null) ListRow(
+                stringResource(R.string.settings_cart_color), value = stringResource(CART_COLORS.first { it.id == settings.color }.label), divider = true,
                 onClick = { colorSheet = true },
                 trailing = { Box(Modifier.size(18.dp).clip(RoundedCornerShape(9.dp)).background(CART_COLORS.first { it.id == settings.color }.swatch)) },
             )
@@ -206,14 +271,14 @@ fun ConsoleSettingsScreen(id: String) {
 
         Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 28.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(Icons.Info, Oe.Muted, 18.dp)
-            val text = if (own.isEmpty()) "Vale para todos os $count jogos do ${console.short}."
-            else "Vale para todos os $count jogos, menos ${own.size} que ${if (own.size == 1) "tem" else "têm"} core próprio."
+            val text = if (own.isEmpty()) countString(R.plurals.settings_applies_all, count, count, console.short)
+            else countString(R.plurals.settings_applies_except, own.size, count, own.size)
             Column {
                 Text(text, style = Type.Small)
                 if (own.isNotEmpty()) {
                     Text(
-                        "Ver quais", style = Type.Small.copy(color = Oe.AccentText),
-                        modifier = Modifier.padding(top = 2.dp).clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button) { ownSheet = true },
+                        stringResource(R.string.settings_see_which), style = Type.Small.copy(color = Oe.AccentText),
+                        modifier = Modifier.padding(top = 2.dp).gamepadFocus(corner = 6.dp).clip(RoundedCornerShape(6.dp)).clickable(role = Role.Button) { ownSheet = true },
                     )
                 }
             }
@@ -223,10 +288,10 @@ fun ConsoleSettingsScreen(id: String) {
     if (colorSheet) {
         ModalBottomSheet({ colorSheet = false }, containerColor = Oe.Sheet) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
-                Text("Cor dos cartuchos", style = Type.Title.copy(fontSize = 22.sp))
-                Text("Vale para os jogos do ${console.short} que não têm cor própria.", style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
+                Text(stringResource(R.string.settings_cart_color), style = Type.Title.copy(fontSize = 22.sp))
+                Text(stringResource(R.string.settings_cart_color_desc, console.short), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
                 if (sample != null) {
-                    Cartridge(console, labelFor(sample), sample.title, settings.color, Modifier.align(Alignment.CenterHorizontally).width(220.dp))
+                    Cartridge(console, labelFor(sample), sample.title, settings.color, Modifier.align(Alignment.CenterHorizontally).width(220.dp), cover = a.app.covers.urlFor(sample))
                     Spacer(Modifier.height(16.dp))
                 }
                 ColorSwatches(settings.color) { c -> lib.updateConsole(console) { it.copy(color = c) } }
@@ -236,7 +301,7 @@ fun ConsoleSettingsScreen(id: String) {
     if (ownSheet) {
         ModalBottomSheet({ ownSheet = false }, containerColor = Oe.Sheet) {
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
-                Text("Com core próprio", style = Type.Title.copy(fontSize = 22.sp))
+                Text(stringResource(R.string.settings_own_core_title), style = Type.Title.copy(fontSize = 22.sp))
                 Spacer(Modifier.height(12.dp))
                 own.forEach { rom ->
                     ListRow(rom.title, value = lib.effectiveCore(rom).name, onClick = { ownSheet = false; a.nav.navigate(Routes.rom(rom.key)) })
@@ -248,6 +313,7 @@ fun ConsoleSettingsScreen(id: String) {
 
 @Composable
 fun BiosScreen() {
+    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_import), "B" to stringResource(R.string.settings_hint_back)))
     val a = LocalActions.current
     val scope = rememberCoroutineScope()
     var result by remember { mutableStateOf<ImportResult?>(null) }
@@ -266,10 +332,10 @@ fun BiosScreen() {
 
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
-            BackLink("Ajustes") { a.nav.popBackStack() }
+            BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             Text("BIOS", style = Type.Display, modifier = Modifier.padding(top = 4.dp))
             Text(
-                "Alguns consoles só ligam com o arquivo de sistema original. Use os que você extraiu do seu próprio aparelho.",
+                stringResource(R.string.settings_bios_intro),
                 style = Type.Small.copy(fontSize = 14.sp, lineHeight = 20.sp), modifier = Modifier.padding(top = 8.dp),
             )
         }
@@ -281,13 +347,13 @@ fun BiosScreen() {
             if (working) {
                 Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(20.dp), color = Oe.AccentText, strokeWidth = 2.dp)
-                    Text("  Conferindo os arquivos...", style = Type.Body)
+                    Text("  " + stringResource(R.string.settings_bios_checking), style = Type.Body)
                 }
             } else {
-                PrimaryButton("Importar do aparelho", { picker.launch(null) }, Modifier.fillMaxWidth(), icon = Icons.Folder, height = 54.dp)
+                PrimaryButton(stringResource(R.string.settings_bios_import_from_device), { picker.launch(null) }, Modifier.fillMaxWidth(), icon = Icons.Folder, height = 54.dp)
             }
             Text(
-                "Escolha a pasta onde estão os arquivos (Downloads, cartão SD...). O OpenEmux confere cada um pelo hash e copia para o console certo. Nome do arquivo não importa.",
+                stringResource(R.string.settings_bios_pick_help),
                 style = Type.Small,
             )
         }
@@ -300,82 +366,130 @@ fun BiosScreen() {
             ) {
                 Icon(if (ok) Icons.Check else Icons.Alert, if (ok) Oe.OkText else Oe.WarnText, 20.dp, stroke = 2.4f)
                 Text(
-                    if (ok) "${r.imported} ${if (r.imported == 1) "arquivo reconhecido e instalado" else "arquivos reconhecidos e instalados"}." + if (r.skipped > 0) " ${r.skipped} ${if (r.skipped == 1) "ignorado" else "ignorados"}." else ""
-                    else "Nenhuma BIOS conhecida nessa pasta. ${r.skipped} arquivos conferidos.",
+                    if (ok) countString(R.plurals.settings_bios_imported, r.imported, r.imported) +
+                        if (r.skipped > 0) " " + countString(R.plurals.settings_bios_skipped, r.skipped, r.skipped) else ""
+                    else countString(R.plurals.settings_bios_none_found, r.skipped, r.skipped),
                     style = Type.Body.copy(fontSize = 14.sp, color = if (ok) Oe.OkText else Oe.WarnText),
                 )
             }
         }
 
-        val rows = remember(refresh) {
-            Console.entries.map { c ->
-                val def = KNOWN_BIOS.firstOrNull { it.console == c }
-                Triple(c, def, def?.let { a.app.importer.biosPresent(it) })
+        // Like the desktop's BIOS page: every console the catalog names, each file with its state.
+        val consoles = remember(refresh) {
+            Console.entries.mapNotNull { c ->
+                val defs = KNOWN_BIOS.filter { it.console == c }.sortedByDescending { it.required }
+                if (defs.isEmpty()) null else c to defs.map { it to a.app.importer.biosPresent(it) }
             }
         }
-        SectionHeader("Seus consoles", "${rows.count { it.second == null || it.third == true }} de ${rows.size} prontos")
-        Card(Modifier.padding(horizontal = 20.dp)) {
-            rows.forEachIndexed { i, (c, def, present) ->
-                ListRow(
-                    c.displayName,
-                    subtitle = def?.fileName ?: "Não precisa de BIOS",
-                    divider = i > 0, minHeight = 64.dp,
-                    trailing = {
-                        if (def != null) Tag(if (def.required) "Obrigatória" else "Opcional", Color(0xFF26262E), Color(0xFFB4B4C0))
-                        val ok = def == null || present == true
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                            Icon(if (ok) Icons.Check else Icons.Alert, if (ok) Oe.Ok else Oe.Muted, 16.dp, stroke = 2.4f)
-                            Text(if (ok) "OK" else "Faltando", style = Type.Section.copy(fontSize = 13.sp, color = if (ok) Oe.Ok else Oe.Muted))
-                        }
-                    },
-                )
+        val ready = consoles.count { (_, defs) -> defs.none { (d, present) -> d.required && !present } }
+        SectionHeader(stringResource(R.string.settings_bios_consoles), stringResource(R.string.settings_bios_ready_count, ready, consoles.size))
+        Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            consoles.forEach { (c, defs) ->
+                Card {
+                    ListRow(
+                        c.fullName, minHeight = 60.dp, leading = { ConsoleIcon(c) },
+                        value = stringResource(R.string.settings_count_of, defs.count { it.second }, defs.size),
+                    )
+                    defs.forEach { (def, present) ->
+                        ListRow(
+                            if (def.files.size > 1) stringResource(R.string.settings_bios_one_of) else def.files.first(),
+                            subtitle = if (def.files.size > 1) def.files.joinToString(" · ") else null,
+                            divider = true, minHeight = 52.dp, subtitleLines = 4,
+                            leading = {
+                                Icon(if (present) Icons.Check else Icons.Alert, if (present) Oe.Ok else if (def.required) Oe.Warn else Oe.Muted, 18.dp, stroke = 2.4f)
+                            },
+                            trailing = {
+                                if (def.required) Tag(stringResource(R.string.settings_bios_tag_required), Oe.WarnBg, Oe.WarnText)
+                                else Tag(stringResource(R.string.settings_bios_tag_optional), Oe.Surface2, Oe.Muted)
+                            },
+                        )
+                    }
+                }
             }
         }
         Text(
-            "Só aparecem os consoles desta versão (GBA e Super Nintendo).",
+            stringResource(R.string.settings_bios_footer),
             style = Type.Small.copy(color = Oe.Faint), modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 28.dp),
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ImportScreen() {
+    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back), "L1 R1" to stringResource(R.string.settings_hint_tabs)))
     val a = LocalActions.current
     val scope = rememberCoroutineScope()
     var result by remember { mutableStateOf<ImportResult?>(null) }
     var working by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
-    fun run(block: suspend () -> ImportResult) {
-        working = true
+    // Extensions several consoles take, still to be answered, and the import waiting on them.
+    var asking by remember { mutableStateOf<List<Pair<String, List<Console>>>>(emptyList()) }
+    var choices by remember { mutableStateOf<Map<String, Console>>(emptyMap()) }
+    var pendingImport by remember { mutableStateOf<(suspend (Map<String, Console>) -> ImportResult)?>(null) }
+
+    fun finish(block: suspend (Map<String, Console>) -> ImportResult, picked: Map<String, Console>) {
         scope.launch {
-            result = runCatching { block() }.getOrDefault(ImportResult(0, 0))
+            result = runCatching { block(picked) }.getOrDefault(ImportResult(0, 0))
             a.app.library.scan()
             working = false
         }
     }
+    fun run(ambiguities: suspend () -> Map<String, List<Console>>, block: suspend (Map<String, Console>) -> ImportResult) {
+        working = true
+        scope.launch {
+            val open = runCatching { ambiguities() }.getOrDefault(emptyMap())
+            if (open.isEmpty()) finish(block, emptyMap())
+            else { choices = emptyMap(); pendingImport = block; asking = open.toList() }
+        }
+    }
     val files = rememberLauncherForActivityResult(ActivityResultContracts.OpenMultipleDocuments()) { uris ->
-        if (uris.isNotEmpty()) run { a.app.importer.importRoms(uris) }
+        if (uris.isNotEmpty()) run({ a.app.importer.ambiguities(uris) }) { a.app.importer.importRoms(uris, it) }
     }
     val folder = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        if (uri != null) run { a.app.importer.importRomTree(uri) }
+        if (uri != null) run({ a.app.importer.ambiguitiesInTree(uri) }) { a.app.importer.importRomTree(uri, it) }
+    }
+
+    asking.firstOrNull()?.let { (ext, candidates) ->
+        ModalBottomSheet({ asking = emptyList(); pendingImport = null; working = false }, containerColor = Oe.Sheet) {
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+                Text(stringResource(R.string.settings_import_ext_title, ext), style = Type.Title.copy(fontSize = 22.sp))
+                Text(
+                    stringResource(R.string.settings_import_ext_question, ext),
+                    style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+                )
+                Card {
+                    candidates.forEachIndexed { i, c ->
+                        ListRow(
+                            c.fullName, divider = i > 0, minHeight = 56.dp, leading = { ConsoleIcon(c) },
+                            onClick = {
+                                choices = choices + (ext to c)
+                                asking = asking.drop(1)
+                                if (asking.isEmpty()) pendingImport?.let { finish(it, choices) }
+                            },
+                        )
+                    }
+                }
+            }
+        }
     }
 
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
-        Text("Importar", style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
+        Text(stringResource(R.string.settings_import), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
         Text(
-            "Traga as ROMs dos jogos que você tem. O OpenEmux reconhece o console pela extensão e abre arquivos .zip sozinho.",
+            stringResource(R.string.settings_import_intro),
             style = Type.Small.copy(fontSize = 14.sp, lineHeight = 20.sp), modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
         )
         Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             if (working) {
                 Row(Modifier.fillMaxWidth().height(54.dp), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
                     CircularProgressIndicator(Modifier.size(20.dp), color = Oe.AccentText, strokeWidth = 2.dp)
-                    Text("  Copiando...", style = Type.Body)
+                    Text("  " + stringResource(R.string.settings_import_copying), style = Type.Body)
                 }
             } else {
-                PrimaryButton("Escolher arquivos", { files.launch(arrayOf("*/*")) }, Modifier.fillMaxWidth(), icon = Icons.File, height = 54.dp)
-                SecondaryButton("Escolher uma pasta inteira", { folder.launch(null) }, Modifier.fillMaxWidth(), icon = Icons.Folder, height = 54.dp)
+                PrimaryButton(stringResource(R.string.settings_import_pick_files), { files.launch(arrayOf("*/*")) }, Modifier.fillMaxWidth(), icon = Icons.File, height = 54.dp)
+                SecondaryButton(stringResource(R.string.settings_import_pick_folder), { folder.launch(null) }, Modifier.fillMaxWidth(), icon = Icons.Folder, height = 54.dp)
             }
         }
         result?.let { r ->
@@ -387,30 +501,31 @@ fun ImportScreen() {
             ) {
                 Icon(if (ok) Icons.Check else Icons.Alert, if (ok) Oe.OkText else Oe.WarnText, 20.dp, stroke = 2.4f)
                 Text(
-                    if (ok) "${r.imported} ${if (r.imported == 1) "jogo importado" else "jogos importados"}." + if (r.skipped > 0) " ${r.skipped} ${if (r.skipped == 1) "arquivo ignorado" else "arquivos ignorados"}." else ""
-                    else "Nenhuma ROM de GBA ou SNES encontrada.",
+                    if (ok) countString(R.plurals.settings_import_games, r.imported, r.imported) +
+                        if (r.skipped > 0) " " + countString(R.plurals.settings_import_skipped, r.skipped, r.skipped) else ""
+                    else stringResource(R.string.settings_import_none),
                     style = Type.Body.copy(fontSize = 14.sp, color = if (ok) Oe.OkText else Oe.WarnText),
                     modifier = Modifier.weight(1f),
                 )
                 if (ok) Text(
-                    "Ver", style = Type.Section.copy(color = Oe.OkText),
-                    modifier = Modifier.clip(RoundedCornerShape(8.dp)).clickable { a.nav.navigate(Routes.SHELF) { popUpTo(Routes.SHELF) { inclusive = true } } }.padding(6.dp),
+                    stringResource(R.string.settings_import_view), style = Type.Section.copy(color = Oe.OkText),
+                    modifier = Modifier.gamepadFocus(corner = 8.dp).clip(RoundedCornerShape(8.dp)).clickable { a.nav.navigate(Routes.SHELF) { popUpTo(Routes.SHELF) { inclusive = true } } }.padding(6.dp),
                 )
             }
         }
 
-        SectionHeader("Formatos desta versão")
+        SectionHeader(stringResource(R.string.settings_import_formats))
         Card(Modifier.padding(horizontal = 20.dp)) {
             Console.entries.forEachIndexed { i, c ->
                 ListRow(
-                    c.displayName, subtitle = c.extensions.joinToString("  ") { ".$it" } + "  .zip",
-                    divider = i > 0, minHeight = 60.dp, leading = { ConsoleChip(c) },
+                    c.fullName, subtitle = c.extensions.joinToString("  ") { ".$it" } + "  .zip",
+                    divider = i > 0, minHeight = 60.dp, leading = { ConsoleIcon(c) },
                 )
             }
         }
-        SectionHeader("Onde ficam")
+        SectionHeader(stringResource(R.string.settings_import_where))
         Text(
-            "Android/data/${context.packageName}/files/roms. Você também pode copiar direto para lá pelo computador.",
+            stringResource(R.string.settings_import_where_desc, context.packageName),
             style = Type.Small.copy(fontFamily = FontFamily.Monospace, fontSize = 12.sp),
             maxLines = 3, overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(horizontal = 20.dp),

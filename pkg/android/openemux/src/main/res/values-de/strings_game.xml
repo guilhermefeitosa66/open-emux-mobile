@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Pause sheet (game process) -->
+    <string name="game_back">Zurück</string>
+    <string name="game_back_to_game">Zurück zum Spiel</string>
+    <string name="game_choose">Auswählen</string>
+    <string name="game_save_states">Savestates</string>
+    <string name="game_shader">Shader</string>
+    <string name="game_playing_now">Läuft gerade · %1$s</string>
+    <string name="game_playing_for">Seit %1$d Min. im Spiel · %2$s</string>
+    <string name="game_tap_to_load">Zum Laden tippen</string>
+    <string name="game_shader_this_session">Nur für diese Sitzung</string>
+    <string name="game_toast_saved_slot">Spielstand auf Platz %1$d gespeichert</string>
+    <string name="game_toast_fast_forward_on">Vorspulen beim Fortsetzen</string>
+    <string name="game_toast_fast_forward_off">Normale Geschwindigkeit</string>
+    <string name="game_toast_screenshot">Bildschirmfoto gespeichert</string>
+    <string name="game_toast_sound_off">Ton aus</string>
+    <string name="game_toast_sound_on">Ton an</string>
+    <string name="game_toast_shader">Shader: %1$s</string>
+    <string name="game_toast_state_other_core">Dieser Spielstand ist von einem anderen Kern</string>
+    <string name="game_toast_state_saved_other_core">Dieser Spielstand wurde mit einem anderen Kern gespeichert</string>
+    <string name="game_save_state">Spielstand speichern</string>
+    <string name="game_load">Laden</string>
+    <string name="game_fast_forward">Vorspulen</string>
+    <string name="game_screenshot">Bildschirmfoto</string>
+    <string name="game_audio">Audio</string>
+    <string name="game_muted">Stumm</string>
+    <string name="game_restart">Spiel neu starten</string>
+    <string name="game_quit">Spiel beenden</string>
+    <string name="game_no_states">Noch keine Savestates.</string>
+    <string name="game_state_auto">AUTO</string>
+    <string name="game_state_slot">PLATZ %1$d</string>
+    <string name="game_shader_blurb_none">Reine Pixel, kein Effekt.</string>
+    <string name="game_shader_blurb_dot">Punktmatrix wie am Handheld.</string>
+    <string name="game_shader_blurb_sharp">Scharfe Pixel ohne Treppen.</string>
+    <string name="game_shader_blurb_zfast">Leichte CRT-Scanlines.</string>
+    <string name="game_shader_blurb_geom">Gewölbter CRT mit Glühen und Maske.</string>
+
+    <!-- Game detail screen -->
+    <string name="detail_continue">Weiterspielen</string>
+    <string name="detail_play">Spielen</string>
+    <string name="detail_favorite">Favorit</string>
+    <string name="detail_menu">Menü ⋯</string>
+    <string name="detail_back">Zurück</string>
+    <string name="detail_favorite_remove">Aus Favoriten entfernen</string>
+    <string name="detail_favorite_add">Zu Favoriten hinzufügen</string>
+    <string name="detail_more_options">Weitere Optionen</string>
+    <string name="detail_remove_from_library">Aus Bibliothek entfernen</string>
+    <string name="detail_restart">Neu starten</string>
+    <string name="detail_save_states">Savestates</string>
+    <string name="detail_see_all">Alle anzeigen (%1$d)</string>
+    <string name="detail_no_states">Noch keine. Speichere über das Menü im Spiel.</string>
+    <string name="detail_cart_color">Modulfarbe</string>
+    <string name="detail_default_suffix">" · Standard"</string>
+    <string name="detail_core">Kern</string>
+    <string name="detail_shader">Shader</string>
+    <string name="detail_default_tag">STANDARD</string>
+    <string name="detail_controller_skin">Controller-Skin</string>
+    <string name="detail_cheats">Cheats</string>
+    <string name="detail_coming_soon">Bald verfügbar</string>
+    <string name="detail_remove_title">%1$s entfernen?</string>
+    <string name="detail_remove_message">Die ROM-Datei wird vom Gerät gelöscht. Spielstände und Savestates bleiben erhalten, falls du sie erneut importierst.</string>
+    <string name="detail_remove">Entfernen</string>
+    <string name="detail_cancel">Abbrechen</string>
+    <string name="detail_core_sheet_title">Kern für diese ROM</string>
+    <string name="detail_console_default">Konsolenstandard</string>
+    <string name="detail_core_default_desc">Aktuell %1$s. Ändert sich der Standard für %2$s, folgt diese ROM.</string>
+    <string name="detail_pin_for_rom">ODER NUR FÜR DIESE ROM FESTLEGEN</string>
+    <string name="detail_core_pinned_desc">Bleibt bei %1$s, auch wenn sich der Standard ändert.</string>
+    <plurals name="detail_core_states_warning">
+        <item quantity="one">Savestates öffnen sich nur im Kern, der sie erstellt hat. Der Savestate dieser ROM ist von %2$s. Der Spielstand (.srm) funktioniert weiterhin.</item>
+        <item quantity="other">Savestates öffnen sich nur im Kern, der sie erstellt hat. Die %1$d Savestates dieser ROM sind von %2$s. Der Spielstand (.srm) funktioniert weiterhin.</item>
+    </plurals>
+    <string name="detail_done">Fertig</string>
+    <string name="detail_shader_sheet_title">Shader für diese ROM</string>
+    <string name="detail_shader_default_desc">Aktuell %1$s. Folgt dem Standard für %2$s.</string>
+    <string name="detail_states_sheet_hint">Tippen, um das Spiel an dieser Stelle zu öffnen</string>
+    <!-- NDS screen layouts, chosen from the pause sheet with a gamepad. -->
+    <string name="game_screens">Bildschirme</string>
+    <string name="game_screens_top">Nur oberer Bildschirm</string>
+    <string name="game_screens_bottom">Nur unterer Bildschirm</string>
+    <string name="game_screens_stacked">Übereinander</string>
+    <string name="game_screens_side">Nebeneinander</string>
+</resources>

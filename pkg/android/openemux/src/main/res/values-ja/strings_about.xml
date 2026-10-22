@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="about_hint_open">開く</string>
+    <string name="about_version">バージョン %1$s</string>
+    <string name="about_comments">OpenEmu にインスパイアされた、Android 向けのエミュレーターフロントエンド。</string>
+    <string name="about_section_project">プロジェクト</string>
+    <string name="about_site">OpenEmux のウェブサイト</string>
+    <string name="about_releases">リリース</string>
+    <string name="about_report_issue">問題を報告</string>
+    <string name="about_section_license">ライセンス</string>
+    <string name="about_license_title">GNU GPL v3</string>
+    <string name="about_license_body">このアプリは RetroArch を改変して含んでいるため、GPLv3 で配布されています。アプリ独自の Kotlin コードは MIT ライセンスでも利用できます。</string>
+    <string name="about_source">このアプリのソースコード</string>
+    <string name="about_licenses">ライセンス一覧</string>
+    <string name="about_authors">OpenEmux とコントリビューターによる開発。</string>
+    <string name="about_licenses_note">このアプリが同梱またはダウンロードするすべてのものと、そのライセンスです。ライセンス本文は原文の英語のままです。</string>
+    <string name="about_section_app">アプリとライブラリ</string>
+    <string name="about_section_cores">エミュレーター（コア）</string>
+</resources>

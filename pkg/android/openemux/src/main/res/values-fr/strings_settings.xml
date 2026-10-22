@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gamepad hints -->
+    <string name="settings_hint_open">Ouvrir</string>
+    <string name="settings_hint_back">Retour</string>
+    <string name="settings_hint_tabs">Onglets</string>
+    <string name="settings_hint_choose">Choisir</string>
+    <string name="settings_hint_import">Importer</string>
+
+    <!-- Tab bar -->
+    <string name="settings_tab_library">Bibliothèque</string>
+    <string name="settings_tab_recent">Récents</string>
+    <string name="settings_tab_import">Importer</string>
+    <string name="settings_tab_settings">Paramètres</string>
+    <string name="settings_launching">Insertion de la cartouche...</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Paramètres</string>
+    <plurals name="settings_bios_consoles_missing">
+        <item quantity="one">%d console a besoin de fichiers</item>
+        <item quantity="many">%d de consoles ont besoin de fichiers</item>
+        <item quantity="other">%d consoles ont besoin de fichiers</item>
+    </plurals>
+    <plurals name="settings_bios_optional_missing">
+        <item quantity="one">%d fichier facultatif manquant</item>
+        <item quantity="many">%d de fichiers facultatifs manquants</item>
+        <item quantity="other">%d fichiers facultatifs manquants</item>
+    </plurals>
+    <string name="settings_bios_all_ready">Tout est prêt</string>
+    <string name="settings_import">Importer</string>
+    <string name="settings_section_appearance">Apparence</string>
+    <string name="settings_theme">Thème</string>
+    <string name="settings_theme_system">Système</string>
+    <string name="settings_theme_system_desc">Suit le mode clair/sombre de l’appareil.</string>
+    <string name="settings_theme_light">Clair</string>
+    <string name="settings_theme_light_desc">Fond clair, toujours.</string>
+    <string name="settings_theme_dark">Sombre</string>
+    <string name="settings_theme_dark_desc">Fond sombre, toujours.</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_system_desc">Utilise la langue de l’appareil.</string>
+    <string name="settings_section_consoles">Consoles</string>
+    <string name="settings_section_consoles_trailing">cœur · shader</string>
+    <string name="settings_section_general">Général</string>
+    <string name="settings_rom_folder">Dossier des ROMs</string>
+    <string name="settings_controls">Commandes</string>
+    <string name="settings_controls_value">Tactile + manette physique</string>
+    <string name="settings_about">À propos</string>
+
+    <!-- Console defaults -->
+    <string name="settings_console_defaults">RÉGLAGES DE LA CONSOLE</string>
+    <string name="settings_default_core">Cœur par défaut</string>
+    <string name="settings_recommended">RECOMMANDÉ</string>
+    <string name="settings_default_shader">Shader par défaut</string>
+    <string name="settings_bios_required">obligatoire</string>
+    <string name="settings_bios_optional">facultatif</string>
+    <string name="settings_bios_found">Trouvé</string>
+    <string name="settings_bios_missing">Manquant</string>
+    <string name="settings_bios_not_needed">Cette console n’en a pas besoin</string>
+    <string name="settings_default_skin">Skin par défaut</string>
+    <string name="settings_cart_color">Couleur de la cartouche</string>
+    <plurals name="settings_applies_all">
+        <item quantity="one">S’applique au seul jeu %2$s.</item>
+        <item quantity="many">S’applique aux %1$d de jeux %2$s.</item>
+        <item quantity="other">S’applique aux %1$d jeux %2$s.</item>
+    </plurals>
+    <plurals name="settings_applies_except">
+        <item quantity="one">S’applique aux %1$d jeux sauf %2$d qui a son propre cœur.</item>
+        <item quantity="many">S’applique aux %1$d jeux sauf %2$d qui ont leur propre cœur.</item>
+        <item quantity="other">S’applique aux %1$d jeux sauf %2$d qui ont leur propre cœur.</item>
+    </plurals>
+    <string name="settings_see_which">Voir lesquels</string>
+    <string name="settings_cart_color_desc">S’applique aux jeux %1$s qui n’ont pas leur propre couleur.</string>
+    <string name="settings_own_core_title">Avec leur propre cœur</string>
+
+    <!-- BIOS -->
+    <string name="settings_bios_intro">Certaines consoles ne démarrent qu’avec le fichier système d’origine. Utilisez ceux extraits de votre propre appareil.</string>
+    <string name="settings_bios_checking">Vérification des fichiers...</string>
+    <string name="settings_bios_import_from_device">Importer depuis l’appareil</string>
+    <string name="settings_bios_pick_help">Choisissez le dossier qui contient les fichiers (Téléchargements, carte SD...). OpenEmux reconnaît chacun par son nom, ou par son empreinte quand il la connaît, et l’installe dans le dossier système.</string>
+    <plurals name="settings_bios_imported">
+        <item quantity="one">%d fichier reconnu et installé.</item>
+        <item quantity="many">%d de fichiers reconnus et installés.</item>
+        <item quantity="other">%d fichiers reconnus et installés.</item>
+    </plurals>
+    <plurals name="settings_bios_skipped">
+        <item quantity="one">%d ignoré.</item>
+        <item quantity="many">%d ignorés.</item>
+        <item quantity="other">%d ignorés.</item>
+    </plurals>
+    <plurals name="settings_bios_none_found">
+        <item quantity="one">Aucun BIOS connu dans ce dossier. %d fichier vérifié.</item>
+        <item quantity="many">Aucun BIOS connu dans ce dossier. %d de fichiers vérifiés.</item>
+        <item quantity="other">Aucun BIOS connu dans ce dossier. %d fichiers vérifiés.</item>
+    </plurals>
+    <string name="settings_bios_consoles">Consoles avec BIOS</string>
+    <string name="settings_bios_ready_count">%1$d sur %2$d prêts</string>
+    <string name="settings_count_of">%1$d sur %2$d</string>
+    <string name="settings_bios_one_of">L’un de ceux-ci</string>
+    <string name="settings_bios_tag_required">Obligatoire</string>
+    <string name="settings_bios_tag_optional">Facultatif</string>
+    <string name="settings_bios_footer">Les consoles absentes de cette liste fonctionnent sans BIOS.</string>
+
+    <!-- Import -->
+    <string name="settings_import_ext_title">Fichiers .%1$s</string>
+    <string name="settings_import_ext_question">Plusieurs consoles utilisent cette extension. À laquelle sont destinés les fichiers .%1$s de cet import ?</string>
+    <string name="settings_import_intro">Ajoutez les ROMs des jeux que vous possédez. OpenEmux reconnaît la console grâce à l’extension et ouvre les .zip tout seul.</string>
+    <string name="settings_import_copying">Copie en cours...</string>
+    <string name="settings_import_pick_files">Choisir des fichiers</string>
+    <string name="settings_import_pick_folder">Choisir un dossier entier</string>
+    <plurals name="settings_import_games">
+        <item quantity="one">%d jeu importé.</item>
+        <item quantity="many">%d de jeux importés.</item>
+        <item quantity="other">%d jeux importés.</item>
+    </plurals>
+    <plurals name="settings_import_skipped">
+        <item quantity="one">%d fichier ignoré.</item>
+        <item quantity="many">%d de fichiers ignorés.</item>
+        <item quantity="other">%d fichiers ignorés.</item>
+    </plurals>
+    <string name="settings_import_none">Aucune ROM reconnue.</string>
+    <string name="settings_import_view">Voir</string>
+    <string name="settings_import_formats">Formats acceptés</string>
+    <string name="settings_import_where">Où ils vont</string>
+    <string name="settings_import_where_desc">Android/data/%1$s/files/roms. Vous pouvez aussi les copier directement depuis un ordinateur.</string>
+
+    <!-- First-run setup -->
+    <string name="settings_setup_start">Démarrer</string>
+    <string name="settings_setup_retry">Réessayer</string>
+    <string name="settings_setup_title">Préparation d’OpenEmux</string>
+    <string name="settings_setup_intro">La première fois, l’app télécharge les émulateurs et leurs fichiers, environ 160 Mo sur l’appareil. Il faut Internet pendant ce temps, idéalement en Wi-Fi. Ensuite, tout fonctionne hors ligne.</string>
+    <string name="settings_setup_percent">%1$d %%</string>
+    <string name="settings_setup_downloading">Téléchargement de %1$s</string>
+    <string name="settings_setup_dont_close">Ne fermez pas l’app avant la fin.</string>
+    <string name="settings_setup_resume_note">Ce qui a déjà été téléchargé est conservé. Réessayer reprend là où ça s’est arrêté.</string>
+    <string name="settings_setup_source">Les fichiers proviennent du buildbot officiel de libretro.</string>
+</resources>

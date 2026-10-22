@@ -18,6 +18,7 @@
         android:appCategory="game"
         android:theme="@style/Theme.OpenEmux"
         android:enableOnBackInvokedCallback="true"
+        android:localeConfig="@xml/locales_config"
         tools:ignore="UnusedAttribute">
 
         <activity
@@ -32,14 +33,13 @@
         </activity>
 
         <!-- The RetroArch engine in a process of its own: it exits the process
-             when the content closes, and the library must survive that. -->
+             when the content closes, and the library must survive that. Same
+             task as the library, so the game opens inside the app. -->
         <activity
             android:name="com.openemux.mobile.game.GameActivity"
             android:process=":game"
             android:exported="false"
-            android:launchMode="singleTask"
-            android:taskAffinity="com.openemux.mobile.game"
-            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
             android:screenOrientation="fullUser"
             android:theme="@style/Theme.OpenEmux.Game"
             android:enableOnBackInvokedCallback="false"
