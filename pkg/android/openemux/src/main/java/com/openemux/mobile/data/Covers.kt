@@ -11,7 +11,8 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class Covers(private val context: Context) {
     private val indexes = ConcurrentHashMap<Console, Index>()
-    private val cache = ConcurrentHashMap<String, String?>()
+    /** "" marks a ROM with no match: ConcurrentHashMap takes no nulls. */
+    private val cache = ConcurrentHashMap<String, String>()
 
     private class Index(val exact: Map<String, List<String>>, val tokens: List<Pair<Set<String>, String>>)
 
@@ -19,8 +20,8 @@ class Covers(private val context: Context) {
         match(rom.console, rom.file.nameWithoutExtension)?.let { name ->
             "https://raw.githubusercontent.com/guilhermefeitosa66/openemux-artwork/main/" +
                 "${rom.console.artworkDir}/${Uri.encode(name)}.webp"
-        }
-    }
+        }.orEmpty()
+    }.ifEmpty { null }
 
     private fun index(console: Console): Index = indexes.getOrPut(console) {
         val names = context.assets.open("covers/covers_${console.id.lowercase()}.txt")

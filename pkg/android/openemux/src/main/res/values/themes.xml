@@ -2,6 +2,7 @@
 <resources>
     <color name="oe_bg">#FF121216</color>
     <color name="oe_accent">#FF7C3AED</color>
+    <color name="oe_icon_background">#FF14101C</color>
     <style name="Theme.OpenEmux" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/oe_bg</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
