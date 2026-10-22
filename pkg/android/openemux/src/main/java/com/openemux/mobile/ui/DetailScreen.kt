@@ -214,7 +214,7 @@ fun DetailScreen(key: String) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             containerColor = Oe.Sheet,
-            title = { Text(stringResource(R.string.detail_remove_title, rom.title), style = Type.Title.copy(fontSize = 20.sp)) },
+            title = { ImmersiveWindow(); Text(stringResource(R.string.detail_remove_title, rom.title), style = Type.Title.copy(fontSize = 20.sp)) },
             text = { Text(stringResource(R.string.detail_remove_message), style = Type.Small) },
             confirmButton = {
                 TextButton({ confirmDelete = false; lib.delete(rom); a.nav.popBackStack() }) { Text(stringResource(R.string.detail_remove), style = Type.Section.copy(color = Oe.Danger)) }
@@ -264,6 +264,7 @@ private fun CoreSheet(rom: Rom, onClose: () -> Unit) {
     val defaultCore = rom.console.core(lib.consoleSettings(rom.console).core)
     val states = remember(rom) { lib.states(rom) }
     ModalBottomSheet(onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = Oe.Sheet) {
+        ImmersiveWindow()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(R.string.detail_core_sheet_title), style = Type.Title.copy(fontSize = 22.sp))
             Text(rom.title, style = Type.Small, modifier = Modifier.padding(top = 4.dp))
@@ -314,6 +315,7 @@ private fun ShaderSheet(rom: Rom, onClose: () -> Unit) {
     val choice = meta.roms[rom.key]?.shader
     val default = shaderById(lib.consoleSettings(rom.console).shader)
     ModalBottomSheet(onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = Oe.Sheet) {
+        ImmersiveWindow()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(R.string.detail_shader_sheet_title), style = Type.Title.copy(fontSize = 22.sp))
             Text(rom.title, style = Type.Small, modifier = Modifier.padding(top = 4.dp))
@@ -341,6 +343,7 @@ private fun ShaderSheet(rom: Rom, onClose: () -> Unit) {
 private fun StatesSheet(rom: Rom, states: List<SaveState>, onClose: () -> Unit) {
     val a = LocalActions.current
     ModalBottomSheet(onClose, containerColor = Oe.Sheet) {
+        ImmersiveWindow()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(R.string.detail_save_states), style = Type.Title.copy(fontSize = 22.sp))
             Text(stringResource(R.string.detail_states_sheet_hint), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 14.dp))

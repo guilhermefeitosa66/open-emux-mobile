@@ -155,6 +155,7 @@ fun SettingsScreen() {
 
     if (themeSheet) {
         ModalBottomSheet({ themeSheet = false }, containerColor = Oe.Sheet) {
+            ImmersiveWindow()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(stringResource(R.string.settings_theme), style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(bottom = 6.dp))
                 THEMES.forEach { (id, name, blurb) ->
@@ -166,6 +167,7 @@ fun SettingsScreen() {
     if (languageSheet) {
         val language = AppLocale.current(context)
         ModalBottomSheet({ languageSheet = false }, containerColor = Oe.Sheet) {
+            ImmersiveWindow()
             Column(
                 Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -287,6 +289,7 @@ fun ConsoleSettingsScreen(id: String) {
 
     if (colorSheet) {
         ModalBottomSheet({ colorSheet = false }, containerColor = Oe.Sheet) {
+            ImmersiveWindow()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(stringResource(R.string.settings_cart_color), style = Type.Title.copy(fontSize = 22.sp))
                 Text(stringResource(R.string.settings_cart_color_desc, console.short), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
@@ -300,6 +303,7 @@ fun ConsoleSettingsScreen(id: String) {
     }
     if (ownSheet) {
         ModalBottomSheet({ ownSheet = false }, containerColor = Oe.Sheet) {
+            ImmersiveWindow()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(stringResource(R.string.settings_own_core_title), style = Type.Title.copy(fontSize = 22.sp))
                 Spacer(Modifier.height(12.dp))
@@ -453,6 +457,7 @@ fun ImportScreen() {
 
     asking.firstOrNull()?.let { (ext, candidates) ->
         ModalBottomSheet({ asking = emptyList(); pendingImport = null; working = false }, containerColor = Oe.Sheet) {
+            ImmersiveWindow()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(stringResource(R.string.settings_import_ext_title, ext), style = Type.Title.copy(fontSize = 22.sp))
                 Text(

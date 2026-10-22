@@ -6,7 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## This fork: OpenEmux Mobile
 
-This is a local fork of RetroArch whose own work lives in `pkg/android/openemux/`: an
+This is a fork of RetroArch (public at https://github.com/guilhermefeitosa66/open-emux-mobile,
+branch `openemux-mobile`) whose own work lives in `pkg/android/openemux/`: an
 Android frontend (Kotlin + Jetpack Compose) on top of the unchanged RetroArch engine.
 `pkg/android/openemux/README.md` is the design reference; read it before changing the
 launch flow, the pause sheet or the engine hooks.

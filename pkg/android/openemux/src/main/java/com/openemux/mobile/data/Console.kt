@@ -5,6 +5,8 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils
 import androidx.compose.ui.res.stringResource
 import com.retroarch.R
 
@@ -309,6 +311,21 @@ enum class Console(
     );
 
     fun core(id: String?): CoreDef = cores.firstOrNull { it.id == id } ?: cores[0]
+
+    /**
+     * The shelf card's background and text. Dark: [shelfColor] under white.
+     * Light: a pastel of the same hue under ink of that hue (contrast over 7:1);
+     * near-gray colors stay near gray.
+     */
+    fun shelf(dark: Boolean): Pair<Color, Color> {
+        if (dark) return shelfColor to Color.White
+        val hsl = FloatArray(3)
+        ColorUtils.colorToHSL(shelfColor.toArgb(), hsl)
+        val gray = hsl[1] < 0.1f
+        val back = if (gray) hsl[1] * 1.2f else (hsl[1] * 1.6f).coerceIn(0.28f, 1f)
+        val ink = if (gray) hsl[1] * 1.2f else (hsl[1] * 1.3f).coerceIn(0.35f, 1f)
+        return Color(ColorUtils.HSLToColor(floatArrayOf(hsl[0], back, 0.84f))) to Color(ColorUtils.HSLToColor(floatArrayOf(hsl[0], ink, 0.22f)))
+    }
 
     /** OpenEmu's pixel-art icon, the desktop's (console_icons.py); null shows the abbreviation chip. */
     @get:DrawableRes

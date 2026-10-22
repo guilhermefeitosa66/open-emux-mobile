@@ -170,6 +170,7 @@ private fun ArtworkSheet(onClose: () -> Unit) {
     val covers by app.covers.progress.collectAsState()
     val labels by app.labels.progress.collectAsState()
     ModalBottomSheet(onClose, containerColor = Oe.Sheet, scrimColor = Color.Black.copy(alpha = 0.55f)) {
+        ImmersiveWindow()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 34.dp)) {
             Text(stringResource(R.string.library_sync_sheet_title), style = Type.Title.copy(fontSize = 22.sp))
             Text(stringResource(R.string.library_sync_sheet_subtitle), style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))

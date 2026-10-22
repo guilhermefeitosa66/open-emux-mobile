@@ -11,6 +11,9 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import com.openemux.mobile.ui.GamepadActions
 import com.openemux.mobile.ui.GamepadBus
 import com.openemux.mobile.ui.InputMode
@@ -40,6 +43,21 @@ class MainActivity : ComponentActivity() {
         val transparent = android.graphics.Color.TRANSPARENT
         val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+        immersive()
+    }
+
+    /** Full screen, like the game: the bars come back over the app on a swipe and leave on their own. */
+    private fun immersive() {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        // Back from the game, a dialog or the shade, the bars may be showing again.
+        if (hasFocus) immersive()
     }
 
     override fun onStart() {

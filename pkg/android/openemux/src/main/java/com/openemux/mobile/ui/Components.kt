@@ -27,6 +27,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +54,14 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -395,6 +404,31 @@ fun ConsoleChip(console: Console, size: Dp = 40.dp) {
             console.short, style = Type.Tag.copy(color = Color.White, fontSize = fontSize, letterSpacing = 0.sp),
             maxLines = 1, softWrap = false, textAlign = TextAlign.Center,
         )
+    }
+}
+
+/** One line, never cut: [style]'s size when it fits, shrinking down to 60% of it for a long text. */
+@Composable
+fun FitText(text: String, style: TextStyle, modifier: Modifier = Modifier) {
+    BasicText(
+        text, modifier, style, maxLines = 1, softWrap = false,
+        autoSize = TextAutoSize.StepBased(minFontSize = style.fontSize * 0.6f, maxFontSize = style.fontSize, stepSize = 1.sp),
+    )
+}
+
+/** In a sheet or dialog, which has a window of its own: keeps the app's full screen there too. */
+@Composable
+fun ImmersiveWindow() {
+    val view = LocalView.current
+    LaunchedEffect(view) {
+        val provider = generateSequence<Any>(view) { (it as? android.view.View)?.parent ?: (it as? android.view.ViewParent)?.parent }
+            .firstOrNull { it is DialogWindowProvider } as? DialogWindowProvider
+        provider?.window?.let { window ->
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                hide(WindowInsetsCompat.Type.systemBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+        }
     }
 }
 

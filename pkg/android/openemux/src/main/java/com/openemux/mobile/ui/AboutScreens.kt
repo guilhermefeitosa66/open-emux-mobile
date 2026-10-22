@@ -41,8 +41,8 @@ private const val SITE = "https://guilhermefeitosa66.github.io/OpenEmux/"
 private const val GITHUB = "https://github.com/guilhermefeitosa66/OpenEmux"
 private const val REDDIT = "https://www.reddit.com/r/OpenEmux/"
 
-/** Where this fork's source is published; null until there is a public repository. */
-private val FORK_SOURCE: String? = null
+/** Where this fork's source is published, as the GPLv3 asks of the APK. */
+private val FORK_SOURCE: String? = "https://github.com/guilhermefeitosa66/open-emux-mobile"
 
 @Composable
 private fun openUrl(): (String) -> Unit {
@@ -118,7 +118,7 @@ fun LicensesScreen() {
         }
     }
     val app = listOf(
-        Notice("OpenEmux Mobile", "GPL-3.0 (APK) · MIT (Kotlin code)", null, "gpl"),
+        Notice("OpenEmux Mobile", "GPL-3.0 (APK) · MIT (Kotlin code)", FORK_SOURCE, "gpl"),
         Notice("RetroArch", "GPL-3.0", "https://github.com/libretro/RetroArch", "gpl"),
         Notice("libretro API (libretro-common)", "MIT", "https://github.com/libretro/libretro-common"),
         Notice("libretro glsl-shaders", "GPL and others, per shader", "https://github.com/libretro/glsl-shaders"),

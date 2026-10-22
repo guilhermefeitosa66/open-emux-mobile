@@ -158,15 +158,17 @@ fun ShelfScreen() {
             items(shelves, key = { it.second }) { (shelf, filter) ->
                 val (short, name, list) = shelf
                 val console = Console.byId(filter)
-                val background = when (filter) {
-                    "FAV" -> Brush.linearGradient(listOf(Color(0xFF5B3FA8), Color(0xFF3A2A6E)))
-                    else -> SolidColor(console!!.shelfColor)
+                val (background, ink) = when (filter) {
+                    "FAV" ->
+                        if (Oe.dark) Brush.linearGradient(listOf(Color(0xFF5B3FA8), Color(0xFF3A2A6E))) to Color.White
+                        else Brush.linearGradient(listOf(Color(0xFFDDD3F8), Color(0xFFC6B8F0))) to Color(0xFF2E1F66)
+                    else -> console!!.shelf(Oe.dark).let { (back, text) -> SolidColor(back) to text }
                 }
                 val isDragged = console != null && console == dragged
                 val moveUp = stringResource(R.string.library_shelf_move_up)
                 val moveDown = stringResource(R.string.library_shelf_move_down)
                 ShelfCard(
-                    short, name, countString(R.plurals.library_games_count, list.size, list.size), list, background,
+                    short, name, countString(R.plurals.library_games_count, list.size, list.size), list, background, ink,
                     Modifier
                         .then(if (isDragged) Modifier.zIndex(1f).graphicsLayer { translationY = dragOffset; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
                         .restorableFocus(filter, focusedShelf, initial = shelves.first().second == filter)
@@ -228,6 +230,7 @@ fun ShelfScreen() {
     menuFor?.let { console ->
         val i = present.indexOf(console)
         ModalBottomSheet({ menuFor = null }, containerColor = Oe.Sheet) {
+            ImmersiveWindow()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(console.displayName, style = Type.Title.copy(fontSize = 22.sp))
                 Text(stringResource(R.string.library_shelf_order_tip), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
@@ -287,7 +290,7 @@ private fun Modifier.reorderGestures(onStart: () -> Unit, onDrag: (Float) -> Uni
 }
 
 @Composable
-private fun ShelfCard(short: String, name: String, count: String, roms: List<Rom>, background: Brush, focus: Modifier, onClick: () -> Unit) {
+private fun ShelfCard(short: String, name: String, count: String, roms: List<Rom>, background: Brush, ink: Color, focus: Modifier, onClick: () -> Unit) {
     val a = LocalActions.current
     Box(
         Modifier
@@ -315,9 +318,9 @@ private fun ShelfCard(short: String, name: String, count: String, roms: List<Rom
             }
         }
         Column(Modifier.align(Alignment.CenterStart).padding(start = 18.dp).width(150.dp)) {
-            Text(short, style = Type.Tag.copy(color = Color.White.copy(alpha = 0.72f), fontSize = 12.sp, letterSpacing = 1.sp))
-            Text(name, style = Type.Title.copy(fontSize = 19.sp, lineHeight = 22.sp, color = Color.White))
-            Text(count, style = Type.Small.copy(color = Color.White.copy(alpha = 0.78f)), modifier = Modifier.padding(top = 4.dp))
+            Text(short, style = Type.Tag.copy(color = ink.copy(alpha = 0.72f), fontSize = 12.sp, letterSpacing = 1.sp))
+            Text(name, style = Type.Title.copy(fontSize = 19.sp, lineHeight = 22.sp, color = ink))
+            Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), modifier = Modifier.padding(top = 4.dp))
         }
     }
 }
@@ -464,7 +467,7 @@ fun LibraryScreen(filter: String) {
                             else -> "${console!!.short} · ${console.core(lib.consoleSettings(console).core).name}"
                         }
                         Text(eyebrow, style = Type.Eyebrow)
-                        Text(
+                        FitText(
                             when (current) { "FAV" -> stringResource(R.string.library_favorites); "ALL" -> stringResource(R.string.library_all_games); else -> console!!.displayName },
                             style = Type.Display, modifier = Modifier.padding(top = 4.dp),
                         )
@@ -551,7 +554,7 @@ private fun LandscapeLibrary(
     Column(Modifier.fillMaxSize().statusBarsPadding().displayCutoutPadding().padding(bottom = TabBarHeight)) {
         Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             BackLink(stringResource(R.string.library_shelf_title)) { a.nav.popBackStack(Routes.SHELF, false) }
-            Text(title, style = Type.Title.copy(fontSize = 22.sp), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 16.dp).weight(1f))
+            FitText(title, style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(start = 16.dp).weight(1f))
             Text(countString(R.plurals.library_games_count, list.size, list.size), style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(horizontal = 12.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp), verticalAlignment = Alignment.CenterVertically) {
                 RoundIconButton(if (searching) Icons.Close else Icons.Search, stringResource(if (searching) R.string.library_close_search else R.string.library_search), onSearch)
@@ -586,12 +589,12 @@ private fun LandscapeLibrary(
                     items(groupRoms, key = { it.key }) { rom ->
                         val open = { a.nav.navigate(Routes.rom(rom.key)) }
                         val favorite = meta.roms[rom.key]?.favorite == true
-                        // Each item gets a third of the row; the cartridge sits smaller inside it.
-                        // A console without cartridge art shows its cover, as in the covers view.
+                        // At most three items a row: the cartridge fills the height it has, and a wide one
+                        // widens its item past a third. A console without cartridge art shows its cover.
                         val itemMode = if (mode == ViewMode.Carts && rom.console.frame == null) ViewMode.Covers else mode
-                        val w = if (itemMode == ViewMode.Carts) minOf(third * 0.82f, itemH * rom.console.cartAspect) else null
+                        val w = if (itemMode == ViewMode.Carts) minOf((maxWidth - margin * 2) * 0.42f, itemH * rom.console.cartAspect) else null
                         Column(
-                            Modifier.width(third).gamepadFocus(corner = 10.dp, scale = 1.06f)
+                            Modifier.width(maxOf(third, w ?: third)).gamepadFocus(corner = 10.dp, scale = 1.06f)
                                 .restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey)
                                 .combinedClickable(onClick = open, onLongClick = open),
                             horizontalAlignment = Alignment.CenterHorizontally,
