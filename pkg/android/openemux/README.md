@@ -5,9 +5,10 @@ games as cartridges, a shelf per console, per-console defaults and a pause
 sheet of its own. It covers the desktop app's 31 systems (`data/Console.kt`),
 each with its own controller skin (`data/Skin.kt`).
 
-This directory lives inside a local fork of RetroArch. It is not published
-anywhere; the `upstream` remote can fetch from libretro but its push URL is
-disabled on purpose.
+This directory lives inside a fork of RetroArch, published at
+<https://github.com/guilhermefeitosa66/open-emux-mobile> (branch
+`openemux-mobile`); the `upstream` remote can fetch from libretro but its
+push URL is disabled on purpose.
 
 ## Why not reskin RetroArch's own UI
 
@@ -131,6 +132,14 @@ SVGs into the PNGs in `res/drawable-nodpi`.
 
 Data lives in `Android/data/com.openemux.mobile/files/` (`roms/<console>`,
 `states`, `saves`, `system` for BIOS, `screenshots`).
+
+Release builds (`./gradlew assembleRelease`) are signed with the key named by
+`openemux.signing` in `local.properties` or `~/.gradle/gradle.properties`: the
+path of a properties file kept outside the repository, with `storeFile`,
+`storePassword`, `keyAlias` and `keyPassword`. Without it they fall back to the
+debug key, with a warning. An APK signed with another key does not install over
+this one: the debug build has to be uninstalled first, and that removes the
+data above with it.
 
 ## Versioning
 

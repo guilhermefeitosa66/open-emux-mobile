@@ -19,6 +19,13 @@ fun localProp(key: String) = "\"" + localProps.getProperty(key, "") + "\""
 
 val openemuxVersion = providers.gradleProperty("openemuxVersion").get()
 
+// Release signing: a properties file outside the repository (storeFile, storePassword,
+// keyAlias, keyPassword), named by openemux.signing in local.properties or
+// ~/.gradle/gradle.properties. Without it, release builds fall back to the debug key.
+val signingProps = (localProps.getProperty("openemux.signing") ?: providers.gradleProperty("openemux.signing").orNull)
+    ?.let { file(it) }?.takeIf { it.exists() }
+    ?.let { f -> Properties().apply { f.inputStream().use { load(it) } } }
+
 android {
     // The RetroArch Java sources import com.retroarch.R / BuildConfig.
     namespace = "com.retroarch"
@@ -76,9 +83,20 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    signingConfigs {
+        if (signingProps != null) create("release") {
+            storeFile = file(signingProps.getProperty("storeFile"))
+            storePassword = signingProps.getProperty("storePassword")
+            keyAlias = signingProps.getProperty("keyAlias")
+            keyPassword = signingProps.getProperty("keyPassword")
+        }
+    }
+
     buildTypes {
         getByName("release") {
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug").also {
+                logger.warn("openemux.signing is not set: the release APK is signed with the debug key.")
+            }
         }
     }
 }
