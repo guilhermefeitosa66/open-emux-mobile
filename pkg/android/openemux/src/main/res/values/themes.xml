@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="oe_bg">#FF121216</color>
+    <color name="oe_accent">#FF7C3AED</color>
+    <style name="Theme.OpenEmux" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/oe_bg</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    <style name="Theme.OpenEmux.Game" parent="android:Theme.NoTitleBar.Fullscreen">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+</resources>

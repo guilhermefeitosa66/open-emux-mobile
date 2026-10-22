@@ -88,6 +88,7 @@
 #include "../../paths.h"
 #include "../../msg_hash_lbl_str.h"
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
 
@@ -3650,6 +3651,8 @@ static void frontend_unix_init(void *data)
          "doVibrateUSB", "(III)Z");
    GET_METHOD_ID(env, android_app->doHapticFeedback, class,
          "doHapticFeedback", "(I)V");
+   GET_METHOD_ID(env, android_app->onExternalMenuRequested, class,
+         "onExternalMenuRequested", "()Z");
    GET_METHOD_ID(env, android_app->getUserLanguageString, class,
          "getUserLanguageString", "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->isPlayStoreBuild, class,
@@ -4205,6 +4208,30 @@ void android_app_set_window_settings(bool notch_write_over,
       CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
             g_android->setWindowSettings,
             (jboolean)notch_write_over, (jboolean)auto_mouse_grab);
+#endif
+}
+
+bool android_app_external_menu(void)
+{
+#ifdef ANDROID
+   jboolean handled = JNI_FALSE;
+   JNIEnv *env      = jni_thread_getenv();
+   bool was_paused;
+
+   if (!env || !g_android || !g_android->onExternalMenuRequested)
+      return false;
+
+   /* Paused before asking: the frontend may resume at once. */
+   was_paused = (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_PAUSED) != 0;
+   command_event(CMD_EVENT_PAUSE, NULL);
+
+   CALL_BOOLEAN_METHOD(env, handled, g_android->activity->clazz,
+         g_android->onExternalMenuRequested);
+   if (handled != JNI_TRUE && !was_paused)
+      command_event(CMD_EVENT_UNPAUSE, NULL);
+   return handled == JNI_TRUE;
+#else
+   return false;
 #endif
 }
 

@@ -172,6 +172,8 @@ struct android_app
    jmethodID doVibrateJoypad;
    jmethodID doVibrateUSB;
    jmethodID doHapticFeedback;
+   /* OpenEmux: lets the Java frontend show its own in-game menu. */
+   jmethodID onExternalMenuRequested;
 
    jmethodID isPlayStoreBuild;
    jmethodID isMetaQuestBuild;
@@ -396,6 +398,10 @@ void android_app_set_window_settings(bool notch_write_over,
 struct retro_vfs_authorized_locations;
 
 void android_show_saf_tree_picker(void);
+
+/* OpenEmux: asks the activity to show its own in-game menu instead of
+ * the RetroArch one. True when the activity took it. */
+bool android_app_external_menu(void);
 bool android_get_vfs_authorized_locations(
       struct retro_vfs_authorized_locations *locations);
 #endif

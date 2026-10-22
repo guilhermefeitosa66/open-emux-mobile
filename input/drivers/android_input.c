@@ -2575,6 +2575,31 @@ static bool android_kbd_takes_key(AInputEvent *event, int keycode)
          keycode == AKEYCODE_BACK);
 }
 
+/* OpenEmux: the system BACK (navigation bar or gesture, device -1)
+ * asks for the menu while content plays, rather than registering the
+ * navigation bar as a gamepad. True when the event was taken. */
+static bool android_input_back_to_menu(AInputEvent *event, int type_event)
+{
+#ifdef HAVE_MENU
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   struct menu_state *menu_st  = menu_state_get_ptr();
+
+   if (     type_event != AINPUT_EVENT_TYPE_KEY
+         || AKeyEvent_getKeyCode(event) != AKEYCODE_BACK
+         || AInputEvent_getDeviceId(event) != -1
+         || (menu_st->flags & MENU_ST_FLAG_ALIVE)
+         || !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+         || runloop_st->current_core_type == CORE_TYPE_DUMMY)
+      return false;
+
+   if (AKeyEvent_getAction(event) == AKEY_EVENT_ACTION_UP)
+      input_driver_platform_request(INPUT_PLATFORM_MENU_TOGGLE);
+   return true;
+#else
+   return false;
+#endif
+}
+
 static void android_input_poll_input_gingerbread(
       android_input_t *android)
 {
@@ -2599,6 +2624,11 @@ static void android_input_poll_input_gingerbread(
          return;
       source            = AInputEvent_getSource(event);
       type_event        = AInputEvent_getType(event);
+      if (android_input_back_to_menu(event, type_event))
+      {
+         AInputQueue_finishEvent(android_app->inputQueue, event, 1);
+         return;
+      }
       id                = android_input_get_id(event);
       port              = android_input_get_id_port(android, id, source);
       is_keyboard       = android_input_event_is_keyboard(android, id, source);
@@ -2685,6 +2715,11 @@ static void android_input_poll_input_default(android_input_t *android)
          handled    = 1;
          source     = AInputEvent_getSource(event);
          type_event = AInputEvent_getType(event);
+         if (android_input_back_to_menu(event, type_event))
+         {
+            AInputQueue_finishEvent(android_app->inputQueue, event, 1);
+            continue;
+         }
          id         = android_input_get_id(event);
          port       = android_input_get_id_port(android, id, source);
          is_keyboard = android_input_event_is_keyboard(android, id, source);

@@ -110,6 +110,7 @@
 
 #if defined(ANDROID)
 #include <android/api-level.h>
+#include "frontend/drivers/platform_unix.h"
 #endif
 
 #ifdef HAVE_PRESENCE
@@ -4295,6 +4296,13 @@ bool command_event(enum event_command cmd, void *data)
 #ifdef HAVE_MENU
          if (menu_st->flags & MENU_ST_FLAG_ALIVE)
             retroarch_menu_running_finished(false);
+#if defined(ANDROID)
+         /* OpenEmux: the frontend draws its own pause sheet */
+         else if ((runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+               && runloop_st->current_core_type != CORE_TYPE_DUMMY
+               && android_app_external_menu())
+            ;
+#endif
          else
             retroarch_menu_running();
 #endif

@@ -8234,6 +8234,12 @@ static enum runloop_state_enum runloop_check_state(
             if (rarch_is_initialized && !core_type_is_dummy && core_is_running)
                retroarch_menu_running_finished(false);
          }
+#if defined(ANDROID)
+         /* OpenEmux: the frontend draws its own pause sheet */
+         else if (!core_type_is_dummy && core_is_running
+               && android_app_external_menu())
+            ;
+#endif
          else
             retroarch_menu_running();
       }

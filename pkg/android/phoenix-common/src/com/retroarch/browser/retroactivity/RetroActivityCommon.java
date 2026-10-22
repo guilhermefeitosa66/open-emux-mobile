@@ -1110,6 +1110,16 @@ public class RetroActivityCommon extends NativeActivity
       finish();
   }
 
+  /**
+   * OpenEmux: called from the native thread when RetroArch is about to
+   * open its own menu. Return true to show a frontend menu instead; the
+   * native side then pauses the content.
+   */
+  public boolean onExternalMenuRequested()
+  {
+    return false;
+  }
+
   public int getVolumeCount()
   {
     int ret = 0;

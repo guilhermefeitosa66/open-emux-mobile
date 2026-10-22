@@ -23,7 +23,7 @@ import com.retroarch.browser.preferences.util.UserPreferences;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-public final class RetroActivityFuture extends RetroActivityCamera {
+public class RetroActivityFuture extends RetroActivityCamera {
 
   // Tracks whether the native activity is already running, so a
   // relaunch reorders it to the front instead of restarting it.
