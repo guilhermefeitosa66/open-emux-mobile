@@ -124,4 +124,31 @@
     <string name="settings_setup_dont_close">Don\'t close the app until it finishes.</string>
     <string name="settings_setup_resume_note">What was already downloaded is kept; trying again picks up where it stopped.</string>
     <string name="settings_setup_source">The files come from the official libretro buildbot.</string>
+
+    <!-- RetroAchievements -->
+    <string name="ra_title" translatable="false">RetroAchievements</string>
+    <string name="settings_section_achievements">Achievements</string>
+    <string name="ra_not_signed_in">Not signed in</string>
+    <string name="ra_signed_in_as">Signed in as %1$s</string>
+    <string name="ra_signed_in_tracking_off">Signed in as %1$s · tracking off</string>
+    <string name="ra_signed_in">Signed in as</string>
+    <string name="ra_intro">Sign in once and every game you play unlocks achievements on your RetroAchievements profile. Your password is only used to sign in and is never saved.</string>
+    <string name="ra_username">Username</string>
+    <string name="ra_password">Password</string>
+    <string name="ra_show_password">Show password</string>
+    <string name="ra_hide_password">Hide password</string>
+    <string name="ra_sign_in">Sign in</string>
+    <string name="ra_signing_in">Signing in...</string>
+    <string name="ra_sign_out">Sign out</string>
+    <string name="ra_error_unreachable">RetroAchievements could not be reached. Check your connection.</string>
+    <string name="ra_error_missing">Enter your username and password.</string>
+    <string name="ra_no_account">No account yet?</string>
+    <string name="ra_create_account">Create one at retroachievements.org</string>
+    <string name="ra_while_playing">While playing</string>
+    <string name="ra_track">Track achievements</string>
+    <string name="ra_track_desc">Unlock achievements in every game that has them</string>
+    <string name="ra_hardcore">Hardcore mode</string>
+    <string name="ra_hardcore_desc">Counts for more points. Loading states and fast forward are turned off</string>
+    <string name="ra_apply_note">Changes apply the next time a game starts. Achievements show at the top of the screen as you unlock them.</string>
+    <string name="ra_see_progress">See your progress at retroachievements.org</string>
 </resources>
