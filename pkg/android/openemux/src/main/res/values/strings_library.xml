@@ -80,4 +80,5 @@
     <string name="library_shelf_move_down">Move down</string>
     <string name="library_shelf_reset_order">Restore default order</string>
     <string name="library_shelf_order_tip">Hold and drag a shelf to change the order. It applies to the whole app.</string>
+    <string name="detail_hardcore_no_load">Loading states is off in hardcore mode</string>
 </resources>

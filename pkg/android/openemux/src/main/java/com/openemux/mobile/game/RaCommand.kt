@@ -16,6 +16,7 @@ object GameExtras {
     const val SHADER = "OE_SHADER"
     const val CORE_NAME = "OE_CORE_NAME"
     const val LOAD_SLOT = "OE_LOAD_SLOT"
+    const val HARDCORE = "OE_HARDCORE"
 }
 
 /**

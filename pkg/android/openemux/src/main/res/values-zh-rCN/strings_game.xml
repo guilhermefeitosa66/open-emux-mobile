@@ -80,4 +80,8 @@
     <string name="game_screens_bottom">仅下屏</string>
     <string name="game_screens_stacked">上下排列</string>
     <string name="game_screens_side">左右排列</string>
+
+    <!-- RetroAchievements hardcore -->
+    <string name="game_hardcore_tag">硬核</string>
+    <string name="game_hardcore_note">硬核模式已开启：本游戏中读取存档和快进已关闭。可在 设置 › RetroAchievements 中关闭。</string>
 </resources>

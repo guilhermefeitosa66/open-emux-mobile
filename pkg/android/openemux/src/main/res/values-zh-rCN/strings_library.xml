@@ -78,4 +78,5 @@
     <string name="library_shelf_move_down">下移</string>
     <string name="library_shelf_reset_order">恢复默认顺序</string>
     <string name="library_shelf_order_tip">长按并拖动陈列架即可调整顺序，整个应用都会使用此顺序。</string>
+    <string name="detail_hardcore_no_load">硬核模式下无法读取存档</string>
 </resources>

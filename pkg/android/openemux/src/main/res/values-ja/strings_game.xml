@@ -80,4 +80,8 @@
     <string name="game_screens_bottom">下画面のみ</string>
     <string name="game_screens_stacked">上下に並べる</string>
     <string name="game_screens_side">左右に並べる</string>
+
+    <!-- RetroAchievements hardcore -->
+    <string name="game_hardcore_tag">ハードコア</string>
+    <string name="game_hardcore_note">ハードコアモードがオンです：このゲームではステートロードと早送りが使えません。設定 › RetroAchievements でオフにできます。</string>
 </resources>

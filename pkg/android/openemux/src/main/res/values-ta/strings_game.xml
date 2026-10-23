@@ -81,4 +81,8 @@
     <string name="game_screens_bottom">கீழ் திரை மட்டும்</string>
     <string name="game_screens_stacked">ஒன்றன் மேல் ஒன்று</string>
     <string name="game_screens_side">அருகருகே</string>
+
+    <!-- RetroAchievements hardcore -->
+    <string name="game_hardcore_tag">ஹார்ட்கோர்</string>
+    <string name="game_hardcore_note">ஹார்ட்கோர் பயன்முறை இயக்கத்தில் உள்ளது: இந்த விளையாட்டில் நிலையை ஏற்றுவதும் வேகமாக்கலும் முடக்கப்பட்டுள்ளன. அமைப்புகள் › RetroAchievements-இல் அதை முடக்கலாம்.</string>
 </resources>

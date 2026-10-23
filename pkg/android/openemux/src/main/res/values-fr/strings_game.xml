@@ -82,4 +82,8 @@
     <string name="game_screens_bottom">Écran du bas seul</string>
     <string name="game_screens_stacked">L’un au-dessus de l’autre</string>
     <string name="game_screens_side">Côte à côte</string>
+
+    <!-- RetroAchievements hardcore -->
+    <string name="game_hardcore_tag">HARDCORE</string>
+    <string name="game_hardcore_note">Le mode hardcore est activé : charger un état et l’avance rapide sont désactivés pour ce jeu. Désactivez-le dans Paramètres › RetroAchievements.</string>
 </resources>

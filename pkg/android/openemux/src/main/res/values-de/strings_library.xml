@@ -80,4 +80,5 @@
     <string name="library_shelf_move_down">Nach unten</string>
     <string name="library_shelf_reset_order">Standardreihenfolge</string>
     <string name="library_shelf_order_tip">Halte ein Regal gedrückt und ziehe es, um die Reihenfolge zu ändern. Sie gilt in der ganzen App.</string>
+    <string name="detail_hardcore_no_load">Spielstände laden ist im Hardcore-Modus deaktiviert</string>
 </resources>

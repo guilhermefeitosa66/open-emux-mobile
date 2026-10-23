@@ -5,6 +5,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -25,6 +31,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,6 +43,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
@@ -67,6 +77,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.contentType
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -121,6 +136,9 @@ object Icons {
     const val Reset = "M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"
     const val Trash = "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"
     const val Dots = "M5 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2M12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2M19 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2"
+    const val Trophy = "M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4"
+    const val Eye = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6"
+    const val EyeOff = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6M4 4l16 16"
 }
 
 @Composable
@@ -320,13 +338,15 @@ fun ListRow(
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable RowScope.() -> Unit)? = null,
     subtitleLines: Int = 1,
+    enabled: Boolean = true,
 ) {
     if (divider) HorizontalDivider(color = Oe.Divider, thickness = 1.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            .let { if (onClick != null) it.gamepadFocus(corner = 0.dp, inset = true).clickable(role = Role.Button, onClick = onClick) else it }
+            .let { if (onClick != null && enabled) it.gamepadFocus(corner = 0.dp, inset = true).clickable(role = Role.Button, onClick = onClick) else it }
+            .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -339,6 +359,102 @@ fun ListRow(
         trailing?.invoke(this)
         if (value != null) Text(value, style = Type.Body.copy(color = Oe.Muted, fontSize = 14.sp))
         if (onClick != null) Icon(Icons.Chevron, Oe.Chevron, 16.dp, stroke = 2.2f)
+    }
+}
+
+/** What a control that cannot be used right now fades to. */
+const val DISABLED_ALPHA = 0.45f
+
+/** A setting that is on or off: the whole row toggles. */
+@Composable
+fun SwitchRow(
+    label: String,
+    subtitle: String?,
+    checked: Boolean,
+    onChange: (Boolean) -> Unit,
+    enabled: Boolean = true,
+    divider: Boolean = false,
+) {
+    if (divider) HorizontalDivider(color = Oe.Divider, thickness = 1.dp)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .let { if (enabled) it.gamepadFocus(corner = 0.dp, inset = true) else it }
+            .toggleable(checked, enabled = enabled, role = Role.Switch, onValueChange = onChange)
+            .alpha(if (enabled) 1f else DISABLED_ALPHA)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(label, style = Type.Body)
+            if (subtitle != null) Text(subtitle, style = Type.Small, modifier = Modifier.padding(top = 2.dp))
+        }
+        Switch(
+            checked, onCheckedChange = null, enabled = enabled,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color.White, checkedTrackColor = Oe.Accent, checkedBorderColor = Oe.Accent,
+                uncheckedThumbColor = Oe.Chevron, uncheckedTrackColor = Oe.Raised, uncheckedBorderColor = Oe.Chevron,
+                disabledCheckedThumbColor = Color.White, disabledCheckedTrackColor = Oe.Accent, disabledCheckedBorderColor = Oe.Accent,
+                disabledUncheckedThumbColor = Oe.Chevron, disabledUncheckedTrackColor = Oe.Raised, disabledUncheckedBorderColor = Oe.Chevron,
+            ),
+        )
+    }
+}
+
+/** A labelled one-line text field; [onReveal] adds the show/hide button of a password. */
+@Composable
+fun OeTextField(
+    label: String,
+    value: String,
+    onChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+    readOnly: Boolean = false,
+    password: Boolean = false,
+    revealed: Boolean = false,
+    onReveal: (() -> Unit)? = null,
+    revealLabel: String = "",
+    contentType: ContentType? = null,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+) {
+    val interaction = remember { MutableInteractionSource() }
+    val focused by interaction.collectIsFocusedAsState()
+    Column(modifier) {
+        Text(label, style = Type.Caption.copy(color = Oe.Muted), modifier = Modifier.padding(bottom = 6.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp)
+                .gamepadFocus(corner = 14.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Oe.Surface)
+                .border(1.5.dp, if (isError) Oe.Danger else if (focused) Oe.AccentBright else Oe.Border, RoundedCornerShape(14.dp))
+                .padding(start = 14.dp, end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            BasicTextField(
+                value, onChange,
+                Modifier.weight(1f).padding(vertical = 14.dp).let { m -> if (contentType != null) m.semantics { this.contentType = contentType } else m },
+                readOnly = readOnly,
+                singleLine = true,
+                textStyle = Type.Body,
+                cursorBrush = SolidColor(Oe.AccentText),
+                visualTransformation = if (password && !revealed) PasswordVisualTransformation() else VisualTransformation.None,
+                keyboardOptions = keyboardOptions,
+                keyboardActions = keyboardActions,
+                interactionSource = interaction,
+            )
+            if (onReveal != null) {
+                Box(
+                    Modifier.size(44.dp).clip(CircleShape).clickable(onClickLabel = revealLabel, role = Role.Button, onClick = onReveal)
+                        .semantics { contentDescription = revealLabel },
+                    contentAlignment = Alignment.Center,
+                ) { Icon(if (revealed) Icons.EyeOff else Icons.Eye, Oe.Muted, 20.dp) }
+            }
+        }
     }
 }
 
