@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -61,6 +62,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openemux.mobile.data.SHADERS
+import com.openemux.mobile.ui.DISABLED_ALPHA
 import com.openemux.mobile.ui.HintBar
 import com.openemux.mobile.ui.Icon
 import com.openemux.mobile.ui.Icons
@@ -68,6 +70,7 @@ import com.openemux.mobile.ui.ListRow
 import com.openemux.mobile.ui.Oe
 import com.openemux.mobile.ui.OpenEmuxTheme
 import com.openemux.mobile.ui.RadioCard
+import com.openemux.mobile.ui.Tag
 import com.openemux.mobile.ui.Type
 import com.openemux.mobile.ui.formatAgo
 import com.openemux.mobile.ui.gamepadFocus
@@ -88,6 +91,8 @@ data class PauseSession(
     val shader: String,
     val coreName: String,
     val startedAt: Long,
+    /** RetroAchievements hardcore: the engine refuses loading states and fast forward. */
+    val hardcore: Boolean = false,
 ) {
     data class State(val slot: Int, val file: File, val thumb: File?, val modified: Long)
 
@@ -125,6 +130,7 @@ data class PauseSession(
             shader = intent.getStringExtra(GameExtras.SHADER) ?: "none",
             coreName = intent.getStringExtra(GameExtras.CORE_NAME) ?: "",
             startedAt = startedAt,
+            hardcore = intent.getBooleanExtra(GameExtras.HARDCORE, false),
         )
     }
 }
@@ -203,14 +209,17 @@ fun PauseSheet(
                             maxLines = 2,
                         )
                         val minutes = ((System.currentTimeMillis() - session.startedAt) / 60000).coerceAtLeast(0)
-                        Text(
-                            when (page) {
-                                Page.Main -> if (minutes < 1) stringResource(R.string.game_playing_now, session.coreName) else stringResource(R.string.game_playing_for, minutes.toInt(), session.coreName)
-                                Page.States -> stringResource(R.string.game_tap_to_load)
-                                Page.Shader -> stringResource(R.string.game_shader_this_session)
-                            },
-                            style = Type.Small, modifier = Modifier.padding(top = 3.dp),
-                        )
+                        Row(Modifier.padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text(
+                                when (page) {
+                                    Page.Main -> if (minutes < 1) stringResource(R.string.game_playing_now, session.coreName) else stringResource(R.string.game_playing_for, minutes.toInt(), session.coreName)
+                                    Page.States -> stringResource(R.string.game_tap_to_load)
+                                    Page.Shader -> stringResource(R.string.game_shader_this_session)
+                                },
+                                style = Type.Small, modifier = Modifier.weight(1f, fill = false),
+                            )
+                            if (page == Page.Main && session.hardcore) Tag(stringResource(R.string.game_hardcore_tag), Oe.WarnBg, Oe.WarnText)
+                        }
                     }
                     SheetIconButton(Icons.Close, stringResource(R.string.game_back_to_game), onResume)
                 }
@@ -234,6 +243,7 @@ fun PauseSheet(
                     when (current) {
                         Page.Main -> MainPage(
                             landscape = landscape,
+                            hardcore = session.hardcore,
                             stateCount = states.count { !it.isAutoSlot() },
                             onSave = {
                                 val next = (states.filter { it.slot > 0 }.maxOfOrNull { it.slot } ?: 0) + 1
@@ -294,6 +304,7 @@ private fun SheetIconButton(path: String, label: String, onClick: () -> Unit) {
 @Composable
 private fun MainPage(
     landscape: Boolean,
+    hardcore: Boolean,
     stateCount: Int,
     onSave: () -> Unit,
     onLoad: () -> Unit,
@@ -307,12 +318,21 @@ private fun MainPage(
 ) {
     val actions = @Composable { modifier: Modifier ->
         Column(modifier) {
+            if (hardcore) {
+                Row(
+                    Modifier.padding(top = 14.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Oe.WarnBg).padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Icon(Icons.Warn, Oe.WarnText, 18.dp, stroke = 2.2f)
+                    Text(stringResource(R.string.game_hardcore_note), style = Type.Body.copy(color = Oe.WarnText, fontSize = 13.sp, lineHeight = 18.sp))
+                }
+            }
             Row(Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 BigButton(stringResource(R.string.game_save_state), Icons.SaveState, Oe.Accent, Color.White, Modifier.weight(1f).restorableFocus("save", remember { mutableStateOf<String?>(null) }, initial = true), onSave)
-                BigButton(stringResource(R.string.game_load), Icons.LoadState, Oe.Raised, Oe.Text, Modifier.weight(1f), onLoad)
+                BigButton(stringResource(R.string.game_load), Icons.LoadState, Oe.Raised, Oe.Text, Modifier.weight(1f), onLoad, enabled = !hardcore)
             }
             Row(Modifier.padding(top = 18.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                ActionTile(stringResource(R.string.game_fast_forward), Icons.FastForward, SessionToggles.fastForward, filled = true, onClick = onFastForward)
+                ActionTile(stringResource(R.string.game_fast_forward), Icons.FastForward, SessionToggles.fastForward, filled = true, enabled = !hardcore, onClick = onFastForward)
                 ActionTile(stringResource(R.string.game_screenshot), Icons.Camera, false, onClick = onScreenshot)
                 ActionTile(stringResource(R.string.game_shader), Icons.Shader, false, onClick = onShader)
                 if (onScreens != null) ActionTile(stringResource(R.string.game_screens), Icons.Screens, false, onClick = onScreens)
@@ -323,7 +343,7 @@ private fun MainPage(
     val rest = @Composable { modifier: Modifier ->
         Column(modifier) {
             Column(Modifier.padding(top = if (landscape) 16.dp else 20.dp).fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(Oe.Raised)) {
-                ListRow(stringResource(R.string.game_save_states), value = stateCount.toString(), onClick = onLoad)
+                ListRow(stringResource(R.string.game_save_states), value = stateCount.toString(), onClick = onLoad, enabled = !hardcore)
                 ListRow(stringResource(R.string.game_restart), divider = true, onClick = onReset)
             }
             Box(
@@ -347,9 +367,10 @@ private fun MainPage(
 }
 
 @Composable
-private fun BigButton(text: String, icon: String, bg: Color, fg: Color, modifier: Modifier, onClick: () -> Unit) {
+private fun BigButton(text: String, icon: String, bg: Color, fg: Color, modifier: Modifier, onClick: () -> Unit, enabled: Boolean = true) {
     Row(
-        modifier.height(56.dp).gamepadFocus(corner = 16.dp).clip(RoundedCornerShape(16.dp)).background(bg).clickable(role = Role.Button, onClick = onClick),
+        modifier.height(56.dp).let { if (enabled) it.gamepadFocus(corner = 16.dp) else it.alpha(DISABLED_ALPHA) }
+            .clip(RoundedCornerShape(16.dp)).background(bg).clickable(enabled = enabled, role = Role.Button, onClick = onClick),
         horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, fg, 22.dp, filled = icon == Icons.SaveState || icon == Icons.LoadState)
@@ -359,9 +380,10 @@ private fun BigButton(text: String, icon: String, bg: Color, fg: Color, modifier
 }
 
 @Composable
-private fun ActionTile(label: String, icon: String, on: Boolean, filled: Boolean = false, onClick: () -> Unit) {
+private fun ActionTile(label: String, icon: String, on: Boolean, filled: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
     Column(
-        Modifier.gamepadFocus(corner = 12.dp).clip(RoundedCornerShape(12.dp)).clickable(role = Role.Button, onClick = onClick).padding(4.dp),
+        Modifier.let { if (enabled) it.gamepadFocus(corner = 12.dp) else it.alpha(DISABLED_ALPHA) }
+            .clip(RoundedCornerShape(12.dp)).clickable(enabled = enabled, role = Role.Button, onClick = onClick).padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(7.dp),
     ) {
         Box(

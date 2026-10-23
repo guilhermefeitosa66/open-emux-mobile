@@ -80,4 +80,5 @@
     <string name="library_shelf_move_down">Mover para baixo</string>
     <string name="library_shelf_reset_order">Restaurar ordem padrão</string>
     <string name="library_shelf_order_tip">Segure e arraste uma estante para mudar a ordem. Ela vale no app todo.</string>
+    <string name="detail_hardcore_no_load">Carregar estados fica desativado no modo hardcore</string>
 </resources>

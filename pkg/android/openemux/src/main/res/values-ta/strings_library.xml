@@ -80,4 +80,5 @@
     <string name="library_shelf_move_down">கீழே நகர்த்து</string>
     <string name="library_shelf_reset_order">இயல்பு வரிசையை மீட்டமை</string>
     <string name="library_shelf_order_tip">வரிசையை மாற்ற, ஒரு அலமாரியை அழுத்திப் பிடித்து இழுக்கவும். இது ஆப் முழுவதும் பொருந்தும்.</string>
+    <string name="detail_hardcore_no_load">ஹார்ட்கோர் பயன்முறையில் நிலைகளை ஏற்ற முடியாது</string>
 </resources>

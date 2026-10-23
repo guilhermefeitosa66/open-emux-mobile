@@ -81,4 +81,8 @@
     <string name="game_screens_bottom">Nur unterer Bildschirm</string>
     <string name="game_screens_stacked">Übereinander</string>
     <string name="game_screens_side">Nebeneinander</string>
+
+    <!-- RetroAchievements hardcore -->
+    <string name="game_hardcore_tag">HARDCORE</string>
+    <string name="game_hardcore_note">Der Hardcore-Modus ist an: Spielstände laden und Vorspulen sind in diesem Spiel deaktiviert. Ausschalten unter Einstellungen › RetroAchievements.</string>
 </resources>

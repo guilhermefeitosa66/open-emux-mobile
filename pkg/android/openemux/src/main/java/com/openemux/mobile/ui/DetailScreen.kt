@@ -1,6 +1,7 @@
 package com.openemux.mobile.ui
 
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -52,6 +53,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
@@ -76,7 +78,15 @@ fun DetailScreen(key: String) {
     val rom = roms.firstOrNull { it.key == key } ?: return
     val romMeta = meta.roms[key]
     val states = remember(rom, revision) { lib.states(rom) }
-    val auto = states.firstOrNull { it.isAuto }
+    val cheevos by a.app.achievements.state.collectAsState()
+    // Hardcore refuses loading a state: no "Continue", and the states stay for when it is off.
+    val hardcore = cheevos.hardcoreActive
+    val auto = if (hardcore) null else states.firstOrNull { it.isAuto }
+    val context = LocalContext.current
+    fun playState(st: SaveState) {
+        if (hardcore) Toast.makeText(context, R.string.detail_hardcore_no_load, Toast.LENGTH_SHORT).show()
+        else a.play(rom, st.isAuto, st.slot.takeIf { !st.isAuto })
+    }
     val playtime = remember(rom, revision) { lib.playtimeSeconds(rom) }
     val core = lib.effectiveCore(rom)
     val shader = lib.effectiveShader(rom)
@@ -173,7 +183,7 @@ fun DetailScreen(key: String) {
                 } else {
                     Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         states.take(3).forEach { st ->
-                            StateThumb(st, Modifier.weight(1f)) { a.play(rom, st.isAuto, st.slot.takeIf { !st.isAuto }) }
+                            StateThumb(st, Modifier.weight(1f)) { playState(st) }
                         }
                         repeat(3 - states.size.coerceAtMost(3)) { Spacer(Modifier.weight(1f)) }
                     }
@@ -206,7 +216,7 @@ fun DetailScreen(key: String) {
     when (sheet) {
         Sheet.Core -> CoreSheet(rom) { sheet = Sheet.None }
         Sheet.Shader -> ShaderSheet(rom) { sheet = Sheet.None }
-        Sheet.States -> StatesSheet(rom, states) { sheet = Sheet.None }
+        Sheet.States -> StatesSheet(states, ::playState) { sheet = Sheet.None }
         Sheet.None -> {}
     }
 
@@ -340,8 +350,7 @@ private fun ShaderSheet(rom: Rom, onClose: () -> Unit) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun StatesSheet(rom: Rom, states: List<SaveState>, onClose: () -> Unit) {
-    val a = LocalActions.current
+private fun StatesSheet(states: List<SaveState>, onPick: (SaveState) -> Unit, onClose: () -> Unit) {
     ModalBottomSheet(onClose, containerColor = Oe.Sheet) {
         ImmersiveWindow()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
@@ -352,7 +361,7 @@ private fun StatesSheet(rom: Rom, states: List<SaveState>, onClose: () -> Unit) 
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(states) { st ->
-                    Column(Modifier.gamepadFocus(corner = 10.dp).clickable(role = Role.Button) { onClose(); a.play(rom, st.isAuto, st.slot.takeIf { !st.isAuto }) }) {
+                    Column(Modifier.gamepadFocus(corner = 10.dp).clickable(role = Role.Button) { onClose(); onPick(st) }) {
                         Box(Modifier.fillMaxWidth().aspectRatio(1.5f).clip(RoundedCornerShape(10.dp)).background(Color.Black)) {
                             val bmp = remember(st.thumbnail) { st.thumbnail?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
                             if (bmp != null) Image(bmp, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
