@@ -188,7 +188,7 @@ class GameLauncher(
             listOf(paths.states(rom.console), paths.saves(rom.console), paths.system, paths.screenshots, paths.playtime)
                 .forEach { it.mkdirs() }
             val config = File(dir, "retroarch.cfg")
-            config.writeText(buildConfig(rom, resume && !hardcore, dir, skin, cheevos.configKeys()))
+            config.writeText(buildConfig(rom, resume && !hardcore, dir, skin, cheevos.configKeys(), hardcore))
 
             library.updateRom(rom.key) { it.copy(lastPlayed = System.currentTimeMillis()) }
 
@@ -213,7 +213,7 @@ class GameLauncher(
         from.startActivity(intent, ActivityOptions.makeCustomAnimation(from, R.anim.game_enter, R.anim.hold).toBundle())
     }
 
-    private fun buildConfig(rom: Rom, resume: Boolean, dir: File, skin: File, cheevos: Map<String, String>): String {
+    private fun buildConfig(rom: Rom, resume: Boolean, dir: File, skin: File, cheevos: Map<String, String>, hardcore: Boolean): String {
         val settings = linkedMapOf(
             "video_driver" to "gl",
             "menu_driver" to "glui",
@@ -251,7 +251,8 @@ class GameLauncher(
             "sort_screenshots_by_content_enable" to "false",
             "savestates_in_content_dir" to "false",
             "savefiles_in_content_dir" to "false",
-            "savestate_auto_save" to "true",
+            // A hardcore session starts fresh: saving on quit would overwrite the softcore auto state.
+            "savestate_auto_save" to (!hardcore).toString(),
             "savestate_auto_load" to resume.toString(),
             "savestate_thumbnail_enable" to "true",
             "state_slot" to "0",

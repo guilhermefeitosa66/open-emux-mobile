@@ -94,7 +94,7 @@ object RaLogin {
                 val stream = if (connection.responseCode < 400) connection.inputStream else connection.errorStream
                 val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
                 parseLogin(body, user).also {
-                    if (it is LoginResult.Refused) Log.i(TAG, "cheevos: login refused for $user")
+                    if (it is LoginResult.Refused) Log.i(TAG, "cheevos: login refused")
                 }
             } finally {
                 connection.disconnect()
