@@ -18,6 +18,7 @@ import com.openemux.mobile.data.NdsLayouts
 import com.openemux.mobile.data.ScreenLayout
 import com.openemux.mobile.ui.InputMode
 import com.openemux.mobile.ui.Oe
+import com.openemux.mobile.ui.ProvideWindowLayout
 import com.openemux.mobile.ui.ThemePref
 import com.retroarch.R
 import com.retroarch.browser.retroactivity.RetroActivityFuture
@@ -211,18 +212,20 @@ class GameActivity : RetroActivityFuture() {
         }
         val view = ComposeView(d.context).apply {
             setContent {
-                PauseSheet(
-                    session = session,
-                    onResume = { d.dismiss() },
-                    onQuit = {
-                        sheetOpen = false
-                        flushPlaytime()
-                        d.setOnDismissListener(null)
-                        d.dismiss()
-                        Thread { RaCommand.send("QUIT") }.start()
-                    },
-                    onScreens = if (ndsScreens) ({ getString(nextNdsLayout().label) }) else null,
-                )
+                ProvideWindowLayout {
+                    PauseSheet(
+                        session = session,
+                        onResume = { d.dismiss() },
+                        onQuit = {
+                            sheetOpen = false
+                            flushPlaytime()
+                            d.setOnDismissListener(null)
+                            d.dismiss()
+                            Thread { RaCommand.send("QUIT") }.start()
+                        },
+                        onScreens = if (ndsScreens) ({ getString(nextNdsLayout().label) }) else null,
+                    )
+                }
             }
         }
         d.setContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))

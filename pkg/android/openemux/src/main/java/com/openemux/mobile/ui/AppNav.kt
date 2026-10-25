@@ -10,7 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.foundation.layout.width
@@ -145,8 +144,8 @@ fun OpenEmuxRoot() {
                     start = { if (route != Routes.SETTINGS) nav.navigate(Routes.SETTINGS) { launchSingleTop = true } },
                 )
                 val showTabs = route in setOf(Routes.SHELF, Routes.LIBRARY, Routes.RECENT, Routes.IMPORT, Routes.SETTINGS)
-            // Short and wide (a phone on its side): the 86dp bar would eat the height, so the tabs go to a rail.
-            val rail = showTabs && LocalConfiguration.current.let { it.screenWidthDp > it.screenHeightDp && it.screenHeightDp < 600 }
+            // A short window (a phone on its side, a split-screen half): the 86dp bar would eat the height, so the tabs go to a rail.
+            val rail = showTabs && LocalWindowLayout.current.short
                 Box(Modifier.fillMaxSize().background(Oe.Bg)) {
                 CompositionLocalProvider(LocalRail provides rail) {
                     NavHost(

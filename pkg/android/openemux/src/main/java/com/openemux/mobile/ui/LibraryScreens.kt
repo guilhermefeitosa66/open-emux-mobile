@@ -1,6 +1,5 @@
 package com.openemux.mobile.ui
 
-import android.content.res.Configuration
 import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -23,6 +22,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -70,7 +70,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -80,6 +79,7 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -377,7 +377,7 @@ fun LibraryScreen(filter: String) {
         select = { searching = !searching; if (!searching) query = "" },
     )
 
-    if (LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE && mode != ViewMode.List) {
+    if (LocalWindowLayout.current.short && mode != ViewMode.List) {
         LandscapeLibrary(
             title = when (current) { "FAV" -> stringResource(R.string.library_favorites); "ALL" -> stringResource(R.string.library_all_games); else -> console!!.displayName },
             list = list, groups = groups, roms = roms, current = current, onPick = { current = it },
@@ -396,26 +396,30 @@ fun LibraryScreen(filter: String) {
             val open = { a.nav.navigate(Routes.rom(rom.key)) }
             val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey)
             when (m) {
-                ViewMode.Carts -> Column(
-                    Modifier.gamepadFocus(corner = 10.dp, scale = 1.06f).then(focus).combinedClickable(onClick = open, onLongClick = open),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Box {
-                        Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
-                        if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
+                ViewMode.Carts -> CappedCell(GridSpec.Carts) {
+                    Column(
+                        it.gamepadFocus(corner = 10.dp, scale = 1.06f).then(focus).combinedClickable(onClick = open, onLongClick = open),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box {
+                            Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
+                            if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
+                        }
+                        Text(
+                            rom.title, style = Type.Caption.copy(color = Oe.Text, fontSize = 13.sp),
+                            maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
+                        )
                     }
-                    Text(
-                        rom.title, style = Type.Caption.copy(color = Oe.Text, fontSize = 13.sp),
-                        maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
-                    )
                 }
-                ViewMode.Covers -> Column(Modifier.gamepadFocus(corner = 10.dp, scale = 1.06f).then(focus).combinedClickable(onClick = open, onLongClick = open)) {
-                    Box {
-                        BoxArt(rom, Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)))
-                        if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
+                ViewMode.Covers -> CappedCell(GridSpec.Covers) {
+                    Column(it.gamepadFocus(corner = 10.dp, scale = 1.06f).then(focus).combinedClickable(onClick = open, onLongClick = open)) {
+                        Box {
+                            BoxArt(rom, Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)))
+                            if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
+                        }
+                        Text(rom.title, style = Type.Caption.copy(color = Oe.Text), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
                     }
-                    Text(rom.title, style = Type.Caption.copy(color = Oe.Text), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
                 }
                 ViewMode.List -> Row(
                     Modifier.fillMaxWidth().gamepadFocus(corner = 12.dp, inset = true).then(focus).clickable(onClick = open).padding(vertical = 8.dp),
@@ -436,10 +440,11 @@ fun LibraryScreen(filter: String) {
     val shown = if (mode == ViewMode.Carts && console != null && console.frame == null) ViewMode.Covers else mode
     // On a mixed page each console's group decides for itself, so each lays out its own columns.
     val perGroup = console == null && mode == ViewMode.Carts && groups.any { it.first?.frame == null }
-    val columns = when (shown) { ViewMode.Carts -> 2; ViewMode.Covers -> 3; ViewMode.List -> 1 }
+    // As many columns as the width holds, never fewer than a phone shows.
+    val spec = when (shown) { ViewMode.Carts -> GridSpec.Carts; ViewMode.Covers -> GridSpec.Covers; ViewMode.List -> GridSpec.List }
     // Staggered, so each box art keeps its own proportions in the covers mode.
     LazyVerticalStaggeredGrid(
-        StaggeredGridCells.Fixed(columns),
+        AdaptiveCells(spec),
         Modifier.fillMaxSize().statusBarsPadding(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 10.dp, bottom = TabBarHeight + 24.dp),
         horizontalArrangement = Arrangement.spacedBy(if (shown == ViewMode.Covers) 12.dp else 16.dp),
@@ -493,7 +498,7 @@ fun LibraryScreen(filter: String) {
             if (perGroup && group != null) {
                 val groupMode = if (group.frame == null) ViewMode.Covers else ViewMode.Carts
                 item(key = "grid-${group.id}", span = StaggeredGridItemSpan.FullLine) {
-                    GroupGrid(groupRoms, if (groupMode == ViewMode.Covers) 3 else 2, if (groupMode == ViewMode.Covers) 12.dp else 16.dp) { tile(it, groupMode) }
+                    GroupGrid(groupRoms, if (groupMode == ViewMode.Covers) GridSpec.Covers else GridSpec.Carts) { tile(it, groupMode) }
                 }
             } else {
                 items(groupRoms, key = { it.key }) { rom -> tile(rom, shown) }
@@ -502,10 +507,11 @@ fun LibraryScreen(filter: String) {
     }
 }
 
-/** A group's games in [columns] staggered columns, filled in turn like the grid's lanes. */
+/** A group's games in as many staggered columns as [spec] fits, filled in turn like the grid's lanes. */
 @Composable
-private fun GroupGrid(roms: List<Rom>, columns: Int, gap: Dp, tile: @Composable (Rom) -> Unit) {
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(gap)) {
+private fun GroupGrid(roms: List<Rom>, spec: GridSpec, tile: @Composable (Rom) -> Unit) = BoxWithConstraints(Modifier.fillMaxWidth()) {
+    val columns = gridColumns(maxWidth.value, spec.min, spec.gap, spec.floor)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
         repeat(columns) { c ->
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                 roms.filterIndexed { i, _ -> i % columns == c }.forEach { tile(it) }
@@ -513,6 +519,17 @@ private fun GroupGrid(roms: List<Rom>, columns: Int, gap: Dp, tile: @Composable 
         }
     }
 }
+
+/** The grid's lanes: as many as [spec] fits in the width, sharing it evenly. */
+private data class AdaptiveCells(private val spec: GridSpec) : StaggeredGridCells {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): IntArray =
+        cellSizes(availableSize, spacing, gridColumns(availableSize.toDp().value, spec.min, spacing.toDp().value, spec.floor))
+}
+
+/** A card no wider than [spec]'s maximum, centred in a wider cell; [content] gets the capped modifier. */
+@Composable
+private fun CappedCell(spec: GridSpec, content: @Composable (Modifier) -> Unit) =
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) { content(Modifier.widthIn(max = spec.max.dp).fillMaxWidth()) }
 
 /** A console's header over its games on a mixed page. */
 @Composable
