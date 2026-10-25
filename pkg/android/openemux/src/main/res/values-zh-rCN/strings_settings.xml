@@ -141,4 +141,5 @@
     <string name="ra_hardcore_desc">可获得更多积分。读取存档和快进将被关闭</string>
     <string name="ra_apply_note">更改将在下次启动游戏时生效。解锁成就时会显示在屏幕顶部。</string>
     <string name="ra_see_progress">在 retroachievements.org 查看进度</string>
+    <string name="nav_rail_label">主导航</string>
 </resources>

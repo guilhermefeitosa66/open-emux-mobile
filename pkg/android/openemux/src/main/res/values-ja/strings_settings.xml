@@ -141,4 +141,5 @@
     <string name="ra_hardcore_desc">獲得ポイントが増えます。ステートロードと早送りは使えません</string>
     <string name="ra_apply_note">変更は次にゲームを起動したときに反映されます。実績は解除されると画面上部に表示されます。</string>
     <string name="ra_see_progress">retroachievements.org で進捗を見る</string>
+    <string name="nav_rail_label">メインナビゲーション</string>
 </resources>

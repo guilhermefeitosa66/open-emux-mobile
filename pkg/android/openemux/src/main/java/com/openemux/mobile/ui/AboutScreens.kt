@@ -55,7 +55,7 @@ fun AboutScreen() {
     GamepadButtons(hints = listOf("A" to stringResource(R.string.about_hint_open), "B" to stringResource(R.string.settings_hint_back)))
     val a = LocalActions.current
     val open = openUrl()
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth()) {
         Column(Modifier.padding(horizontal = 20.dp)) {
             BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
         }
@@ -132,7 +132,7 @@ fun LicensesScreen() {
         Notice("openemux-artwork (box art)", "Community box art, mirrored from libretro-thumbnails", "https://github.com/guilhermefeitosa66/openemux-artwork"),
         Notice("ScreenScraper (cartridge labels)", "Data and media © ScreenScraper.fr and contributors", "https://www.screenscraper.fr/"),
     )
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth()) {
         Column(Modifier.padding(horizontal = 20.dp)) {
             BackLink(stringResource(R.string.settings_about)) { a.nav.popBackStack() }
             Text(stringResource(R.string.about_licenses), style = Type.Display, modifier = Modifier.padding(top = 8.dp))
@@ -169,7 +169,7 @@ fun LicenseTextScreen(id: String) {
     val text by produceState("") {
         value = withContext(Dispatchers.IO) { context.assets.open(file).bufferedReader().use { it.readText() } }
     }
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(horizontal = 20.dp)) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth().padding(horizontal = 20.dp)) {
         BackLink(stringResource(R.string.about_licenses)) { a.nav.popBackStack() }
         Text(
             text, style = Type.Small.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp, color = Oe.Text),

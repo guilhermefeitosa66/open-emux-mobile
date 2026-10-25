@@ -159,4 +159,5 @@
     <string name="ra_hardcore_desc">Rapporte plus de points. Le chargement d’états et l’avance rapide sont désactivés</string>
     <string name="ra_apply_note">Les changements s’appliquent au prochain lancement d’un jeu. Les succès s’affichent en haut de l’écran quand vous les débloquez.</string>
     <string name="ra_see_progress">Suivez votre progression sur retroachievements.org</string>
+    <string name="nav_rail_label">Navigation principale</string>
 </resources>

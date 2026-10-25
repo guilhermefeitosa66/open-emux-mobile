@@ -83,4 +83,11 @@
     <string name="library_shelf_reset_order">Rétablir l’ordre par défaut</string>
     <string name="library_shelf_order_tip">Maintenez une étagère et faites-la glisser pour changer l’ordre. Il s’applique à toute l’app.</string>
     <string name="detail_hardcore_no_load">Le chargement d’états est désactivé en mode hardcore</string>
+    <string name="library_continue_playing">Reprendre la partie</string>
+    <string name="library_see_recent">Voir les récents</string>
+    <string name="library_consoles_heading">Consoles</string>
+    <string name="library_reorder_hint">Appui long pour réorganiser</string>
+    <string name="library_import_more">Importer d’autres jeux</string>
+    <string name="library_recently_added">Ajoutés récemment</string>
+    <string name="library_see_all">Tout voir</string>
 </resources>

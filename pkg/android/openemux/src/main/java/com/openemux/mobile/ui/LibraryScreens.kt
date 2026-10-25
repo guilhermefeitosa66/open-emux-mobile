@@ -66,6 +66,15 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -122,18 +131,27 @@ fun ShelfScreen() {
     val favoritesShort = stringResource(R.string.library_favorites_eyebrow)
     val favoritesName = stringResource(R.string.library_favorites)
 
-    // As many cards side by side as the shelf's own width holds: one on a phone in portrait, two in landscape.
+    // A tablet's shelf: a header row, the games to continue, more columns of taller cards and an import card.
+    val spec = shelfSpecOf(LocalWindowLayout.current)
+    // The newest files, only where the row shows: reading every file's date is not for the main thread.
+    val added by produceState(emptyList<Rom>(), roms, spec.recentlyAdded) {
+        value = if (spec.recentlyAdded) withContext(Dispatchers.IO) { recentlyAdded(roms, { it.file.lastModified() }, 4) } else emptyList()
+    }
+
+    // As many cards side by side as the shelf's own width holds: one on a phone in portrait, two in landscape, three on a wide tablet.
     BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding()) {
-        val columns = shelfColumns(maxWidth.value)
-        val cardWidth = cardWidthDp(maxWidth.value, columns).dp
+        val columns = shelfColumns(maxWidth.value, spec.maxColumns, spec.sidePadding, spec.gap)
+        val cardWidth = cardWidthDp(maxWidth.value, columns, spec.sidePadding, spec.gap).dp
         LazyVerticalGrid(
             GridCells.Fixed(columns),
             Modifier.fillMaxSize(),
             state = gridState,
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = SHELF_SIDE_DP.dp),
-            horizontalArrangement = Arrangement.spacedBy(SHELF_GAP_DP.dp),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = spec.sidePadding.dp),
+            horizontalArrangement = Arrangement.spacedBy(spec.gap.dp),
         ) {
-            item(span = { GridItemSpan(maxLineSpan) }) {
+            if (spec.tablet) item(span = { GridItemSpan(maxLineSpan) }) {
+                TabletShelfHeader(spec, roms)
+            } else item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(Modifier.bleed(SHELF_SIDE_DP.dp)) {
                     Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                         Image(painterResource(R.drawable.oe_logo), contentDescription = null, modifier = Modifier.height(34.dp))
@@ -163,10 +181,30 @@ fun ShelfScreen() {
                         stringResource(R.string.library_shelf_empty_body),
                         stringResource(R.string.library_shelf_empty_action),
                         { a.nav.navigate(Routes.IMPORT) },
-                        Modifier.bleed(SHELF_SIDE_DP.dp),
+                        Modifier.bleed(spec.sidePadding.dp),
                     )
                 }
             } else {
+                if (spec.tablet) {
+                    val playing = continueList(roms, { meta.roms[it.key]?.lastPlayed ?: 0L }, spec.continueCount)
+                    if (playing.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
+                        Column(Modifier.padding(top = 28.dp)) {
+                            SectionHeading(stringResource(R.string.library_continue_playing), stringResource(R.string.library_see_recent)) { a.nav.navigateTab(Routes.RECENT) }
+                            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
+                                playing.forEach { rom -> ContinueCard(rom, meta.roms[rom.key]?.lastPlayed ?: 0L, if (spec.maxColumns > 2) 104.dp else 100.dp, Modifier.weight(1f)) }
+                                // Fewer games than slots: the cards keep their width.
+                                repeat(spec.continueCount - playing.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
+                    }
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Row(Modifier.padding(top = 28.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.library_consoles_heading), style = Type.Section.copy(fontSize = 17.sp), modifier = Modifier.weight(1f))
+                            // A gamepad reorders with Y, not with a long press.
+                            if (!InputMode.gamepad) Text(stringResource(R.string.library_reorder_hint), style = Type.Small)
+                        }
+                    }
+                }
                 val favorites = roms.filter { meta.roms[it.key]?.favorite == true }
                 val shown = live ?: present
                 val shelves = buildList {
@@ -187,6 +225,7 @@ fun ShelfScreen() {
                     val moveDown = stringResource(R.string.library_shelf_move_down)
                     ShelfCard(
                         console, short, name, countString(R.plurals.library_games_count, list.size, list.size), list, background, ink, cardWidth,
+                        spec.cardHeight.dp, (spec.gap / 2).dp, if (spec.tablet) 24.dp else 22.dp,
                         Modifier
                             .then(if (isDragged) Modifier.zIndex(1f).graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
                             .restorableFocus(filter, focusedShelf, initial = shelves.first().second == filter)
@@ -247,6 +286,23 @@ fun ShelfScreen() {
                         a.nav.navigate(Routes.library(filter))
                     }
                 }
+                if (spec.tablet) {
+                    // Never moves and is never a place to drop a dragged card: its key is no console's.
+                    item(key = "import-more") { ImportMoreCard(spec.cardHeight.dp, (spec.gap / 2).dp) }
+                    if (added.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
+                        Column(Modifier.padding(top = 22.dp)) {
+                            SectionHeading(stringResource(R.string.library_recently_added), stringResource(R.string.library_see_all)) { a.nav.navigate(Routes.library("ALL")) }
+                            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
+                                added.forEach { rom -> AddedCartridge(rom, Modifier.weight(1f)) }
+                                repeat(4 - added.size) { Spacer(Modifier.weight(1f)) }
+                            }
+                        }
+                    }
+                }
+            }
+            // On a tablet the logo row is the rail's, so the engine credit closes the page instead.
+            if (spec.tablet) item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) { PoweredByRetroArch() }
             }
             item(span = { GridItemSpan(maxLineSpan) }) { Spacer(BottomSpace) }
         }
@@ -323,18 +379,23 @@ private fun Modifier.bleed(side: Dp): Modifier = layout { measurable, constraint
 
 /** A console's shelf ([console] null: Favorites): icon, tag, name and count, then its three latest cartridges. */
 @Composable
-private fun ShelfCard(console: Console?, short: String, name: String, count: String, roms: List<Rom>, background: Brush, ink: Color, cardWidth: Dp, focus: Modifier, onClick: () -> Unit) {
+private fun ShelfCard(
+    console: Console?, short: String, name: String, count: String, roms: List<Rom>, background: Brush, ink: Color, cardWidth: Dp,
+    height: Dp, spacing: Dp, corner: Dp, focus: Modifier, onClick: () -> Unit,
+) {
     val a = LocalActions.current
     val fanWidth = fanWidthDp(cardWidth.value)
     val compact = isCompactCard(cardWidth.value)
+    // The fan was placed on a 108dp card; a taller one keeps it in the middle.
+    val lift = ((height - 108.dp) / 2).coerceAtLeast(0.dp)
     Box(
         Modifier
-            .padding(vertical = 6.dp)
+            .padding(vertical = spacing)
             .fillMaxWidth()
-            .height(108.dp)
-            .gamepadFocus(corner = 22.dp, scale = 1.02f)
+            .height(height)
+            .gamepadFocus(corner = corner, scale = 1.02f)
             .then(focus)
-            .clip(RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(corner))
             .background(background)
             .clickable(role = Role.Button, onClick = onClick),
     ) {
@@ -350,7 +411,7 @@ private fun ShelfCard(console: Console?, short: String, name: String, count: Str
                 rom.console.cartAspect < 1.65f -> 100.dp
                 else -> 118.dp
             }
-            Box(Modifier.align(Alignment.TopEnd).padding(end = right * scale, top = top).width(w * scale).rotate(angle)) {
+            Box(Modifier.align(Alignment.TopEnd).padding(end = right * scale, top = top + lift).width(w * scale).rotate(angle)) {
                 Cartridge(rom.console, labelFor(rom), rom.title, a.app.library.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
             }
         }
@@ -376,6 +437,120 @@ private fun ShelfCard(console: Console?, short: String, name: String, count: Str
                 }
             }
         }
+    }
+}
+
+/** The tablet shelf's top: title and counts, then search and import on the same row. */
+@Composable
+private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>) {
+    val a = LocalActions.current
+    Column(Modifier.padding(top = spec.topPadding.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.library_shelf_title), style = Type.Display.copy(fontSize = 36.sp, lineHeight = 40.sp))
+                val consoles = Console.entries.count { c -> roms.any { it.console == c } }
+                Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp))
+            }
+            val search = stringResource(R.string.library_search_all_consoles)
+            if (spec.maxColumns > 2) {
+                // Looks like a field, opens the one search page there is.
+                Row(
+                    Modifier.padding(start = 16.dp).width(340.dp).height(48.dp).gamepadFocus(corner = 24.dp).clip(RoundedCornerShape(24.dp)).background(Oe.Control)
+                        .clickable(role = Role.Button) { a.nav.navigate(Routes.library("SEARCH")) }.padding(horizontal = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Search, Oe.Muted, 18.dp)
+                    Text(search, style = Type.Body.copy(color = Oe.Muted), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 10.dp))
+                }
+            } else {
+                Box(Modifier.padding(start = 12.dp)) { RoundIconButton(Icons.Search, search, { a.nav.navigate(Routes.library("SEARCH")) }) }
+            }
+            PrimaryButton(
+                stringResource(R.string.library_shelf_empty_action), { a.nav.navigateTab(Routes.IMPORT) },
+                Modifier.padding(start = 12.dp), icon = Icons.Download, height = 48.dp,
+            )
+        }
+        ArtworkSyncPill(Modifier.padding(top = 16.dp))
+    }
+}
+
+/** A section's title with its link on the right. */
+@Composable
+private fun SectionHeading(title: String, link: String, onLink: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(title, style = Type.Section.copy(fontSize = 17.sp), modifier = Modifier.weight(1f))
+        Text(
+            link, style = Type.BodyMedium.copy(color = Oe.AccentText, fontSize = 14.sp),
+            modifier = Modifier.gamepadFocus(corner = 8.dp).clip(RoundedCornerShape(8.dp)).clickable(role = Role.Button, onClick = onLink).padding(horizontal = 4.dp, vertical = 4.dp),
+        )
+    }
+}
+
+/** A game to pick up again: the whole card resumes it, as the play button does on Recent. */
+@Composable
+private fun ContinueCard(rom: Rom, lastPlayed: Long, height: Dp, modifier: Modifier) {
+    val a = LocalActions.current
+    val lib = a.app.library
+    Row(
+        modifier.height(height).gamepadFocus(corner = 20.dp, scale = 1.02f).clip(RoundedCornerShape(20.dp)).background(Oe.Surface)
+            .clickable(onClickLabel = stringResource(R.string.library_continue_game, rom.title), role = Role.Button) { a.play(rom, true, null) }
+            .padding(horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // Tall shells are sized by the card's height, so they stay inside it.
+        val cart = minOf(112.dp, (height - 24.dp) * rom.console.cartAspect)
+        Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(cart), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
+        Column(Modifier.weight(1f).padding(horizontal = 14.dp)) {
+            Text(rom.title, style = Type.BodyMedium.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text("${rom.console.short} · ${formatAgo(lastPlayed)}", style = Type.Small, maxLines = 1, modifier = Modifier.padding(top = 2.dp))
+        }
+        Box(Modifier.size(44.dp).clip(CircleShape).background(Oe.Accent), contentAlignment = Alignment.Center) {
+            Icon(Icons.Play, Color.White, 18.dp, filled = true)
+        }
+    }
+}
+
+/** The last cell of the tablet shelf: a dashed card that opens Import. */
+@Composable
+private fun ImportMoreCard(height: Dp, spacing: Dp) {
+    val a = LocalActions.current
+    val dash = Oe.Border
+    Box(
+        Modifier.padding(vertical = spacing).fillMaxWidth().height(height).gamepadFocus(corner = 24.dp, scale = 1.02f).clip(RoundedCornerShape(24.dp))
+            .drawBehind {
+                val stroke = 1.5.dp.toPx()
+                drawRoundRect(
+                    dash, topLeft = Offset(stroke / 2, stroke / 2), size = Size(size.width - stroke, size.height - stroke),
+                    cornerRadius = CornerRadius(24.dp.toPx()),
+                    style = Stroke(stroke, pathEffect = PathEffect.dashPathEffect(floatArrayOf(6.dp.toPx(), 5.dp.toPx()))),
+                )
+            }
+            .clickable(role = Role.Button) { a.nav.navigateTab(Routes.IMPORT) },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Plus, Oe.Muted, 28.dp)
+            Text(stringResource(R.string.library_import_more), style = Type.BodyMedium.copy(color = Oe.Muted), modifier = Modifier.padding(top = 8.dp))
+        }
+    }
+}
+
+/** One of the games that came in last, with its title; opens its page. */
+@Composable
+private fun AddedCartridge(rom: Rom, modifier: Modifier) {
+    val a = LocalActions.current
+    Column(
+        modifier.gamepadFocus(corner = 10.dp, scale = 1.04f).clip(RoundedCornerShape(10.dp)).clickable(role = Role.Button) { a.nav.navigate(Routes.rom(rom.key)) },
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CappedCell(GridSpec.Carts) {
+            Cartridge(rom.console, labelFor(rom), rom.title, a.app.library.effectiveColor(rom), it, pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
+        }
+        Text(
+            rom.title, style = Type.Caption.copy(color = Oe.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold),
+            maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
+        )
     }
 }
 
@@ -511,7 +686,10 @@ fun LibraryScreen(filter: String) {
     LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
         Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 10.dp, bottom = TabBarHeight + 24.dp),
+        // A tablet's wider margins line the grid up with the shelf.
+        contentPadding = contentSideDp(LocalWindowLayout.current).dp.let { side ->
+            androidx.compose.foundation.layout.PaddingValues(start = side, end = side, top = 10.dp, bottom = TabBarHeight + 24.dp)
+        },
         horizontalArrangement = Arrangement.spacedBy(spec.gap.dp),
         verticalItemSpacing = if (shown == ViewMode.List) 0.dp else 18.dp,
     ) {

@@ -159,4 +159,5 @@
     <string name="ra_hardcore_desc">Vale más puntos. Cargar estados y el avance rápido se desactivan</string>
     <string name="ra_apply_note">Los cambios se aplican la próxima vez que inicies un juego. Los logros aparecen en la parte superior de la pantalla al desbloquearlos.</string>
     <string name="ra_see_progress">Mira tu progreso en retroachievements.org</string>
+    <string name="nav_rail_label">Navegación principal</string>
 </resources>

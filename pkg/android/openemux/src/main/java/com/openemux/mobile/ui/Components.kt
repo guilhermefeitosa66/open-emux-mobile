@@ -28,6 +28,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
@@ -111,6 +113,7 @@ object Icons {
     const val Play = "M7 4.5v15l13-7.5z"
     const val Star = "M12 3l2.8 5.9 6.2.8-4.6 4.3 1.2 6.3L12 17.3 6.4 20.3l1.2-6.3L3 9.7l6.2-.8z"
     const val Close = "M6 6l12 12M18 6L6 18"
+    const val Plus = "M12 5v14M5 12h14"
     const val Check = "M5 12.5l4.5 4.5L19 7.5"
     const val Globe = "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M3.5 12h17M12 3c2.4 2.6 3.6 5.6 3.6 9s-1.2 6.4-3.6 9M12 3c-2.4 2.6-3.6 5.6-3.6 9s1.2 6.4 3.6 9"
     const val Info = "M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18M12 11v5M12 8h.01"
@@ -562,7 +565,7 @@ fun ConsoleIcon(console: Console, size: Dp = 40.dp) {
 @Composable
 fun EmptyState(title: String, body: String, action: String?, onAction: () -> Unit, modifier: Modifier = Modifier) {
     Column(
-        modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 40.dp),
+        modifier.readingWidth().padding(horizontal = 32.dp, vertical = 40.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -579,6 +582,9 @@ fun EmptyState(title: String, body: String, action: String?, onAction: () -> Uni
 }
 
 val ScreenPadding = PaddingValues(horizontal = 20.dp)
+
+/** Full width, centred, never wider than a comfortable line of text: no change on a phone, a column on a tablet. */
+fun Modifier.readingWidth(): Modifier = fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 640.dp)
 
 @Composable
 fun formatPlaytime(seconds: Long): String = when {
