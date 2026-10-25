@@ -139,9 +139,9 @@ val FocusMargin = 24.dp
 /** The hint bar's height, its divider included. */
 val HintBarHeight = 40.dp
 
-/** What the hint bar covers at the bottom of the screen: nothing outside gamepad mode. */
+/** What the hint bar covers at the bottom of the screen: it shows in gamepad mode, so nothing outside it. */
 val hintBarInset: Dp
-    @Composable get() = if (InputMode.gamepad && GamepadBus.hints.isNotEmpty()) HintBarHeight else 0.dp
+    @Composable get() = if (InputMode.gamepad) HintBarHeight else 0.dp
 
 /**
  * The focus highlight from the design: a 3dp ring 3dp outside the item with
@@ -160,8 +160,10 @@ fun Modifier.gamepadFocus(
     val shown = focused && InputMode.gamepad
     val alpha by animateFloatAsState(if (shown) 1f else 0f, tween(120), label = "focus")
     val grow by animateFloatAsState(if (shown) scale else 1f, tween(120), label = "grow")
-    val report = rememberUpdatedState(onFocus)
-    LaunchedEffect(shown) { report.value?.invoke(shown) }
+    if (onFocus != null) {
+        val report = rememberUpdatedState<(Boolean) -> Unit>(onFocus)
+        LaunchedEffect(shown) { report.value(shown) }
+    }
     // An item that leaves while focused takes its count with it.
     DisposableEffect(Unit) { onDispose { if (focused) InputMode.focused -= 1 } }
     this
