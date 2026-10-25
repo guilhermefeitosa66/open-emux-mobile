@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -52,6 +53,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -60,6 +62,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import com.openemux.mobile.data.SHADERS
 import com.openemux.mobile.ui.DISABLED_ALPHA
@@ -175,14 +178,29 @@ fun PauseSheet(
         val context = LocalContext.current
         val states = remember(refresh) { session.states() }
         val cart = remember { session.cartPath?.let { BitmapFactory.decodeFile(it)?.asImageBitmap() } }
+        val window = LocalWindowLayout.current
+        // A tablet gets a side panel on the right, the game still showing on the left (TabPausa).
+        val panel = window.tablet
+        val panelWidth = min(440.dp, (window.widthDp * 0.55f).dp)
         // A wide window (a phone on its side) is short: the main page goes in two columns when they fit, and whatever still overflows scrolls.
-        val landscape = LocalWindowLayout.current.wide
+        val landscape = window.wide && !panel
 
         fun command(cmd: String, message: String? = null, after: () -> Unit = {}) {
             scope.launch {
                 withContext(Dispatchers.IO) { RaCommand.send(cmd) }
                 if (message != null) toast = message
                 after()
+            }
+        }
+
+        fun load(st: PauseSession.State) {
+            scope.launch {
+                val reply = withContext(Dispatchers.IO) {
+                    val slot = if (st.slot < 0) session.stageAuto(st) else st.slot
+                    RaCommand.ask("LOAD_STATE_SLOT $slot", 3000)
+                }
+                if (reply?.contains("ERROR") == true) toast = context.getString(R.string.game_toast_state_other_core)
+                else onResume()
             }
         }
 
@@ -197,20 +215,44 @@ fun PauseSheet(
                 Modifier.fillMaxSize().background(Color(0x8C08080A))
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onResume)
             )
+            if (panel) {
+                PausedArea(
+                    if (session.hardcore) emptyList() else states.take(4),
+                    Modifier.align(Alignment.CenterStart).fillMaxHeight().width(window.widthDp.dp - panelWidth),
+                    ::load,
+                )
+            }
+            val shape = if (panel) RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp) else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             Column(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .windowInsetsPadding(WindowInsets.displayCutout)
-                    .widthIn(max = if (landscape) 760.dp else 520.dp)
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
-                    .background(Oe.Sheet)
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
-                    .navigationBarsPadding()
-                    .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 20.dp),
+                if (panel) {
+                    Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .width(panelWidth)
+                        .shadow(24.dp, shape)
+                        .clip(shape)
+                        .background(Oe.Sheet)
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                        .windowInsetsPadding(WindowInsets.displayCutout)
+                        .navigationBarsPadding()
+                        .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = 20.dp)
+                } else {
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .windowInsetsPadding(WindowInsets.displayCutout)
+                        .widthIn(max = if (landscape) 760.dp else 520.dp)
+                        .fillMaxWidth()
+                        .clip(shape)
+                        .background(Oe.Sheet)
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                        .navigationBarsPadding()
+                        .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 20.dp)
+                },
             ) {
-                Box(Modifier.align(Alignment.CenterHorizontally).size(40.dp, 5.dp).clip(CircleShape).background(Oe.Chevron))
-                Spacer(Modifier.height(14.dp))
+                if (!panel) {
+                    Box(Modifier.align(Alignment.CenterHorizontally).size(40.dp, 5.dp).clip(CircleShape).background(Oe.Chevron))
+                    Spacer(Modifier.height(14.dp))
+                }
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (page != Page.Main) {
                         SheetIconButton(Icons.Back, stringResource(R.string.game_back)) { page = Page.Main }
@@ -239,7 +281,8 @@ fun PauseSheet(
                     SheetIconButton(Icons.Close, stringResource(R.string.game_back_to_game), onResume)
                 }
 
-                MarginFocusScroll { Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                // On the panel the page fills the height, so Quit stays at its foot.
+                MarginFocusScroll { Column(Modifier.weight(1f, fill = panel).verticalScroll(rememberScrollState())) {
                 if (toast != null) {
                     Row(
                         Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Oe.OkBg).padding(12.dp),
@@ -281,18 +324,9 @@ fun PauseSheet(
                                 command("MUTE", context.getString(if (SessionToggles.muted) R.string.game_toast_sound_off else R.string.game_toast_sound_on))
                             },
                             onReset = { command("RESET") { onResume() } },
-                            onQuit = onQuit,
+                            onQuit = onQuit.takeUnless { panel },
                         )
-                        Page.States -> StatesPage(states) { st ->
-                            scope.launch {
-                                val reply = withContext(Dispatchers.IO) {
-                                    val slot = if (st.slot < 0) session.stageAuto(st) else st.slot
-                                    RaCommand.ask("LOAD_STATE_SLOT $slot", 3000)
-                                }
-                                if (reply?.contains("ERROR") == true) toast = context.getString(R.string.game_toast_state_other_core)
-                                else onResume()
-                            }
-                        }
+                        Page.States -> StatesPage(states, ::load)
                         Page.Shader -> ShaderPage(SessionToggles.shader ?: session.shader) { id ->
                             SessionToggles.shader = id
                             val preset = SHADERS.first { it.id == id }.preset
@@ -302,7 +336,8 @@ fun PauseSheet(
                     }
                 }
                 } }
-                HintBar(listOf("A" to stringResource(R.string.game_choose), "B" to stringResource(R.string.game_back), "START" to stringResource(R.string.game_back_to_game)), Modifier.padding(top = 12.dp))
+                if (panel && page == Page.Main) QuitButton(Modifier.padding(top = 12.dp), onQuit)
+                HintBar(listOf("A" to stringResource(R.string.game_choose), "B" to stringResource(R.string.game_back), "START" to stringResource(R.string.game_back_to_game)), Modifier.padding(top = 12.dp), tall = true)
             }
         }
     }
@@ -332,7 +367,8 @@ private fun MainPage(
     onAudio: () -> Unit,
     onScreens: (() -> Unit)?,
     onReset: () -> Unit,
-    onQuit: () -> Unit,
+    /** Null on the tablet panel, which pins Quit at its foot. */
+    onQuit: (() -> Unit)?,
 ) {
     val actions = @Composable { modifier: Modifier ->
         Column(modifier) {
@@ -364,11 +400,7 @@ private fun MainPage(
                 ListRow(stringResource(R.string.game_save_states), value = stateCount.toString(), onClick = onLoad, enabled = !hardcore)
                 ListRow(stringResource(R.string.game_restart), divider = true, onClick = onReset)
             }
-            Box(
-                Modifier.padding(top = 12.dp).fillMaxWidth().height(50.dp).gamepadFocus(corner = 16.dp).clip(RoundedCornerShape(16.dp)).background(Oe.DangerBg)
-                    .clickable(role = Role.Button, onClick = onQuit),
-                contentAlignment = Alignment.Center,
-            ) { Text(stringResource(R.string.game_quit), style = Type.Button.copy(color = Oe.Danger, fontSize = 15.sp)) }
+            if (onQuit != null) QuitButton(Modifier.padding(top = 12.dp), onQuit)
         }
     }
     if (landscape) {
@@ -380,6 +412,38 @@ private fun MainPage(
         Column {
             actions(Modifier)
             rest(Modifier)
+        }
+    }
+}
+
+@Composable
+private fun QuitButton(modifier: Modifier, onQuit: () -> Unit) {
+    Box(
+        modifier.fillMaxWidth().height(50.dp).gamepadFocus(corner = 16.dp).clip(RoundedCornerShape(16.dp)).background(Oe.DangerBg)
+            .clickable(role = Role.Button, onClick = onQuit),
+        contentAlignment = Alignment.Center,
+    ) { Text(stringResource(R.string.game_quit), style = Type.Button.copy(color = Oe.Danger, fontSize = 15.sp)) }
+}
+
+/** Left of the tablet panel, over the dimmed game: the "Paused" chip and the latest saved states, a tap loads one. */
+@Composable
+private fun PausedArea(states: List<PauseSession.State>, modifier: Modifier, onPick: (PauseSession.State) -> Unit) {
+    Box(modifier.windowInsetsPadding(WindowInsets.displayCutout).padding(28.dp)) {
+        Text(
+            stringResource(R.string.game_paused).uppercase(),
+            style = Type.Tag.copy(color = Color.White),
+            modifier = Modifier.align(Alignment.TopStart).clip(CircleShape).background(Color(0x99000000)).padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+        if (states.isNotEmpty()) {
+            Column(Modifier.align(Alignment.BottomStart)) {
+                Text(stringResource(R.string.game_save_states), style = Type.Title.copy(color = Color.White, fontSize = 15.sp))
+                Text(stringResource(R.string.game_tap_to_load), style = Type.Small.copy(color = Color(0xB3FFFFFF)), modifier = Modifier.padding(top = 2.dp))
+                Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    states.forEach { st ->
+                        StateCard(st, Modifier.weight(1f, fill = false).widthIn(max = 140.dp), Color(0xB3FFFFFF)) { onPick(st) }
+                    }
+                }
+            }
         }
     }
 }
@@ -429,22 +493,24 @@ private fun StatesPage(states: List<PauseSession.State>, onPick: (PauseSession.S
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         items(states) { st ->
-            Column(
-                Modifier.gamepadFocus(corner = 10.dp)
-                    .restorableFocus(st.file.path, focused, initial = st == states.first())
-                    .clickable(role = Role.Button) { onPick(st) },
-            ) {
-                Box(Modifier.fillMaxWidth().aspectRatio(1.5f).clip(RoundedCornerShape(10.dp)).background(Color.Black)) {
-                    val bmp = remember(st.thumb) { st.thumb?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
-                    if (bmp != null) Image(bmp, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                    Box(Modifier.padding(6.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xB3000000)).padding(horizontal = 6.dp, vertical = 2.dp)) {
-                        Text(if (st.slot < 0) stringResource(R.string.game_state_auto) else stringResource(R.string.game_state_slot, st.slot), style = Type.Tag.copy(color = Color.White, fontSize = 10.sp))
-                    }
-                }
-                Text(formatAgo(st.modified), style = Type.Caption, modifier = Modifier.padding(top = 5.dp, start = 2.dp))
-            }
+            StateCard(st, Modifier.restorableFocus(st.file.path, focused, initial = st == states.first())) { onPick(st) }
         }
     } }
+}
+
+/** A saved state's thumbnail, its slot over it and its age under it; [ago] tints the age (white over the game). */
+@Composable
+private fun StateCard(st: PauseSession.State, modifier: Modifier, ago: Color? = null, onClick: () -> Unit) {
+    Column(Modifier.gamepadFocus(corner = 10.dp).then(modifier).clickable(role = Role.Button, onClick = onClick)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(1.5f).clip(RoundedCornerShape(10.dp)).background(Color.Black)) {
+            val bmp = remember(st.thumb) { st.thumb?.let { BitmapFactory.decodeFile(it.path)?.asImageBitmap() } }
+            if (bmp != null) Image(bmp, null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Box(Modifier.padding(6.dp).clip(RoundedCornerShape(6.dp)).background(Color(0xB3000000)).padding(horizontal = 6.dp, vertical = 2.dp)) {
+                Text(if (st.slot < 0) stringResource(R.string.game_state_auto) else stringResource(R.string.game_state_slot, st.slot), style = Type.Tag.copy(color = Color.White, fontSize = 10.sp))
+            }
+        }
+        Text(formatAgo(st.modified), style = if (ago != null) Type.Caption.copy(color = ago) else Type.Caption, modifier = Modifier.padding(top = 5.dp, start = 2.dp))
+    }
 }
 
 @Composable

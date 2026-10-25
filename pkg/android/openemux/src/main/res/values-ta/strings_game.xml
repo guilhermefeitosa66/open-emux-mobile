@@ -9,6 +9,7 @@
     <string name="game_playing_now">இப்போது விளையாடுகிறது · %1$s</string>
     <string name="game_playing_for">%1$d நிமி விளையாடுகிறது · %2$s</string>
     <string name="game_tap_to_load">ஏற்றத் தட்டவும்</string>
+    <string name="game_paused">இடைநிறுத்தப்பட்டது</string>
     <string name="game_shader_this_session">இந்த அமர்வுக்கு மட்டும்</string>
     <string name="game_toast_saved_slot">நிலை ஸ்லாட் %1$d இல் சேமிக்கப்பட்டது</string>
     <string name="game_toast_fast_forward_on">தொடரும்போது வேகமாக்கல் இயக்கத்தில்</string>

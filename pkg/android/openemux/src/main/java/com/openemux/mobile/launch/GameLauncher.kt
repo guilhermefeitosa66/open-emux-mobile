@@ -182,6 +182,7 @@ class GameLauncher(
                 ndsLayouts = ndsLayouts,
                 hardcore = hardcore,
                 coreId = core.id,
+                density = context.resources.displayMetrics.density,
             )
 
             val shader = library.effectiveShader(rom)
