@@ -161,4 +161,53 @@
     <string name="ra_see_progress">Suivez votre progression sur retroachievements.org</string>
     <string name="settings_update_check">Rechercher les mises à jour</string>
     <string name="settings_update_check_desc">Demander à GitHub s’il existe une version plus récente à l’ouverture de l’app</string>
+
+    <!-- Back up and restore (issue #545) -->
+    <string name="settings_backup">Sauvegarde et restauration</string>
+    <string name="settings_backup_desc">Gardez vos sauvegardes et réglages en réinstallant</string>
+    <string name="backup_intro">Enregistrez tout ce que garde OpenEmux dans un fichier à vous, et récupérez‑le sur une nouvelle installation ou un nouveau téléphone.</string>
+    <string name="backup_section_export">Exporter</string>
+    <string name="backup_section_import">Importer</string>
+    <string name="backup_saves">Sauvegardes et états</string>
+    <string name="backup_saves_desc">Sauvegardes, états sauvegardés, temps de jeu, captures d’écran</string>
+    <string name="backup_settings">Réglages et illustrations</string>
+    <string name="backup_settings_desc">Réglages, favoris, étiquettes, BIOS</string>
+    <string name="backup_include_roms">Inclure les ROMs</string>
+    <plurals name="backup_roms_count">
+        <item quantity="one">%1$d jeu · %2$s</item>
+        <item quantity="many">%1$d de jeux · %2$s</item>
+        <item quantity="other">%1$d jeux · %2$s</item>
+    </plurals>
+    <plurals name="backup_games">
+        <item quantity="one">%d jeu</item>
+        <item quantity="many">%d de jeux</item>
+        <item quantity="other">%d jeux</item>
+    </plurals>
+    <string name="backup_export">Exporter les données · %1$s</string>
+    <string name="backup_export_note">Les cœurs et les jaquettes sont téléchargés à nouveau après une restauration. Votre compte RetroAchievements n’est pas enregistré : reconnectez‑vous.</string>
+    <string name="backup_export_note_no_roms">Sans les ROMs, recopiez vos jeux avec Importer des ROMs après la restauration : les sauvegardes et les états les retrouvent par leur nom.</string>
+    <string name="backup_import">Importer les données</string>
+    <string name="backup_import_note">Remplace la bibliothèque, les sauvegardes et les réglages de ce téléphone par ceux du fichier.</string>
+    <string name="backup_keep_data_lead">Vous désinstallez pour mettre à jour ?</string>
+    <string name="backup_keep_data">Sur Android 10 et plus récent, cochez « Conserver les données de l’application » dans la fenêtre de désinstallation, puis réinstallez la même application.</string>
+    <string name="backup_exporting">Exportation…</string>
+    <string name="backup_importing">Importation…</string>
+    <string name="backup_progress">%1$s sur %2$s</string>
+    <string name="backup_cancel">Annuler</string>
+    <string name="backup_exported">Exporté vers %1$s · %2$s</string>
+    <plurals name="backup_restored">
+        <item quantity="one">%1$d jeu et %2$d sauvegardes et états restaurés. OpenEmux va redémarrer.</item>
+        <item quantity="many">%1$d de jeux et %2$d sauvegardes et états restaurés. OpenEmux va redémarrer.</item>
+        <item quantity="other">%1$d jeux et %2$d sauvegardes et états restaurés. OpenEmux va redémarrer.</item>
+    </plurals>
+    <string name="backup_confirm_title">Remplacer vos données ?</string>
+    <string name="backup_confirm_from">D’OpenEmux %1$s, créée le %2$s · %3$s</string>
+    <string name="backup_confirm_note">La bibliothèque, les sauvegardes et les réglages de ce téléphone sont remplacés. OpenEmux redémarre une fois terminé.</string>
+    <string name="backup_confirm">Remplacer et restaurer</string>
+    <string name="backup_err_invalid">Ce fichier n’est pas une sauvegarde OpenEmux, ou il est endommagé. Rien n’a été modifié.</string>
+    <string name="backup_err_newer">Cette sauvegarde a été créée par un OpenEmux plus récent. Mettez d’abord l’application à jour. Rien n’a été modifié.</string>
+    <string name="backup_err_space">Pas assez d’espace libre : la sauvegarde nécessite %1$s et %2$s sont libres. Rien n’a été modifié.</string>
+    <string name="backup_err_write">La sauvegarde n’a pas pu être écrite. %1$s</string>
+    <string name="backup_err_read">La sauvegarde n’a pas pu être lue. %1$s Rien n’a été modifié.</string>
+    <string name="backup_file_name">Sauvegarde OpenEmux %1$s</string>
 </resources>

@@ -4,4 +4,6 @@
 <full-backup-content>
     <exclude domain="sharedpref" path="cheevos.xml" />
     <exclude domain="file" path="launch" />
+    <exclude domain="file" path=".restore-staging" />
+    <exclude domain="external" path=".restore-staging" />
 </full-backup-content>

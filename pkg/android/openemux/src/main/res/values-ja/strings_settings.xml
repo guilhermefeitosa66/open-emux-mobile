@@ -143,4 +143,47 @@
     <string name="ra_see_progress">retroachievements.org で進捗を見る</string>
     <string name="settings_update_check">アップデートを確認</string>
     <string name="settings_update_check_desc">アプリ起動時に GitHub で新しいバージョンを確認します</string>
+
+    <!-- Back up and restore (issue #545) -->
+    <string name="settings_backup">バックアップと復元</string>
+    <string name="settings_backup_desc">再インストールしてもセーブと設定を残します</string>
+    <string name="backup_intro">OpenEmux が保存しているものを自分のファイル 1 つにまとめ、新しいインストールや新しいスマートフォンで元に戻せます。</string>
+    <string name="backup_section_export">書き出し</string>
+    <string name="backup_section_import">取り込み</string>
+    <string name="backup_saves">セーブとステート</string>
+    <string name="backup_saves_desc">セーブデータ、ステートセーブ、プレイ時間、スクリーンショット</string>
+    <string name="backup_settings">設定とアートワーク</string>
+    <string name="backup_settings_desc">設定、お気に入り、ラベル、BIOS</string>
+    <string name="backup_include_roms">ROM を含める</string>
+    <plurals name="backup_roms_count">
+        <item quantity="other">%1$d 本のゲーム · %2$s</item>
+    </plurals>
+    <plurals name="backup_games">
+        <item quantity="other">%d 本のゲーム</item>
+    </plurals>
+    <string name="backup_export">データを書き出す · %1$s</string>
+    <string name="backup_export_note">コアとカバーは復元後にもう一度ダウンロードされます。RetroAchievements のアカウントは保存されません。再度ログインしてください。</string>
+    <string name="backup_export_note_no_roms">ROM を含めない場合は、復元後に「ROM を取り込む」でゲームを戻してください。セーブとステートは名前でゲームを見つけます。</string>
+    <string name="backup_import">データを取り込む</string>
+    <string name="backup_import_note">このスマートフォンのライブラリ、セーブ、設定をファイルの内容に置き換えます。</string>
+    <string name="backup_keep_data_lead">アップデートのためにアンインストールしますか？</string>
+    <string name="backup_keep_data">Android 10 以降では、アンインストールの画面で「アプリのデータを保持」にチェックを入れ、同じアプリを再インストールしてください。</string>
+    <string name="backup_exporting">書き出し中…</string>
+    <string name="backup_importing">取り込み中…</string>
+    <string name="backup_progress">%1$s / %2$s</string>
+    <string name="backup_cancel">キャンセル</string>
+    <string name="backup_exported">%1$s に書き出しました · %2$s</string>
+    <plurals name="backup_restored">
+        <item quantity="other">%1$d 本のゲームと %2$d 件のセーブとステートを復元しました。OpenEmux を再起動します。</item>
+    </plurals>
+    <string name="backup_confirm_title">データを置き換えますか？</string>
+    <string name="backup_confirm_from">OpenEmux %1$s で %2$s に作成 · %3$s</string>
+    <string name="backup_confirm_note">このスマートフォンのライブラリ、セーブ、設定が置き換えられます。完了すると OpenEmux が再起動します。</string>
+    <string name="backup_confirm">置き換えて復元</string>
+    <string name="backup_err_invalid">このファイルは OpenEmux のバックアップではないか、破損しています。何も変更されていません。</string>
+    <string name="backup_err_newer">このバックアップは新しいバージョンの OpenEmux で作成されました。先にアプリを更新してください。何も変更されていません。</string>
+    <string name="backup_err_space">空き容量が足りません。バックアップには %1$s が必要で、空きは %2$s です。何も変更されていません。</string>
+    <string name="backup_err_write">バックアップを書き込めませんでした。%1$s</string>
+    <string name="backup_err_read">バックアップを読み込めませんでした。%1$s 何も変更されていません。</string>
+    <string name="backup_file_name">OpenEmux バックアップ %1$s</string>
 </resources>

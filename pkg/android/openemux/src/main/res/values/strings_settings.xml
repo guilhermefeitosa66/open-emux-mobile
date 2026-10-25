@@ -153,4 +153,50 @@
     <string name="ra_see_progress">See your progress at retroachievements.org</string>
     <string name="settings_update_check">Check for updates</string>
     <string name="settings_update_check_desc">Ask GitHub for a newer version when the app opens</string>
+
+    <!-- Back up and restore (issue #545) -->
+    <string name="settings_backup">Back up and restore</string>
+    <string name="settings_backup_desc">Keep your saves and settings when you reinstall</string>
+    <string name="backup_intro">Save everything OpenEmux keeps to one file you own, and bring it back on a new install or a new phone.</string>
+    <string name="backup_section_export">Export</string>
+    <string name="backup_section_import">Import</string>
+    <string name="backup_saves">Saves and states</string>
+    <string name="backup_saves_desc">Saves, save states, playtime, screenshots</string>
+    <string name="backup_settings">Settings and artwork</string>
+    <string name="backup_settings_desc">Settings, favorites, labels, BIOS</string>
+    <string name="backup_include_roms">Include ROMs</string>
+    <plurals name="backup_roms_count">
+        <item quantity="one">%1$d game · %2$s</item>
+        <item quantity="other">%1$d games · %2$s</item>
+    </plurals>
+    <plurals name="backup_games">
+        <item quantity="one">%d game</item>
+        <item quantity="other">%d games</item>
+    </plurals>
+    <string name="backup_export">Export data · %1$s</string>
+    <string name="backup_export_note">Cores and covers are downloaded again after a restore. Your RetroAchievements account is not saved: sign in again.</string>
+    <string name="backup_export_note_no_roms">Without ROMs, copy your games back with Import ROMs after the restore: saves and states find them by name.</string>
+    <string name="backup_import">Import data</string>
+    <string name="backup_import_note">Replaces the library, saves and settings on this phone with the ones in the file.</string>
+    <string name="backup_keep_data_lead">Uninstalling to update?</string>
+    <string name="backup_keep_data">On Android 10 and newer, tick “Keep app data” in the uninstall dialog and reinstall the same app.</string>
+    <string name="backup_exporting">Exporting…</string>
+    <string name="backup_importing">Importing…</string>
+    <string name="backup_progress">%1$s of %2$s</string>
+    <string name="backup_cancel">Cancel</string>
+    <string name="backup_exported">Exported to %1$s · %2$s</string>
+    <plurals name="backup_restored">
+        <item quantity="one">Restored %1$d game and %2$d saves and states. OpenEmux will restart now.</item>
+        <item quantity="other">Restored %1$d games and %2$d saves and states. OpenEmux will restart now.</item>
+    </plurals>
+    <string name="backup_confirm_title">Replace your data?</string>
+    <string name="backup_confirm_from">From OpenEmux %1$s, made on %2$s · %3$s</string>
+    <string name="backup_confirm_note">The library, saves and settings on this phone are replaced. OpenEmux restarts when it is done.</string>
+    <string name="backup_confirm">Replace and restore</string>
+    <string name="backup_err_invalid">This file is not an OpenEmux backup, or it is damaged. Nothing was changed.</string>
+    <string name="backup_err_newer">This backup was made by a newer OpenEmux. Update the app first. Nothing was changed.</string>
+    <string name="backup_err_space">Not enough free space: the backup needs %1$s and %2$s is free. Nothing was changed.</string>
+    <string name="backup_err_write">The backup could not be written. %1$s</string>
+    <string name="backup_err_read">The backup could not be read. %1$s Nothing was changed.</string>
+    <string name="backup_file_name">OpenEmux backup %1$s</string>
 </resources>

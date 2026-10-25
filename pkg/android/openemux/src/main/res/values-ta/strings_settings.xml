@@ -152,4 +152,50 @@
     <string name="ra_see_progress">உங்கள் முன்னேற்றத்தை retroachievements.org-இல் பாருங்கள்</string>
     <string name="settings_update_check">புதுப்பிப்புகளைச் சரிபார்</string>
     <string name="settings_update_check_desc">ஆப் திறக்கும்போது புதிய பதிப்பு உள்ளதா என GitHub-இல் கேட்கும்</string>
+
+    <!-- Back up and restore (issue #545) -->
+    <string name="settings_backup">காப்புப்பிரதி மற்றும் மீட்டமைப்பு</string>
+    <string name="settings_backup_desc">மீண்டும் நிறுவும்போது உங்கள் சேமிப்புகளையும் அமைப்புகளையும் வைத்திருங்கள்</string>
+    <string name="backup_intro">OpenEmux வைத்திருக்கும் அனைத்தையும் உங்களுக்குச் சொந்தமான ஒரே கோப்பில் சேமித்து, புதிய நிறுவலிலோ புதிய போனிலோ திரும்பக் கொண்டு வாருங்கள்.</string>
+    <string name="backup_section_export">ஏற்றுமதி</string>
+    <string name="backup_section_import">இறக்குமதி</string>
+    <string name="backup_saves">சேமிப்புகள் மற்றும் நிலைகள்</string>
+    <string name="backup_saves_desc">சேமிப்புகள், சேமிப்பு நிலைகள், விளையாடிய நேரம், திரைப்பிடிப்புகள்</string>
+    <string name="backup_settings">அமைப்புகள் மற்றும் படங்கள்</string>
+    <string name="backup_settings_desc">அமைப்புகள், பிடித்தவை, லேபிள்கள், BIOS</string>
+    <string name="backup_include_roms">ROM-களைச் சேர்</string>
+    <plurals name="backup_roms_count">
+        <item quantity="one">%1$d விளையாட்டு · %2$s</item>
+        <item quantity="other">%1$d விளையாட்டுகள் · %2$s</item>
+    </plurals>
+    <plurals name="backup_games">
+        <item quantity="one">%d விளையாட்டு</item>
+        <item quantity="other">%d விளையாட்டுகள்</item>
+    </plurals>
+    <string name="backup_export">தரவை ஏற்றுமதி செய் · %1$s</string>
+    <string name="backup_export_note">மீட்டமைத்த பிறகு கோர்களும் அட்டைப்படங்களும் மீண்டும் பதிவிறக்கப்படும். உங்கள் RetroAchievements கணக்கு சேமிக்கப்படாது: மீண்டும் உள்நுழையவும்.</string>
+    <string name="backup_export_note_no_roms">ROM-கள் இல்லாமல், மீட்டமைத்த பிறகு ROM-களை இறக்குமதி செய் மூலம் உங்கள் விளையாட்டுகளை மீண்டும் நகலெடுக்கவும்: சேமிப்புகளும் நிலைகளும் அவற்றைப் பெயரால் கண்டுபிடிக்கும்.</string>
+    <string name="backup_import">தரவை இறக்குமதி செய்</string>
+    <string name="backup_import_note">இந்தப் போனில் உள்ள நூலகம், சேமிப்புகள் மற்றும் அமைப்புகளைக் கோப்பில் உள்ளவற்றால் மாற்றுகிறது.</string>
+    <string name="backup_keep_data_lead">புதுப்பிக்க நிறுவல் நீக்குகிறீர்களா?</string>
+    <string name="backup_keep_data">Android 10 மற்றும் அதற்குப் பிந்தையவற்றில், நிறுவல் நீக்க உரையாடலில் “ஆப்ஸ் தரவை வைத்திரு” என்பதைத் தேர்வுசெய்து அதே ஆப்ஸை மீண்டும் நிறுவவும்.</string>
+    <string name="backup_exporting">ஏற்றுமதி செய்கிறது…</string>
+    <string name="backup_importing">இறக்குமதி செய்கிறது…</string>
+    <string name="backup_progress">%2$s இல் %1$s</string>
+    <string name="backup_cancel">ரத்துசெய்</string>
+    <string name="backup_exported">%1$s க்கு ஏற்றுமதி செய்யப்பட்டது · %2$s</string>
+    <plurals name="backup_restored">
+        <item quantity="one">%1$d விளையாட்டும் %2$d சேமிப்புகளும் நிலைகளும் மீட்டமைக்கப்பட்டன. OpenEmux இப்போது மறுதொடக்கம் ஆகும்.</item>
+        <item quantity="other">%1$d விளையாட்டுகளும் %2$d சேமிப்புகளும் நிலைகளும் மீட்டமைக்கப்பட்டன. OpenEmux இப்போது மறுதொடக்கம் ஆகும்.</item>
+    </plurals>
+    <string name="backup_confirm_title">உங்கள் தரவை மாற்றவா?</string>
+    <string name="backup_confirm_from">OpenEmux %1$s இலிருந்து, %2$s அன்று உருவாக்கப்பட்டது · %3$s</string>
+    <string name="backup_confirm_note">இந்தப் போனில் உள்ள நூலகம், சேமிப்புகள் மற்றும் அமைப்புகள் மாற்றப்படும். முடிந்ததும் OpenEmux மறுதொடக்கம் ஆகும்.</string>
+    <string name="backup_confirm">மாற்றி மீட்டமை</string>
+    <string name="backup_err_invalid">இந்தக் கோப்பு OpenEmux காப்புப்பிரதி அல்ல, அல்லது சேதமடைந்துள்ளது. எதுவும் மாற்றப்படவில்லை.</string>
+    <string name="backup_err_newer">இந்தக் காப்புப்பிரதி புதிய OpenEmux ஆல் உருவாக்கப்பட்டது. முதலில் ஆப்ஸைப் புதுப்பிக்கவும். எதுவும் மாற்றப்படவில்லை.</string>
+    <string name="backup_err_space">போதுமான இடம் இல்லை: காப்புப்பிரதிக்கு %1$s தேவை, %2$s மட்டுமே காலியாக உள்ளது. எதுவும் மாற்றப்படவில்லை.</string>
+    <string name="backup_err_write">காப்புப்பிரதியை எழுத முடியவில்லை. %1$s</string>
+    <string name="backup_err_read">காப்புப்பிரதியைப் படிக்க முடியவில்லை. %1$s எதுவும் மாற்றப்படவில்லை.</string>
+    <string name="backup_file_name">OpenEmux காப்புப்பிரதி %1$s</string>
 </resources>

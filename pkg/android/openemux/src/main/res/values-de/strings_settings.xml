@@ -152,4 +152,50 @@
     <string name="ra_see_progress">Fortschritt auf retroachievements.org ansehen</string>
     <string name="settings_update_check">Nach Updates suchen</string>
     <string name="settings_update_check_desc">Beim Öffnen der App auf GitHub nach einer neueren Version fragen</string>
+
+    <!-- Back up and restore (issue #545) -->
+    <string name="settings_backup">Sichern und wiederherstellen</string>
+    <string name="settings_backup_desc">Spielstände und Einstellungen bei einer Neuinstallation behalten</string>
+    <string name="backup_intro">Speichere alles, was OpenEmux aufbewahrt, in einer eigenen Datei und hol es auf einer neuen Installation oder einem neuen Handy zurück.</string>
+    <string name="backup_section_export">Exportieren</string>
+    <string name="backup_section_import">Importieren</string>
+    <string name="backup_saves">Spielstände und Savestates</string>
+    <string name="backup_saves_desc">Spielstände, Savestates, Spielzeit, Bildschirmfotos</string>
+    <string name="backup_settings">Einstellungen und Artwork</string>
+    <string name="backup_settings_desc">Einstellungen, Favoriten, Etiketten, BIOS</string>
+    <string name="backup_include_roms">ROMs einschließen</string>
+    <plurals name="backup_roms_count">
+        <item quantity="one">%1$d Spiel · %2$s</item>
+        <item quantity="other">%1$d Spiele · %2$s</item>
+    </plurals>
+    <plurals name="backup_games">
+        <item quantity="one">%d Spiel</item>
+        <item quantity="other">%d Spiele</item>
+    </plurals>
+    <string name="backup_export">Daten exportieren · %1$s</string>
+    <string name="backup_export_note">Kerne und Cover werden nach einer Wiederherstellung erneut heruntergeladen. Dein RetroAchievements-Konto wird nicht gesichert: Melde dich wieder an.</string>
+    <string name="backup_export_note_no_roms">Ohne ROMs kopierst du deine Spiele nach der Wiederherstellung mit „ROMs importieren“ zurück: Spielstände und Savestates finden sie über den Namen.</string>
+    <string name="backup_import">Daten importieren</string>
+    <string name="backup_import_note">Ersetzt Bibliothek, Spielstände und Einstellungen auf diesem Handy durch die aus der Datei.</string>
+    <string name="backup_keep_data_lead">Deinstallieren zum Aktualisieren?</string>
+    <string name="backup_keep_data">Ab Android 10 im Deinstallationsdialog „App-Daten behalten“ ankreuzen und dieselbe App neu installieren.</string>
+    <string name="backup_exporting">Wird exportiert…</string>
+    <string name="backup_importing">Wird importiert…</string>
+    <string name="backup_progress">%1$s von %2$s</string>
+    <string name="backup_cancel">Abbrechen</string>
+    <string name="backup_exported">Exportiert nach %1$s · %2$s</string>
+    <plurals name="backup_restored">
+        <item quantity="one">%1$d Spiel und %2$d Spielstände und Savestates wiederhergestellt. OpenEmux startet jetzt neu.</item>
+        <item quantity="other">%1$d Spiele und %2$d Spielstände und Savestates wiederhergestellt. OpenEmux startet jetzt neu.</item>
+    </plurals>
+    <string name="backup_confirm_title">Deine Daten ersetzen?</string>
+    <string name="backup_confirm_from">Von OpenEmux %1$s, erstellt am %2$s · %3$s</string>
+    <string name="backup_confirm_note">Bibliothek, Spielstände und Einstellungen auf diesem Handy werden ersetzt. OpenEmux startet danach neu.</string>
+    <string name="backup_confirm">Ersetzen und wiederherstellen</string>
+    <string name="backup_err_invalid">Diese Datei ist keine OpenEmux-Sicherung oder sie ist beschädigt. Es wurde nichts geändert.</string>
+    <string name="backup_err_newer">Diese Sicherung stammt von einem neueren OpenEmux. Aktualisiere zuerst die App. Es wurde nichts geändert.</string>
+    <string name="backup_err_space">Nicht genug freier Speicher: Die Sicherung braucht %1$s, frei sind %2$s. Es wurde nichts geändert.</string>
+    <string name="backup_err_write">Die Sicherung konnte nicht geschrieben werden. %1$s</string>
+    <string name="backup_err_read">Die Sicherung konnte nicht gelesen werden. %1$s Es wurde nichts geändert.</string>
+    <string name="backup_file_name">OpenEmux-Sicherung %1$s</string>
 </resources>
