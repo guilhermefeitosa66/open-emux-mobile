@@ -25,6 +25,7 @@ class Paths(context: Context) {
     val shaders = File(internal, "shaders")
     val launch = File(internal, "launch")
     val meta = File(internal, "meta.json")
+    val index = File(internal, "library.index")
     val carts = File(internal, "carts")
     val labels = File(internal, "labels")
 }
@@ -82,6 +83,13 @@ class Library(private val context: Context) {
     private val _roms = MutableStateFlow<List<Rom>>(emptyList())
     val roms: StateFlow<List<Rom>> = _roms.asStateFlow()
 
+    /** False until the ROM list is known: restored from the index or scanned once. */
+    private val _loaded = MutableStateFlow(false)
+    val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
+
+    /** The keys the index on disk holds, so an unchanged scan does not rewrite it. */
+    private var indexed: List<String>? = null
+
     private val _meta = MutableStateFlow(Meta())
     val meta: StateFlow<Meta> = _meta.asStateFlow()
 
@@ -91,9 +99,18 @@ class Library(private val context: Context) {
 
     init {
         _meta.value = loadMeta()
+        loadIndex()
     }
 
     suspend fun scan() = withContext(Dispatchers.IO) {
+        try {
+            scanRoms()
+        } finally {
+            _loaded.value = true
+        }
+    }
+
+    private fun scanRoms() {
         val found = Console.entries.flatMap { console ->
             val dir = paths.roms(console)
             dir.mkdirs()
@@ -107,6 +124,7 @@ class Library(private val context: Context) {
                 .map { Rom("${console.id}/${it.name}", console, it, titleFromFileName(it.name)) }
         }.sortedBy { it.title.lowercase() }
         _roms.value = found
+        saveIndex(found)
         _revision.value++
     }
 
@@ -209,9 +227,32 @@ class Library(private val context: Context) {
     fun delete(rom: Rom) {
         rom.file.delete()
         _roms.value = _roms.value.filterNot { it.key == rom.key }
+        saveIndex(_roms.value)
         val current = _meta.value
         _meta.value = current.copy(roms = current.roms - rom.key)
         saveMeta()
+    }
+
+    private fun loadIndex() {
+        val file = paths.index
+        if (!file.exists()) return
+        val roms = runCatching { decodeLibraryIndex(file.readText(), paths::roms) }.getOrNull() ?: return
+        indexed = roms.map { it.key }
+        _roms.value = roms
+        _loaded.value = true
+    }
+
+    /** A failed write only costs the fast start next time. */
+    private fun saveIndex(roms: List<Rom>) {
+        val keys = roms.map { it.key }
+        if (keys == indexed) return
+        runCatching {
+            paths.index.parentFile?.mkdirs()
+            val tmp = File(paths.index.path + ".tmp")
+            tmp.writeText(encodeLibraryIndex(roms))
+            if (!tmp.renameTo(paths.index)) error("rename failed")
+            indexed = keys
+        }
     }
 
     private fun loadMeta(): Meta {
