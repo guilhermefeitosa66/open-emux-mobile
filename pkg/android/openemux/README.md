@@ -122,6 +122,7 @@ Needs the Android SDK (platform 36), NDK 28 and JDK 17.
 
 ```sh
 tools/build.sh              # engine (arm64-v8a, x86_64) + APK
+./gradlew testDebugUnitTest --no-daemon   # JVM unit tests (src/test)
 ```
 
 The APK ships no cores. On first open, `data/Setup.kt` downloads from the
@@ -146,6 +147,11 @@ data above with it.
 The version follows the OpenEmux desktop release it pairs with:
 `openemuxVersion` in `gradle.properties` sets `versionName`, and
 `versionCode` is `major * 10000 + minor * 100 + patch`.
+
+On start the app asks GitHub for the latest OpenEmux release
+(`data/Updates.kt`) and, when it is newer than `versionName`, shows a banner
+on the shelf that opens the release page. "Check for updates" in Settings
+turns the request off. `-PopenemuxVersion=1.0.0` builds an "old" APK to see it.
 
 ## Not yet supported
 
