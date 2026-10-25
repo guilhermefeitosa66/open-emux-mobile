@@ -169,6 +169,7 @@ class GameLauncher(
                 rom.console, bounds.width(), bounds.height(), File(dir, "skin"),
                 cutout = if (bounds.height() >= bounds.width()) cutout.top else maxOf(cutout.left, cutout.right),
                 ndsLayouts = ndsLayouts,
+                hardcore = hardcore,
             )
 
             val shader = library.effectiveShader(rom)
@@ -288,6 +289,11 @@ class GameLauncher(
             "thumbnails_directory" to File(paths.internal, "thumbnails").absolutePath,
         )
         settings.putAll(cheevos)
+        // RetroArch still fast-forwards in hardcore; the skin and the pause sheet leave it out, and so do the keys.
+        if (hardcore) {
+            settings["input_toggle_fast_forward"] = "nul"
+            settings["input_hold_fast_forward"] = "nul"
+        }
         // The PS skin has both sticks: Beetle PSX and PCSX ReARMed read them as a DualShock.
         if (rom.console == Console.PS) settings["input_libretro_device_p1"] = "517"
         return settings.entries.joinToString("\n") { (k, v) -> "$k = \"$v\"" } + "\n"

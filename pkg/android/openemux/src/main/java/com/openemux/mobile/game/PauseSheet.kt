@@ -91,7 +91,7 @@ data class PauseSession(
     val shader: String,
     val coreName: String,
     val startedAt: Long,
-    /** RetroAchievements hardcore: the engine refuses loading states and fast forward. */
+    /** RetroAchievements hardcore: the engine refuses loading states; the app leaves fast forward out too. */
     val hardcore: Boolean = false,
 ) {
     data class State(val slot: Int, val file: File, val thumb: File?, val modified: Long)
