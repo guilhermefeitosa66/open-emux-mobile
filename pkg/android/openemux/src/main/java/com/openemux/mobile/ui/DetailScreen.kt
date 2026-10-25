@@ -334,10 +334,11 @@ private fun DetailTitle(overline: String, title: String, meta: String, align: Te
 /** The game's settings as tiles, [columns] to a row, for the tabletop's bottom half. */
 @Composable
 private fun SettingTiles(settings: List<Setting>, columns: Int) {
+    val defaultSuffix = stringResource(R.string.detail_default_suffix)
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         settings.chunked(columns).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                row.forEach { SettingTile(it.label, it.value, it.onClick, Modifier.weight(1f)) }
+                row.forEach { SettingTile(it.label, if (it.isDefault) it.value + defaultSuffix else it.value, it.onClick, Modifier.weight(1f)) }
                 repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
         }

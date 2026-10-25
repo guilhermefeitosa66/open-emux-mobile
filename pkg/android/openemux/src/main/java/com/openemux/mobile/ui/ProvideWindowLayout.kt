@@ -3,7 +3,6 @@ package com.openemux.mobile.ui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -47,7 +46,7 @@ fun ProvideWindowLayout(content: @Composable () -> Unit) {
             layout.displayFeatures.filterIsInstance<FoldingFeature>().firstOrNull()?.let { fold ->
                 val b = fold.bounds
                 foldOf(fold.state == FoldingFeature.State.HALF_OPENED, fold.orientation == FoldingFeature.Orientation.VERTICAL, b.left, b.top, b.right, b.bottom)
-            }.also { Log.d("OpenEmux", "window fold: $it") }
+            }
         }.catch { emit(null) }
     }
     val fold by folds.collectAsStateWithLifecycle(initialValue = null)

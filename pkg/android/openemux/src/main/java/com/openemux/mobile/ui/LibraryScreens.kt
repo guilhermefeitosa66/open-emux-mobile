@@ -134,7 +134,7 @@ fun ShelfScreen() {
     // In tabletop the shelves stay on the top half and the way to add more is on the bottom one.
     if (LocalTabletop.current) TabletopDeck {
         Column(Modifier.fillMaxSize().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)) {
-            SecondaryButton(stringResource(R.string.library_shelf_empty_action), { a.nav.navigate(Routes.IMPORT) }, Modifier.fillMaxWidth(), icon = Icons.Download)
+            SecondaryButton(stringResource(R.string.library_shelf_empty_action), { openTab(a.nav, Routes.IMPORT, Routes.SHELF) }, Modifier.fillMaxWidth(), icon = Icons.Download)
         }
     }
 

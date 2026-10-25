@@ -392,6 +392,6 @@ val TabBarHeight: Dp
 val RailWidth: Dp
     @Composable get() = railWidthDp(LocalWindowLayout.current).let { if (it > 0f) it.dp else 80.dp }
 
-private val MAIN_TABS = listOf(Routes.SHELF, Routes.RECENT, Routes.IMPORT, Routes.SETTINGS)
+private val MAIN_TABS = TAB_ITEMS.map { it.route }
 val BottomSpace: Modifier
     @Composable get() = Modifier.height(TabBarHeight + hintBarInset + 24.dp)
