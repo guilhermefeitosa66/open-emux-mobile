@@ -170,6 +170,7 @@ class GameLauncher(
                 cutout = if (bounds.height() >= bounds.width()) cutout.top else maxOf(cutout.left, cutout.right),
                 ndsLayouts = ndsLayouts,
                 hardcore = hardcore,
+                coreId = library.effectiveCore(rom).id,
             )
 
             val shader = library.effectiveShader(rom)
@@ -180,7 +181,7 @@ class GameLauncher(
             File(dir, "core-options.cfg").writeText(
                 "mgba_skip_bios = \"ON\"\n" +
                     "mgba_use_bios = \"ON\"\n" +
-                    // The skins draw the 6-button pad; Genesis Plus GX picks it on its own.
+                    // The skins draw the 6-button pad; Genesis Plus GX gets it from its port device (buildConfig).
                     "picodrive_input1 = \"6 button pad\"\n" +
                     // The skin opens on the saved portrait layout; the activity follows the overlay from there.
                     (ndsLayouts?.let { "desmume_screens_layout = \"${it.first.value}\"\n" } ?: "")
@@ -296,6 +297,14 @@ class GameLauncher(
         }
         // The PS skin has both sticks: Beetle PSX and PCSX ReARMed read them as a DualShock.
         if (rom.console == Console.PS) settings["input_libretro_device_p1"] = "517"
+        // Genesis Plus GX only gives a pad six buttons when the ROM header asks; the MD skins draw X, Y, Z and MODE
+        // for every game, so pin its MD Joypad 6 Button. PicoDrive reads picodrive_input1 instead.
+        val core = library.effectiveCore(rom).id
+        if ((rom.console == Console.MD || rom.console == Console.MCD) && core == "genesis_plus_gx") {
+            settings["input_libretro_device_p1"] = "513"
+        }
+        // atari800 picks its 5200 joystick on load, but the frontend's port device overrides it and moves Fire 2 to B.
+        if (rom.console == Console.A5200) settings["input_libretro_device_p1"] = "769"
         return settings.entries.joinToString("\n") { (k, v) -> "$k = \"$v\"" } + "\n"
     }
 }
