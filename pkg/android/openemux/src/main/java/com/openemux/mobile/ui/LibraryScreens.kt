@@ -191,7 +191,12 @@ fun ShelfScreen() {
                         Column(Modifier.padding(top = 28.dp)) {
                             SectionHeading(stringResource(R.string.library_continue_playing), stringResource(R.string.library_see_recent)) { a.nav.navigateTab(Routes.RECENT) }
                             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
-                                playing.forEach { rom -> ContinueCard(rom, meta.roms[rom.key]?.lastPlayed ?: 0L, if (spec.maxColumns > 2) 104.dp else 100.dp, Modifier.weight(1f)) }
+                                playing.forEach { rom ->
+                                    ContinueCard(
+                                        rom, meta.roms[rom.key]?.lastPlayed ?: 0L, if (spec.maxColumns > 2) 104.dp else 100.dp,
+                                        Modifier.weight(1f), Modifier.restorableFocus("continue-${rom.key}", focusedShelf),
+                                    )
+                                }
                                 // Fewer games than slots: the cards keep their width.
                                 repeat(spec.continueCount - playing.size) { Spacer(Modifier.weight(1f)) }
                             }
@@ -288,12 +293,12 @@ fun ShelfScreen() {
                 }
                 if (spec.tablet) {
                     // Never moves and is never a place to drop a dragged card: its key is no console's.
-                    item(key = "import-more") { ImportMoreCard(spec.cardHeight.dp, (spec.gap / 2).dp) }
+                    item(key = "import-more") { ImportMoreCard(spec.cardHeight.dp, (spec.gap / 2).dp, Modifier.restorableFocus("import-more", focusedShelf)) }
                     if (added.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                         Column(Modifier.padding(top = 22.dp)) {
                             SectionHeading(stringResource(R.string.library_recently_added), stringResource(R.string.library_see_all)) { a.nav.navigate(Routes.library("ALL")) }
                             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
-                                added.forEach { rom -> AddedCartridge(rom, Modifier.weight(1f)) }
+                                added.forEach { rom -> AddedCartridge(rom, Modifier.weight(1f), Modifier.restorableFocus("added-${rom.key}", focusedShelf)) }
                                 repeat(4 - added.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
@@ -467,7 +472,7 @@ private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>) {
             }
             PrimaryButton(
                 stringResource(R.string.library_shelf_empty_action), { a.nav.navigateTab(Routes.IMPORT) },
-                Modifier.padding(start = 12.dp), icon = Icons.Download, height = 48.dp,
+                Modifier.padding(start = 12.dp), icon = Icons.Download, height = 48.dp, sidePadding = 20.dp,
             )
         }
         ArtworkSyncPill(Modifier.padding(top = 16.dp))
@@ -488,11 +493,11 @@ private fun SectionHeading(title: String, link: String, onLink: () -> Unit) {
 
 /** A game to pick up again: the whole card resumes it, as the play button does on Recent. */
 @Composable
-private fun ContinueCard(rom: Rom, lastPlayed: Long, height: Dp, modifier: Modifier) {
+private fun ContinueCard(rom: Rom, lastPlayed: Long, height: Dp, modifier: Modifier, focus: Modifier) {
     val a = LocalActions.current
     val lib = a.app.library
     Row(
-        modifier.height(height).gamepadFocus(corner = 20.dp, scale = 1.02f).clip(RoundedCornerShape(20.dp)).background(Oe.Surface)
+        modifier.height(height).gamepadFocus(corner = 20.dp, scale = 1.02f).then(focus).clip(RoundedCornerShape(20.dp)).background(Oe.Surface)
             .clickable(onClickLabel = stringResource(R.string.library_continue_game, rom.title), role = Role.Button) { a.play(rom, true, null) }
             .padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -512,11 +517,11 @@ private fun ContinueCard(rom: Rom, lastPlayed: Long, height: Dp, modifier: Modif
 
 /** The last cell of the tablet shelf: a dashed card that opens Import. */
 @Composable
-private fun ImportMoreCard(height: Dp, spacing: Dp) {
+private fun ImportMoreCard(height: Dp, spacing: Dp, focus: Modifier) {
     val a = LocalActions.current
     val dash = Oe.Border
     Box(
-        Modifier.padding(vertical = spacing).fillMaxWidth().height(height).gamepadFocus(corner = 24.dp, scale = 1.02f).clip(RoundedCornerShape(24.dp))
+        Modifier.padding(vertical = spacing).fillMaxWidth().height(height).gamepadFocus(corner = 24.dp, scale = 1.02f).then(focus).clip(RoundedCornerShape(24.dp))
             .drawBehind {
                 val stroke = 1.5.dp.toPx()
                 drawRoundRect(
@@ -537,10 +542,10 @@ private fun ImportMoreCard(height: Dp, spacing: Dp) {
 
 /** One of the games that came in last, with its title; opens its page. */
 @Composable
-private fun AddedCartridge(rom: Rom, modifier: Modifier) {
+private fun AddedCartridge(rom: Rom, modifier: Modifier, focus: Modifier) {
     val a = LocalActions.current
     Column(
-        modifier.gamepadFocus(corner = 10.dp, scale = 1.04f).clip(RoundedCornerShape(10.dp)).clickable(role = Role.Button) { a.nav.navigate(Routes.rom(rom.key)) },
+        modifier.gamepadFocus(corner = 10.dp, scale = 1.04f).then(focus).clip(RoundedCornerShape(10.dp)).clickable(role = Role.Button) { a.nav.navigate(Routes.rom(rom.key)) },
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         CappedCell(GridSpec.Carts) {

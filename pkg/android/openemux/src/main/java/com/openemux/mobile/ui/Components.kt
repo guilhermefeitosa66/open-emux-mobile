@@ -286,14 +286,15 @@ fun BackLink(label: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: String? = null, height: Dp = 52.dp, enabled: Boolean = true) {
+fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, icon: String? = null, height: Dp = 52.dp, enabled: Boolean = true, sidePadding: Dp = 0.dp) {
     Row(
         modifier
             .height(height)
             .gamepadFocus(corner = 16.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(if (enabled) Oe.Accent else Oe.Surface2)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .padding(horizontal = sidePadding),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {

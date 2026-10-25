@@ -8,6 +8,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.unit.Dp
@@ -46,6 +47,10 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -157,7 +162,10 @@ fun OpenEmuxRoot() {
                     NavHost(
                         nav,
                         startDestination = Routes.SHELF,
-                        modifier = Modifier.fillMaxSize().padding(start = if (rail) railWidth else 0.dp),
+                        // Right from the rail comes back to the item the screen had focused.
+                        modifier = Modifier.fillMaxSize().padding(start = if (rail) railWidth else 0.dp)
+                            .focusProperties { onEnter = { if (requestedFocusDirection == FocusDirection.Right) InputMode.last?.requestFocus() } }
+                            .focusGroup(),
                         enterTransition = { fadeIn() },
                         exitTransition = { fadeOut() },
                     ) {
@@ -210,7 +218,16 @@ private fun TabBar(route: String?, modifier: Modifier) {
 @Composable
 private fun TabRail(route: String?, tablet: Boolean, width: Dp, modifier: Modifier) {
     val label = stringResource(R.string.nav_rail_label)
-    Row(modifier.fillMaxHeight().background(Oe.Bg.copy(alpha = 0.94f)).semantics { contentDescription = label }) {
+    val activeTab = remember { FocusRequester() }
+    Row(
+        modifier.fillMaxHeight().background(Oe.Bg.copy(alpha = 0.94f)).semantics { contentDescription = label }
+            // Only Left from the content moves into the rail, onto the current tab; the first press of a gamepad
+            // lands on the screen's own item.
+            .focusProperties {
+                onEnter = { if (requestedFocusDirection != FocusDirection.Left || !activeTab.requestFocus()) cancelFocusChange() }
+            }
+            .focusGroup(),
+    ) {
         if (tablet) {
             val expanded = width > 80.dp
             Column(
@@ -223,7 +240,7 @@ private fun TabRail(route: String?, tablet: Boolean, width: Dp, modifier: Modifi
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
-                    Tabs(route, pill = true)
+                    Tabs(route, pill = true, activeTab)
                 }
             }
         } else {
@@ -232,7 +249,7 @@ private fun TabRail(route: String?, tablet: Boolean, width: Dp, modifier: Modifi
                 verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Tabs(route)
+                Tabs(route, activeTab = activeTab)
             }
         }
         VerticalDivider(color = Oe.Surface2, thickness = 1.dp)
@@ -240,7 +257,7 @@ private fun TabRail(route: String?, tablet: Boolean, width: Dp, modifier: Modifi
 }
 
 @Composable
-private fun Tabs(route: String?, pill: Boolean = false) {
+private fun Tabs(route: String?, pill: Boolean = false, activeTab: FocusRequester? = null) {
     val nav = LocalActions.current.nav
     val tabs = listOf(
         Triple(R.string.settings_tab_library, Icons.Cart, Routes.SHELF),
@@ -256,6 +273,7 @@ private fun Tabs(route: String?, pill: Boolean = false) {
         Column(
             Modifier
                 .then(if (pill) Modifier.width(76.dp).heightIn(min = 56.dp) else Modifier.widthIn(min = 64.dp))
+                .then(if (active && activeTab != null) Modifier.focusRequester(activeTab) else Modifier)
                 .gamepadFocus(corner = 12.dp)
                 .clip(RoundedCornerShape(12.dp))
                 .clickable(role = Role.Tab) { if (target == Routes.SHELF || target != route) nav.navigateTab(target) }
