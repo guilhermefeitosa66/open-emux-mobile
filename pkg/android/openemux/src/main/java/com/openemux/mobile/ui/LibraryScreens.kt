@@ -447,7 +447,7 @@ fun LibraryScreen(filter: String) {
         AdaptiveCells(spec),
         Modifier.fillMaxSize().statusBarsPadding(),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 10.dp, bottom = TabBarHeight + 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(if (shown == ViewMode.Covers) 12.dp else 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(spec.gap.dp),
         verticalItemSpacing = if (shown == ViewMode.List) 0.dp else 18.dp,
     ) {
         item(span = StaggeredGridItemSpan.FullLine) {
