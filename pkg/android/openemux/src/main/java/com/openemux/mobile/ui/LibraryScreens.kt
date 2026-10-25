@@ -707,7 +707,8 @@ private fun FavBadge(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ViewToggle(mode: ViewMode, onChange: (ViewMode) -> Unit) {
-    Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Oe.Surface).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    // A shaped background, not a clip: a clip would cut the focused button's ring.
+    Row(Modifier.background(Oe.Surface, RoundedCornerShape(12.dp)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         listOf(ViewMode.Carts to Icons.Cart, ViewMode.Covers to Icons.Grid, ViewMode.List to Icons.List).forEach { (m, icon) ->
             val on = m == mode
             Box(
