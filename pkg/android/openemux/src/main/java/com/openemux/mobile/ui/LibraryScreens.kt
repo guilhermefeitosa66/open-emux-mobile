@@ -36,7 +36,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.items as gridItems
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -210,7 +209,8 @@ fun ShelfScreen() {
                                             live = present; dragged = console; dragOffset = Offset.Zero
                                         },
                                         onDrag = { delta ->
-                                            dragOffset += delta
+                                            // One column: only the vertical move means anything, so a sideways drift never stalls the reorder.
+                                            dragOffset += if (columns == 1) Offset(0f, delta.y) else delta
                                             val items = gridState.layoutInfo.visibleItemsInfo
                                             val self = items.firstOrNull { it.key == console.id }
                                             if (self != null) {
@@ -344,7 +344,7 @@ private fun ShelfCard(console: Console?, short: String, name: String, count: Str
             .clickable(role = Role.Button, onClick = onClick),
     ) {
         val fan = roms.sortedByDescending { a.app.library.romMeta(it.key).lastPlayed }.take(3)
-        // Drawn for a 210dp fan; a narrower card scales it, horizontally only.
+        // Drawn for a 210dp fan; a narrower card scales its widths and end offsets (heights follow each cartridge's aspect), top offsets stay.
         val scale = fanWidth / FAN_MAX_DP
         val placements = listOf(Triple(92.dp, 26.dp, -9f), Triple(52.dp, 16.dp, -2f), Triple(8.dp, 30.dp, 7f))
         fan.forEachIndexed { i, rom ->
