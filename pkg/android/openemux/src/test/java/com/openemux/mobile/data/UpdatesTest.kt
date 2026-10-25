@@ -49,12 +49,17 @@ class UpdateVersionTest {
 
 class ParseReleaseTest {
     @Test fun readsTheTagAndThePage() {
-        val release = parseRelease("""{"tag_name":"v1.18.0","name":"OpenEmux 1.18.0","html_url":"https://example/r/1.18.0"}""")
-        assertEquals(Release("1.18.0", "https://example/r/1.18.0"), release)
+        val release = parseRelease("""{"tag_name":"v1.18.0","name":"OpenEmux 1.18.0","html_url":"https://github.com/o/r/1.18.0"}""")
+        assertEquals(Release("1.18.0", "https://github.com/o/r/1.18.0"), release)
     }
 
     @Test fun withoutAPageFallsBackToTheLatestRelease() {
         assertEquals(Release("1.18.0", DEFAULT_RELEASE_URL), parseRelease("""{"tag_name":"1.18.0"}"""))
+    }
+
+    @Test fun aPageOutsideGitHubFallsBackToTheLatestRelease() {
+        assertEquals(Release("1.18.0", DEFAULT_RELEASE_URL), parseRelease("""{"tag_name":"1.18.0","html_url":"javascript:alert(1)"}"""))
+        assertEquals(Release("1.18.0", DEFAULT_RELEASE_URL), parseRelease("""{"tag_name":"1.18.0","html_url":null}"""))
     }
 
     @Test fun withoutATagUsesTheName() {
@@ -73,10 +78,10 @@ class ParseReleaseTest {
 }
 
 class UpdateCheckerTest {
-    private val latest = """{"tag_name":"v1.18.0","html_url":"https://example/r"}"""
+    private val latest = """{"tag_name":"v1.18.0","html_url":"https://github.com/o/r"}"""
 
     @Test fun aNewerReleaseIsAvailable() = runBlocking {
-        assertEquals(UpdateState.Available(Release("1.18.0", "https://example/r")), UpdateChecker("1.17.0") { latest }.check())
+        assertEquals(UpdateState.Available(Release("1.18.0", "https://github.com/o/r")), UpdateChecker("1.17.0") { latest }.check())
     }
 
     @Test fun theSameReleaseIsUpToDate() = runBlocking {
@@ -105,9 +110,9 @@ class UpdateCheckerTest {
 }
 
 class UpdateStoreTest {
-    private val newer = UpdateState.Available(Release("1.18.0", "https://example/r"))
+    private val newer = UpdateState.Available(Release("1.18.0", "https://github.com/o/r"))
 
-    private class Fetches(private val body: String? = """{"tag_name":"1.18.0","html_url":"https://example/r"}""") {
+    private class Fetches(private val body: String? = """{"tag_name":"1.18.0","html_url":"https://github.com/o/r"}""") {
         var count = 0
         val fetch: suspend () -> String? = { count++; body }
     }
@@ -161,6 +166,18 @@ class UpdateStoreTest {
         val store = UpdateStore(true, {}, UpdateChecker("1.17.0") { gate.await(); body }, Dispatchers.Unconfined)
         val job = store.checkOnce(this)!!
         store.setEnabled(false)
+        gate.complete(Unit)
+        job.join()
+        assertSame(UpdateState.Unknown, store.state.value)
+    }
+
+    @Test fun offThenOnWhileCheckingStillShowsNothing() = runBlocking {
+        val gate = CompletableDeferred<Unit>()
+        val body = """{"tag_name":"1.18.0"}"""
+        val store = UpdateStore(true, {}, UpdateChecker("1.17.0") { gate.await(); body }, Dispatchers.Unconfined)
+        val job = store.checkOnce(this)!!
+        store.setEnabled(false)
+        store.setEnabled(true)
         gate.complete(Unit)
         job.join()
         assertSame(UpdateState.Unknown, store.state.value)

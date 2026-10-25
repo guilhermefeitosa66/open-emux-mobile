@@ -42,11 +42,11 @@ import com.retroarch.R
 
 /** The newer release, while the check found one and "Not now" was not pressed; null otherwise. */
 @Composable
-fun pendingUpdate(ignoreDismissed: Boolean = false): Release? {
+fun pendingUpdate(): Release? {
     val updates = LocalActions.current.app.updates
     val state by updates.state.collectAsState()
     val dismissed by updates.dismissed.collectAsState()
-    return (state as? UpdateState.Available)?.release?.takeIf { ignoreDismissed || !dismissed }
+    return (state as? UpdateState.Available)?.release?.takeIf { !dismissed }
 }
 
 /** The non-modal "new version" banner on the shelf; takes no space when there is nothing to show. */

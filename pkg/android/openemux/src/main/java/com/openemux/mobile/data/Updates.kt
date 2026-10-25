@@ -51,7 +51,9 @@ fun parseRelease(json: String): Release? {
     val obj = try { JSONObject(json) } catch (_: JSONException) { return null }
     val tag = obj.optString("tag_name").ifBlank { obj.optString("name") }
     val version = UpdateVersion.parse(tag)?.joinToString(".") ?: return null
-    return Release(version, obj.optString("html_url").ifBlank { DEFAULT_RELEASE_URL })
+    // Only a GitHub page is opened; anything else falls back to the latest release.
+    val page = obj.optString("html_url").takeIf { it.startsWith("https://github.com/") } ?: DEFAULT_RELEASE_URL
+    return Release(version, page)
 }
 
 /** What the last check found; [Unknown] also covers "off", "still running" and "failed". */
@@ -96,6 +98,7 @@ class UpdateStore(
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
 
     private var started = false
+    private var job: Job? = null
 
     /** Starts the check unless it is off or already ran in this process; null when nothing started. */
     fun checkOnce(scope: CoroutineScope): Job? {
@@ -106,7 +109,7 @@ class UpdateStore(
             val found = checker.check()
             // Turned off while the request was out: show nothing.
             if (_enabled.value) _state.value = found
-        }
+        }.also { job = it }
     }
 
     fun dismiss() {
@@ -117,7 +120,11 @@ class UpdateStore(
     fun setEnabled(on: Boolean) {
         _enabled.value = on
         persist(on)
-        if (!on) _state.value = UpdateState.Unknown
+        if (!on) {
+            // A request still out must not land after an off-then-on.
+            job?.cancel()
+            _state.value = UpdateState.Unknown
+        }
     }
 
     companion object {
