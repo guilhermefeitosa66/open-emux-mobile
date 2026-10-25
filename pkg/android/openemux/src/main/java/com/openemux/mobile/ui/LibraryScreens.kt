@@ -40,6 +40,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -128,6 +130,13 @@ fun ShelfScreen() {
         select = { a.nav.navigate(Routes.library("SEARCH")) },
         y = { menuFor = Console.byId(focusedShelf.value) },
     )
+
+    // In tabletop the shelves stay on the top half and the way to add more is on the bottom one.
+    if (LocalTabletop.current) TabletopDeck {
+        Column(Modifier.fillMaxSize().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)) {
+            SecondaryButton(stringResource(R.string.library_shelf_empty_action), { a.nav.navigate(Routes.IMPORT) }, Modifier.fillMaxWidth(), icon = Icons.Download)
+        }
+    }
 
     val favoritesShort = stringResource(R.string.library_favorites_eyebrow)
     val favoritesName = stringResource(R.string.library_favorites)
@@ -633,7 +642,9 @@ fun LibraryScreen(filter: String) {
         select = { searching = !searching; if (!searching) query = "" },
     )
 
-    if (LocalWindowLayout.current.short && mode != ViewMode.List) {
+    val tabletop = LocalTabletop.current
+    // Tabletop decides first: the top half takes the upright layout, however short it is.
+    if (LocalWindowLayout.current.short && !tabletop && mode != ViewMode.List) {
         LandscapeLibrary(
             title = when (current) { "FAV" -> stringResource(R.string.library_favorites); "ALL" -> stringResource(R.string.library_all_games); else -> console!!.displayName },
             list = list, groups = groups, roms = roms, current = current, onPick = { current = it },
@@ -644,6 +655,28 @@ fun LibraryScreen(filter: String) {
             focusedRom = focusedRom,
         )
         return
+    }
+
+    val searchAndSort: @Composable () -> Unit = {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            RoundIconButton(if (searching) Icons.Close else Icons.Search, stringResource(if (searching) R.string.library_close_search else R.string.library_search), {
+                searching = !searching; if (!searching) query = ""
+            })
+            RoundIconButton(Icons.Sort, stringResource(R.string.library_sort_by, stringResource(sort.label)), {
+                sort = if (sort == SortMode.Az) SortMode.Recent else SortMode.Az
+            })
+        }
+    }
+    // In tabletop the page's controls sit on the bottom half and the grid has the top one.
+    if (tabletop) TabletopDeck {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { searchAndSort() }
+                ViewToggle(mode) { mode = it }
+            }
+            if (searching) SearchField(query, autoFocus = searchRequested) { query = it }
+            ConsoleChips(roms, current, Modifier.padding(top = 14.dp)) { current = it }
+        }
     }
 
     // One game in the grid, in view mode m.
@@ -713,16 +746,9 @@ fun LibraryScreen(filter: String) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { BackLink(stringResource(R.string.library_shelf_title)) { a.nav.popBackStack(Routes.SHELF, false) } }
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        RoundIconButton(if (searching) Icons.Close else Icons.Search, stringResource(if (searching) R.string.library_close_search else R.string.library_search), {
-                            searching = !searching; if (!searching) query = ""
-                        })
-                        RoundIconButton(Icons.Sort, stringResource(R.string.library_sort_by, stringResource(sort.label)), {
-                            sort = if (sort == SortMode.Az) SortMode.Recent else SortMode.Az
-                        })
-                    }
+                    if (!tabletop) searchAndSort()
                 }
-                if (searching) SearchField(query, autoFocus = searchRequested) { query = it }
+                if (searching && !tabletop) SearchField(query, autoFocus = searchRequested) { query = it }
                 Row(Modifier.padding(top = 14.dp), verticalAlignment = Alignment.Bottom) {
                     Column(Modifier.weight(1f)) {
                         val eyebrow = when (current) {
@@ -739,10 +765,10 @@ fun LibraryScreen(filter: String) {
                     Text(countString(R.plurals.library_games_count, list.size, list.size), style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(bottom = 4.dp))
                 }
                 ArtworkSyncPill(Modifier.padding(top = 16.dp))
-                ConsoleChips(roms, current, Modifier.padding(top = 14.dp)) { current = it }
+                if (!tabletop) ConsoleChips(roms, current, Modifier.padding(top = 14.dp)) { current = it }
                 Row(Modifier.padding(top = 22.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(if (sort == SortMode.Az) R.string.library_section_carts else R.string.library_section_recent), style = Type.Section.copy(fontSize = 17.sp), modifier = Modifier.weight(1f))
-                    ViewToggle(mode) { mode = it }
+                    if (!tabletop) ViewToggle(mode) { mode = it }
                 }
                 if (list.isEmpty()) {
                     Text(

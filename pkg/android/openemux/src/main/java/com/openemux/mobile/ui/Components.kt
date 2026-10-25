@@ -326,6 +326,24 @@ fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modi
     }
 }
 
+/** A setting as a tile: its name over its value; a tap opens it, when it opens anything. */
+@Composable
+fun SettingTile(label: String, value: String, onClick: (() -> Unit)?, modifier: Modifier = Modifier) {
+    Column(
+        modifier
+            .heightIn(min = 58.dp)
+            .let { if (onClick != null) it.gamepadFocus(corner = 14.dp) else it }
+            .clip(RoundedCornerShape(14.dp))
+            .background(Oe.Surface)
+            .let { if (onClick != null) it.clickable(role = Role.Button, onClick = onClick) else it }
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(label, style = Type.Caption.copy(fontWeight = FontWeight.Normal), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(value, style = Type.Section, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+    }
+}
+
 @Composable
 fun Card(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Column(modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Oe.Surface)) { content() }

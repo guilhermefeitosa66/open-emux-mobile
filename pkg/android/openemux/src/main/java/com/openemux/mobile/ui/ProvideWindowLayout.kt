@@ -3,6 +3,7 @@ package com.openemux.mobile.ui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -39,18 +40,19 @@ fun ProvideWindowLayout(content: @Composable () -> Unit) {
             ?.let { it.width() / density to it.height() / density }
             ?: (configuration.screenWidthDp.toFloat() to configuration.screenHeightDp.toFloat())
     }
-    val postures = remember(activity) {
-        // A device or a window the tracker cannot read is simply flat.
+    val folds = remember(activity) {
+        // A device or a window the tracker cannot read has no fold.
         val info = activity?.let { runCatching { WindowInfoTracker.getOrCreate(it).windowLayoutInfo(it) }.getOrNull() }
         (info ?: emptyFlow()).map { layout ->
             layout.displayFeatures.filterIsInstance<FoldingFeature>().firstOrNull()?.let { fold ->
                 val b = fold.bounds
-                postureOf(fold.state == FoldingFeature.State.HALF_OPENED, fold.orientation == FoldingFeature.Orientation.VERTICAL, b.left, b.top, b.right, b.bottom)
-            } ?: Posture.Flat
-        }.catch { emit(Posture.Flat) }
+                foldOf(fold.state == FoldingFeature.State.HALF_OPENED, fold.orientation == FoldingFeature.Orientation.VERTICAL, b.left, b.top, b.right, b.bottom)
+            }.also { Log.d("OpenEmux", "window fold: $it") }
+        }.catch { emit(null) }
     }
-    val posture by postures.collectAsStateWithLifecycle(initialValue = Posture.Flat)
-    CompositionLocalProvider(LocalWindowLayout provides WindowLayout.of(size.first, size.second, posture), content = content)
+    val fold by folds.collectAsStateWithLifecycle(initialValue = null)
+    val posture = fold?.let { postureOf(it.halfOpened, it.vertical, it.leftPx, it.topPx, it.rightPx, it.bottomPx) } ?: Posture.Flat
+    CompositionLocalProvider(LocalWindowLayout provides WindowLayout.of(size.first, size.second, posture, fold, density), content = content)
 }
 
 /** The activity behind a context, through any wrappers (a dialog's themed context included). */
