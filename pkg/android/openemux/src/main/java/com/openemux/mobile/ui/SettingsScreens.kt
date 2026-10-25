@@ -44,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -104,7 +105,7 @@ fun SettingsScreen() {
     val missingOptional = missing.count { !it.required }
     val missingRequired = missing.filter { it.required }.map { it.console }.distinct().size
 
-    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.settings_title), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
 
         Row(
@@ -652,7 +653,7 @@ fun ImportScreen() {
         }
     }
 
-    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.settings_import), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
         Text(
             stringResource(R.string.settings_import_intro),

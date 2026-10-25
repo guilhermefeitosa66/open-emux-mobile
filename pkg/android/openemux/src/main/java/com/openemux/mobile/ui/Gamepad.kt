@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.BringIntoViewSpec
@@ -38,7 +39,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
@@ -248,6 +251,17 @@ fun MarginFocusScroll(leading: Dp = FocusMargin, trailing: Dp = FocusMargin, con
     }
     CompositionLocalProvider(LocalBringIntoViewSpec provides spec, content = content)
 }
+
+/**
+ * Keeps gamepad focus in this list when it is pushed past the last item in
+ * [direction]. The margin leaves room between the last item and what lies
+ * beyond it (the tab bar, the header), and the focus search would otherwise
+ * jump there; the last item holds focus instead, as when it touched the edge.
+ */
+fun Modifier.holdFocusAtEnd(direction: FocusDirection): Modifier =
+    focusProperties {
+        onExit = { if (InputMode.gamepad && requestedFocusDirection == direction) cancelFocusChange() }
+    }.focusGroup()
 
 /**
  * A row that scrolls sideways under the gamepad without cutting the first

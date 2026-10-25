@@ -58,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -117,7 +118,7 @@ fun ShelfScreen() {
     val favoritesName = stringResource(R.string.library_favorites)
 
     // The focused shelf keeps clear of the top and of the bars over the bottom.
-    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), state = listState) {
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyColumn(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down), state = listState) {
         item {
             Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.oe_logo), contentDescription = null, modifier = Modifier.height(34.dp))
@@ -445,7 +446,7 @@ fun LibraryScreen(filter: String) {
     // Staggered, so each box art keeps its own proportions in the covers mode.
     MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
-        Modifier.fillMaxSize().statusBarsPadding(),
+        Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down),
         contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 10.dp, bottom = TabBarHeight + hintBarInset + 24.dp),
         horizontalArrangement = Arrangement.spacedBy(spec.gap.dp),
         verticalItemSpacing = if (shown == ViewMode.List) 0.dp else 18.dp,
@@ -569,7 +570,8 @@ private fun LandscapeLibrary(
     val lib = a.app.library
     val meta by lib.meta.collectAsState()
     Column(Modifier.fillMaxSize().statusBarsPadding().displayCutoutPadding().padding(bottom = TabBarHeight + hintBarInset)) {
-        Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+        // The header sits under the top edge: the room above it is the focus ring's.
+        Row(Modifier.padding(start = 20.dp, end = 20.dp, top = FocusOutset), verticalAlignment = Alignment.CenterVertically) {
             BackLink(stringResource(R.string.library_shelf_title)) { a.nav.popBackStack(Routes.SHELF, false) }
             FitText(title, style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(start = 16.dp).weight(1f))
             Text(countString(R.plurals.library_games_count, list.size, list.size), style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(horizontal = 12.dp))
@@ -596,7 +598,7 @@ private fun LandscapeLibrary(
             }
             // The focused game stays in the middle; the first and last rest at the row's edges.
             CenteredFocusScroll { LazyRow(
-                Modifier.fillMaxSize(),
+                Modifier.fillMaxSize().holdFocusAtEnd(FocusDirection.Right),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = margin),
                 horizontalArrangement = Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.CenterVertically,
@@ -729,7 +731,7 @@ fun RecentScreen() {
     val recent = roms.filter { (meta.roms[it.key]?.lastPlayed ?: 0) > 0 }.sortedByDescending { meta.roms[it.key]!!.lastPlayed }
     GamepadButtons(hints = listOf("A" to stringResource(R.string.library_hint_detail), "L1 R1" to stringResource(R.string.library_hint_tabs)))
 
-    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyColumn(Modifier.fillMaxSize().statusBarsPadding()) {
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyColumn(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down)) {
         item {
             Text(stringResource(R.string.library_recent_title), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp))
         }
