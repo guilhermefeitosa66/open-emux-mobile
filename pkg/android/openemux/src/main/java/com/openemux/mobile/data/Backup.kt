@@ -90,17 +90,18 @@ class BackupRoots(val external: File, val internal: File) {
                 old.deleteRecursively()
                 if (root.file.exists() && !rename(root.file, old)) throw IOException("could not set aside ${root.name}")
                 moved += root
-                root.file.parentFile?.mkdirs()
+                root.file.parentFile.mkdirs()
                 if (!rename(staging(root), root.file)) throw IOException("could not restore ${root.name}")
             }
         } catch (e: IOException) {
+            // A root the device did not have goes again; one it had comes back.
             moved.asReversed().forEach { root ->
-                val old = old(root)
-                if (old.exists()) { root.file.deleteRecursively(); old.renameTo(root.file) }
+                root.file.deleteRecursively()
+                old(root).renameTo(root.file)
             }
             throw BackupError.Io(e.message)
         }
-        committed.parentFile?.mkdirs()
+        committed.parentFile.mkdirs()
         committed.writeText("")
         finish()
     }
@@ -337,10 +338,11 @@ class BackupReader(private val roots: BackupRoots) {
             }
             val root = rootOf(name, listed) ?: throw BackupError.NotABackup("entry $name")
             val target = if (root.isDir) File(roots.staging(root), name.removePrefix(root.name + "/")) else roots.staging(root)
-            target.parentFile?.mkdirs()
+            target.parentFile.mkdirs()
             onProgress(root.name.substringAfter('/'), bytes, declared.bytes)
             target.outputStream().use { bytes += copy(zip, it, buf, declared.bytes - bytes) }
-            if (entry.time > 0) target.setLastModified(entry.time)
+            // States are listed newest first: they keep the time they were made. -1 is "unknown".
+            target.setLastModified(entry.time.coerceAtLeast(0))
         }
         if (seen.size != declared.files || bytes != declared.bytes) throw BackupError.NotABackup("incomplete")
         return StagedBackup(manifest, listed, prefs)
