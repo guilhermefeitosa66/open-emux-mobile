@@ -31,8 +31,12 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
@@ -49,7 +53,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -62,6 +65,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -70,6 +74,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -101,9 +106,9 @@ fun ShelfScreen() {
     // While a shelf is dragged: the order on screen, the dragged console and how far it is from its slot.
     var live by remember { mutableStateOf<List<Console>?>(null) }
     var dragged by remember { mutableStateOf<Console?>(null) }
-    var dragOffset by remember { mutableFloatStateOf(0f) }
+    var dragOffset by remember { mutableStateOf(Offset.Zero) }
     var menuFor by remember { mutableStateOf<Console?>(null) }
-    val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
     val haptic = LocalHapticFeedback.current
     GamepadButtons(
         hints = listOf(
@@ -117,114 +122,134 @@ fun ShelfScreen() {
     val favoritesShort = stringResource(R.string.library_favorites_eyebrow)
     val favoritesName = stringResource(R.string.library_favorites)
 
-    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), state = listState) {
-        item {
-            Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-                Image(painterResource(R.drawable.oe_logo), contentDescription = null, modifier = Modifier.height(34.dp))
-                // On a narrow screen the credit wraps under the name instead of pushing the button.
-                FlowRow(
-                    Modifier.padding(start = 10.dp).weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    itemVerticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("OpenEmux", style = Type.Title.copy(fontSize = 18.sp))
-                    PoweredByRetroArch()
+    // As many cards side by side as the shelf's own width holds: one on a phone in portrait, two in landscape.
+    BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding()) {
+        val columns = shelfColumns(maxWidth.value)
+        val cardWidth = cardWidthDp(maxWidth.value, columns).dp
+        LazyVerticalGrid(
+            GridCells.Fixed(columns),
+            Modifier.fillMaxSize(),
+            state = gridState,
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = SHELF_SIDE_DP.dp),
+            horizontalArrangement = Arrangement.spacedBy(SHELF_GAP_DP.dp),
+        ) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Column(Modifier.bleed(SHELF_SIDE_DP.dp)) {
+                    Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Image(painterResource(R.drawable.oe_logo), contentDescription = null, modifier = Modifier.height(34.dp))
+                        // On a narrow screen the credit wraps under the name instead of pushing the button.
+                        FlowRow(
+                            Modifier.padding(start = 10.dp).weight(1f),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            itemVerticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("OpenEmux", style = Type.Title.copy(fontSize = 18.sp))
+                            PoweredByRetroArch()
+                        }
+                        RoundIconButton(Icons.Search, stringResource(R.string.library_search_all_consoles), { a.nav.navigate(Routes.library("SEARCH")) })
+                    }
+                    Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 16.dp)) {
+                        Text(stringResource(R.string.library_shelf_title), style = Type.Display)
+                        val consoles = Console.entries.count { c -> roms.any { it.console == c } }
+                        Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 6.dp))
+                    }
+                    ArtworkSyncPill(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
                 }
-                RoundIconButton(Icons.Search, stringResource(R.string.library_search_all_consoles), { a.nav.navigate(Routes.library("SEARCH")) })
             }
-            Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 16.dp)) {
-                Text(stringResource(R.string.library_shelf_title), style = Type.Display)
-                val consoles = Console.entries.count { c -> roms.any { it.console == c } }
-                Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 6.dp))
-            }
-            ArtworkSyncPill(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
-        }
-        if (roms.isEmpty()) {
-            item {
-                EmptyState(
-                    stringResource(R.string.library_shelf_empty_title),
-                    stringResource(R.string.library_shelf_empty_body),
-                    stringResource(R.string.library_shelf_empty_action),
-                    { a.nav.navigate(Routes.IMPORT) },
-                )
-            }
-        } else {
-            val favorites = roms.filter { meta.roms[it.key]?.favorite == true }
-            val shown = live ?: present
-            val shelves = buildList {
-                if (favorites.isNotEmpty()) add(Triple(favoritesShort, favoritesName, favorites) to "FAV")
-                shown.forEach { c -> add(Triple(c.short, c.displayName, roms.filter { it.console == c }) to c.id) }
-            }
-            items(shelves, key = { it.second }) { (shelf, filter) ->
-                val (short, name, list) = shelf
-                val console = Console.byId(filter)
-                val (background, ink) = when (filter) {
-                    "FAV" ->
-                        if (Oe.dark) Brush.linearGradient(listOf(Color(0xFF5B3FA8), Color(0xFF3A2A6E))) to Color.White
-                        else Brush.linearGradient(listOf(Color(0xFFDDD3F8), Color(0xFFC6B8F0))) to Color(0xFF2E1F66)
-                    else -> console!!.shelf(Oe.dark).let { (back, text) -> SolidColor(back) to text }
+            if (roms.isEmpty()) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    EmptyState(
+                        stringResource(R.string.library_shelf_empty_title),
+                        stringResource(R.string.library_shelf_empty_body),
+                        stringResource(R.string.library_shelf_empty_action),
+                        { a.nav.navigate(Routes.IMPORT) },
+                        Modifier.bleed(SHELF_SIDE_DP.dp),
+                    )
                 }
-                val isDragged = console != null && console == dragged
-                val moveUp = stringResource(R.string.library_shelf_move_up)
-                val moveDown = stringResource(R.string.library_shelf_move_down)
-                ShelfCard(
-                    short, name, countString(R.plurals.library_games_count, list.size, list.size), list, background, ink,
-                    Modifier
-                        .then(if (isDragged) Modifier.zIndex(1f).graphicsLayer { translationY = dragOffset; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
-                        .restorableFocus(filter, focusedShelf, initial = shelves.first().second == filter)
-                        .then(
-                            if (console == null) Modifier else Modifier
-                                .semantics {
-                                    customActions = listOf(
-                                        CustomAccessibilityAction(moveUp) { lib.moveConsole(console, present, -1) },
-                                        CustomAccessibilityAction(moveDown) { lib.moveConsole(console, present, 1) },
+            } else {
+                val favorites = roms.filter { meta.roms[it.key]?.favorite == true }
+                val shown = live ?: present
+                val shelves = buildList {
+                    if (favorites.isNotEmpty()) add(Triple(favoritesShort, favoritesName, favorites) to "FAV")
+                    shown.forEach { c -> add(Triple(c.short, c.displayName, roms.filter { it.console == c }) to c.id) }
+                }
+                gridItems(shelves, key = { it.second }) { (shelf, filter) ->
+                    val (short, name, list) = shelf
+                    val console = Console.byId(filter)
+                    val (background, ink) = when (filter) {
+                        "FAV" ->
+                            if (Oe.dark) Brush.linearGradient(listOf(Color(0xFF5B3FA8), Color(0xFF3A2A6E))) to Color.White
+                            else Brush.linearGradient(listOf(Color(0xFFDDD3F8), Color(0xFFC6B8F0))) to Color(0xFF2E1F66)
+                        else -> console!!.shelf(Oe.dark).let { (back, text) -> SolidColor(back) to text }
+                    }
+                    val isDragged = console != null && console == dragged
+                    val moveUp = stringResource(R.string.library_shelf_move_up)
+                    val moveDown = stringResource(R.string.library_shelf_move_down)
+                    ShelfCard(
+                        console, short, name, countString(R.plurals.library_games_count, list.size, list.size), list, background, ink, cardWidth,
+                        Modifier
+                            .then(if (isDragged) Modifier.zIndex(1f).graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
+                            .restorableFocus(filter, focusedShelf, initial = shelves.first().second == filter)
+                            .then(
+                                if (console == null) Modifier else Modifier
+                                    .semantics {
+                                        customActions = listOf(
+                                            CustomAccessibilityAction(moveUp) { lib.moveConsole(console, present, -1) },
+                                            CustomAccessibilityAction(moveDown) { lib.moveConsole(console, present, 1) },
+                                        )
+                                    }
+                                    .reorderGestures(
+                                        onStart = {
+                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            live = present; dragged = console; dragOffset = Offset.Zero
+                                        },
+                                        onDrag = { delta ->
+                                            // One column: only the vertical move means anything, so a sideways drift never stalls the reorder.
+                                            dragOffset += if (columns == 1) Offset(0f, delta.y) else delta
+                                            val items = gridState.layoutInfo.visibleItemsInfo
+                                            val self = items.firstOrNull { it.key == console.id }
+                                            if (self != null) {
+                                                // The card under the dragged card's centre, in either column.
+                                                val key = reorderTarget(
+                                                    self.offset.x + self.size.width / 2 + dragOffset.x,
+                                                    self.offset.y + self.size.height / 2 + dragOffset.y,
+                                                    console.id,
+                                                    items.map { Slot(it.key, it.offset.x.toFloat(), it.offset.y.toFloat(), it.size.width.toFloat(), it.size.height.toFloat()) },
+                                                ) { k -> live?.any { it.id == k } == true }
+                                                val target = items.firstOrNull { it.key == key }
+                                                if (target != null) {
+                                                    // Previous/next in reading order: left to right, then down.
+                                                    val order = live!!.toMutableList()
+                                                    val to = order.indexOfFirst { it.id == target.key }
+                                                    order.remove(console)
+                                                    order.add(to, console)
+                                                    live = order
+                                                    // The card is laid out in its new slot: keep it under the finger.
+                                                    dragOffset += Offset((self.offset.x - target.offset.x).toFloat(), (self.offset.y - target.offset.y).toFloat())
+                                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                                }
+                                            }
+                                        },
+                                        onEnd = { moved ->
+                                            val order = live
+                                            if (moved && order != null) {
+                                                // Only the shelves on screen moved; the others keep their slots in the full order.
+                                                val it = order.iterator()
+                                                lib.setConsoleOrder(lib.orderedConsoles().map { c -> if (c in present) it.next() else c })
+                                            } else if (!moved) {
+                                                menuFor = console
+                                            }
+                                            live = null; dragged = null; dragOffset = Offset.Zero
+                                        },
                                     )
-                                }
-                                .reorderGestures(
-                                    onStart = {
-                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                        live = present; dragged = console; dragOffset = 0f
-                                    },
-                                    onDrag = { dy ->
-                                        dragOffset += dy
-                                        val items = listState.layoutInfo.visibleItemsInfo
-                                        val self = items.firstOrNull { it.key == console.id }
-                                        if (self != null) {
-                                            val center = self.offset + self.size / 2 + dragOffset
-                                            val target = items.firstOrNull { info ->
-                                                info.key != console.id && live?.any { it.id == info.key } == true &&
-                                                    center >= info.offset && center < info.offset + info.size
-                                            }
-                                            if (target != null) {
-                                                val order = live!!.toMutableList()
-                                                order.remove(console)
-                                                order.add(order.indexOfFirst { it.id == target.key }.let { if (target.index > self.index) it + 1 else it }, console)
-                                                live = order
-                                                // The card is laid out in its new slot: keep it under the finger.
-                                                dragOffset += self.offset - target.offset
-                                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                                            }
-                                        }
-                                    },
-                                    onEnd = { moved ->
-                                        val order = live
-                                        if (moved && order != null) {
-                                            // Only the shelves on screen moved; the others keep their slots in the full order.
-                                            val it = order.iterator()
-                                            lib.setConsoleOrder(lib.orderedConsoles().map { c -> if (c in present) it.next() else c })
-                                        } else if (!moved) {
-                                            menuFor = console
-                                        }
-                                        live = null; dragged = null; dragOffset = 0f
-                                    },
-                                )
-                        ),
-                ) {
-                    a.nav.navigate(Routes.library(filter))
+                            ),
+                    ) {
+                        a.nav.navigate(Routes.library(filter))
+                    }
                 }
             }
+            item(span = { GridItemSpan(maxLineSpan) }) { Spacer(BottomSpace) }
         }
-        item { Spacer(BottomSpace) }
     }
 
     menuFor?.let { console ->
@@ -259,7 +284,7 @@ fun ShelfScreen() {
  * Watches the Initial pass so that, once the press is long, the card's click
  * and the list's scroll never see the gesture.
  */
-private fun Modifier.reorderGestures(onStart: () -> Unit, onDrag: (Float) -> Unit, onEnd: (moved: Boolean) -> Unit): Modifier = composed {
+private fun Modifier.reorderGestures(onStart: () -> Unit, onDrag: (Offset) -> Unit, onEnd: (moved: Boolean) -> Unit): Modifier = composed {
     val start by rememberUpdatedState(onStart)
     val drag by rememberUpdatedState(onDrag)
     val end by rememberUpdatedState(onEnd)
@@ -280,21 +305,31 @@ private fun Modifier.reorderGestures(onStart: () -> Unit, onDrag: (Float) -> Uni
                 val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
                 change.consume()
                 if (!change.pressed) break
-                val dy = change.position.y - change.previousPosition.y
-                travel += kotlin.math.abs(dy)
-                if (dy != 0f) drag(dy)
+                val delta = change.position - change.previousPosition
+                travel += delta.getDistance()
+                if (delta != Offset.Zero) drag(delta)
             }
             end(travel > viewConfiguration.touchSlop)
         }
     }
 }
 
+/** Lets a full-width row of the shelf grid reach past the grid's side padding, as it did in a list. */
+private fun Modifier.bleed(side: Dp): Modifier = layout { measurable, constraints ->
+    val extra = (side * 2).roundToPx()
+    val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra))
+    layout(constraints.maxWidth, placeable.height) { placeable.place(-side.roundToPx(), 0) }
+}
+
+/** A console's shelf ([console] null: Favorites): icon, tag, name and count, then its three latest cartridges. */
 @Composable
-private fun ShelfCard(short: String, name: String, count: String, roms: List<Rom>, background: Brush, ink: Color, focus: Modifier, onClick: () -> Unit) {
+private fun ShelfCard(console: Console?, short: String, name: String, count: String, roms: List<Rom>, background: Brush, ink: Color, cardWidth: Dp, focus: Modifier, onClick: () -> Unit) {
     val a = LocalActions.current
+    val fanWidth = fanWidthDp(cardWidth.value)
+    val compact = isCompactCard(cardWidth.value)
     Box(
         Modifier
-            .padding(horizontal = 20.dp, vertical = 6.dp)
+            .padding(vertical = 6.dp)
             .fillMaxWidth()
             .height(108.dp)
             .gamepadFocus(corner = 22.dp, scale = 1.02f)
@@ -304,6 +339,8 @@ private fun ShelfCard(short: String, name: String, count: String, roms: List<Rom
             .clickable(role = Role.Button, onClick = onClick),
     ) {
         val fan = roms.sortedByDescending { a.app.library.romMeta(it.key).lastPlayed }.take(3)
+        // Drawn for a 210dp fan; a narrower card scales its widths and end offsets (heights follow each cartridge's aspect), top offsets stay.
+        val scale = fanWidth / FAN_MAX_DP
         val placements = listOf(Triple(92.dp, 26.dp, -9f), Triple(52.dp, 16.dp, -2f), Triple(8.dp, 30.dp, 7f))
         fan.forEachIndexed { i, rom ->
             val (right, top, angle) = placements[i + (3 - fan.size)]
@@ -313,15 +350,43 @@ private fun ShelfCard(short: String, name: String, count: String, roms: List<Rom
                 rom.console.cartAspect < 1.65f -> 100.dp
                 else -> 118.dp
             }
-            Box(Modifier.align(Alignment.TopEnd).padding(end = right, top = top).width(w).rotate(angle)) {
+            Box(Modifier.align(Alignment.TopEnd).padding(end = right * scale, top = top).width(w * scale).rotate(angle)) {
                 Cartridge(rom.console, labelFor(rom), rom.title, a.app.library.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
             }
         }
-        Column(Modifier.align(Alignment.CenterStart).padding(start = 18.dp).width(150.dp)) {
-            Text(short, style = Type.Tag.copy(color = ink.copy(alpha = 0.72f), fontSize = 12.sp, letterSpacing = 1.sp))
-            Text(name, style = Type.Title.copy(fontSize = 19.sp, lineHeight = 22.sp, color = ink))
-            Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), modifier = Modifier.padding(top = 4.dp))
+        val tag = Type.Tag.copy(color = ink.copy(alpha = 0.72f), fontSize = 12.sp, letterSpacing = 1.sp)
+        // The text ends where the fan begins, so it never runs under the cartridges.
+        val textEnd = (fanWidth + 8f).dp
+        if (compact) {
+            Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(start = 14.dp, end = textEnd)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ShelfIconTile(console, 24.dp, 8.dp, 18.dp, 14.dp)
+                    Text(short, style = tag, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+                }
+                Text(name, style = Type.Title.copy(fontSize = 17.sp, lineHeight = 20.sp, color = ink), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+                Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), modifier = Modifier.padding(top = 4.dp))
+            }
+        } else {
+            Row(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(start = 16.dp, end = textEnd), verticalAlignment = Alignment.CenterVertically) {
+                ShelfIconTile(console, 40.dp, 12.dp, 28.dp, 20.dp)
+                Column(Modifier.padding(start = 12.dp)) {
+                    Text(short, style = tag, maxLines = 1)
+                    Text(name, style = Type.Title.copy(fontSize = 19.sp, lineHeight = 22.sp, color = ink), maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), modifier = Modifier.padding(top = 4.dp))
+                }
+            }
         }
+    }
+}
+
+/** The console's pixel icon (the star for Favorites) on a soft tile that reads on every shelf colour. */
+@Composable
+private fun ShelfIconTile(console: Console?, size: Dp, corner: Dp, icon: Dp, star: Dp) {
+    Box(
+        Modifier.size(size).clip(RoundedCornerShape(corner)).background(Color.White.copy(alpha = if (Oe.dark) 0.16f else 0.62f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (console == null) Icon(Icons.Star, Oe.Star, star, filled = true) else ConsoleIcon(console, icon)
     }
 }
 
