@@ -585,7 +585,8 @@ fun EmptyState(title: String, body: String, action: String?, onAction: () -> Uni
 val ScreenPadding = PaddingValues(horizontal = 20.dp)
 
 /** Full width, centred, never wider than a comfortable line of text: no change on a phone, a column on a tablet. */
-fun Modifier.readingWidth(): Modifier = fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 640.dp)
+// The last fillMaxWidth keeps the column at that width even when its content is narrower, so nothing shrinks and recentres.
+fun Modifier.readingWidth(): Modifier = fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally).widthIn(max = 640.dp).fillMaxWidth()
 
 @Composable
 fun formatPlaytime(seconds: Long): String = when {

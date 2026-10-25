@@ -135,8 +135,11 @@ fun ShelfScreen() {
     val spec = shelfSpecOf(LocalWindowLayout.current)
     // The newest files, only where the row shows: reading every file's date is not for the main thread.
     val added by produceState(emptyList<Rom>(), roms, spec.recentlyAdded) {
-        value = if (spec.recentlyAdded) withContext(Dispatchers.IO) { recentlyAdded(roms, { it.file.lastModified() }, 4) } else emptyList()
+        value = if (spec.recentlyAdded) withContext(Dispatchers.IO) { recentlyAdded(roms, { it.file.lastModified() }, RECENTLY_ADDED_COUNT) } else emptyList()
     }
+
+    // The games to continue, sorted once per library or play-time change rather than on every pass over the grid.
+    val playing = remember(roms, meta, spec.continueCount) { continueList(roms, { meta.roms[it.key]?.lastPlayed ?: 0L }, spec.continueCount) }
 
     // As many cards side by side as the shelf's own width holds: one on a phone in portrait, two in landscape, three on a wide tablet.
     BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding()) {
@@ -186,7 +189,6 @@ fun ShelfScreen() {
                 }
             } else {
                 if (spec.tablet) {
-                    val playing = continueList(roms, { meta.roms[it.key]?.lastPlayed ?: 0L }, spec.continueCount)
                     if (playing.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                         Column(Modifier.padding(top = 28.dp)) {
                             SectionHeading(stringResource(R.string.library_continue_playing), stringResource(R.string.library_see_recent)) { a.nav.navigateTab(Routes.RECENT) }
@@ -299,7 +301,7 @@ fun ShelfScreen() {
                             SectionHeading(stringResource(R.string.library_recently_added), stringResource(R.string.library_see_all)) { a.nav.navigate(Routes.library("ALL")) }
                             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
                                 added.forEach { rom -> AddedCartridge(rom, Modifier.weight(1f), Modifier.restorableFocus("added-${rom.key}", focusedShelf)) }
-                                repeat(4 - added.size) { Spacer(Modifier.weight(1f)) }
+                                repeat(RECENTLY_ADDED_COUNT - added.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                     }

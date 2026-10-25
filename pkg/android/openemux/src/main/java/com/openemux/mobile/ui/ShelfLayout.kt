@@ -53,4 +53,8 @@ fun <T> continueList(items: List<T>, lastPlayed: (T) -> Long, n: Int): List<T> =
 
 /** The [n] games that came in last, by when their file was copied in, newest first. */
 fun <T> recentlyAdded(items: List<T>, modified: (T) -> Long, n: Int): List<T> =
-    items.sortedByDescending(modified).take(n.coerceAtLeast(0))
+    // [modified] reads the file system: once per item, not once per comparison.
+    items.map { it to modified(it) }.sortedByDescending { it.second }.take(n.coerceAtLeast(0)).map { it.first }
+
+/** How many games the tablet's recently added row shows. */
+const val RECENTLY_ADDED_COUNT = 4
