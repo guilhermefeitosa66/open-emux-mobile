@@ -165,12 +165,13 @@ class GameLauncher(
             val bounds = metrics.bounds
             val cutout = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.displayCutout())
             val ndsLayouts = if (rom.console == Console.NDS) NdsLayouts.load(context.filesDir) else null
+            val core = library.effectiveCore(rom)
             val skin = SkinRenderer(context).render(
                 rom.console, bounds.width(), bounds.height(), File(dir, "skin"),
                 cutout = if (bounds.height() >= bounds.width()) cutout.top else maxOf(cutout.left, cutout.right),
                 ndsLayouts = ndsLayouts,
                 hardcore = hardcore,
-                coreId = library.effectiveCore(rom).id,
+                coreId = core.id,
             )
 
             val shader = library.effectiveShader(rom)
@@ -190,13 +191,13 @@ class GameLauncher(
             listOf(paths.states(rom.console), paths.saves(rom.console), paths.system, paths.screenshots, paths.playtime)
                 .forEach { it.mkdirs() }
             val config = File(dir, "retroarch.cfg")
-            config.writeText(buildConfig(rom, resume && !hardcore, dir, skin, cheevos.configKeys(), hardcore))
+            config.writeText(buildConfig(rom, core.id, resume && !hardcore, dir, skin, cheevos.configKeys(), hardcore))
 
             library.updateRom(rom.key) { it.copy(lastPlayed = System.currentTimeMillis()) }
 
             Intent(context, GameActivity::class.java).apply {
                 putExtra("ROM", rom.file.absolutePath)
-                putExtra("LIBRETRO", File(paths.cores, library.effectiveCore(rom).fileName).absolutePath)
+                putExtra("LIBRETRO", File(paths.cores, core.fileName).absolutePath)
                 putExtra("CONFIGFILE", config.absolutePath)
                 putExtra("IME", "com.android.inputmethod.latin/.LatinIME")
                 putExtra(GameExtras.TITLE, rom.title)
@@ -207,7 +208,7 @@ class GameLauncher(
                 putExtra(GameExtras.PLAYTIME, library.playtimeFile(rom).absolutePath)
                 putExtra(GameExtras.SHADERS_DIR, paths.shaders.absolutePath)
                 putExtra(GameExtras.SHADER, shader.id)
-                putExtra(GameExtras.CORE_NAME, library.effectiveCore(rom).name)
+                putExtra(GameExtras.CORE_NAME, core.name)
                 putExtra(GameExtras.HARDCORE, hardcore)
                 if (slot != null && !hardcore) putExtra(GameExtras.LOAD_SLOT, slot)
             }
@@ -215,7 +216,7 @@ class GameLauncher(
         from.startActivity(intent, ActivityOptions.makeCustomAnimation(from, R.anim.game_enter, R.anim.hold).toBundle())
     }
 
-    private fun buildConfig(rom: Rom, resume: Boolean, dir: File, skin: File, cheevos: Map<String, String>, hardcore: Boolean): String {
+    private fun buildConfig(rom: Rom, coreId: String, resume: Boolean, dir: File, skin: File, cheevos: Map<String, String>, hardcore: Boolean): String {
         val settings = linkedMapOf(
             "video_driver" to "gl",
             "menu_driver" to "glui",
@@ -299,11 +300,10 @@ class GameLauncher(
         if (rom.console == Console.PS) settings["input_libretro_device_p1"] = "517"
         // Genesis Plus GX only gives a pad six buttons when the ROM header asks; the MD skins draw X, Y, Z and MODE
         // for every game, so pin its MD Joypad 6 Button. PicoDrive reads picodrive_input1 instead.
-        val core = library.effectiveCore(rom).id
-        if ((rom.console == Console.MD || rom.console == Console.MCD) && core == "genesis_plus_gx") {
+        if ((rom.console == Console.MD || rom.console == Console.MCD) && coreId == "genesis_plus_gx") {
             settings["input_libretro_device_p1"] = "513"
         }
-        // atari800 picks its 5200 joystick on load, but the frontend's port device overrides it and moves Fire 2 to B.
+        // atari800 only switches to its 5200 joystick when the frontend asks for that port device; the default joypad moves Fire 2 to B.
         if (rom.console == Console.A5200) settings["input_libretro_device_p1"] = "769"
         return settings.entries.joinToString("\n") { (k, v) -> "$k = \"$v\"" } + "\n"
     }

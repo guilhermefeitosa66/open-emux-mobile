@@ -59,7 +59,7 @@ private val KEYPAD_KEY = SkinKey("", KEYPAD_BIND, R.string.data_skin_keypad)
 /** The console key that opens [Skin.keypad] in place of the face buttons. */
 const val KEYPAD_BIND = "keypad"
 
-class Skin(
+data class Skin(
     val name: String,
     val family: SkinFamily,
     val colors: SkinColors,
@@ -439,8 +439,9 @@ fun Skin.forCore(coreId: String?): Skin {
             is SkinCluster.Face -> SkinCluster.Face(cl.side, cl.row, cl.slots, cl.buttons.map { SkinButton(it.label, b(it.bind), it.bg, it.fg) })
         }
     }
-    return Skin(
-        name, family, colors, shouldersLeft.map(::k), shouldersRight.map(::k), clusters, pills.map(::k), keypad.map { it.map(::k) },
+    return copy(
+        shouldersLeft = shouldersLeft.map(::k), shouldersRight = shouldersRight.map(::k), clusters = clusters,
+        pills = pills.map(::k), keypad = keypad.map { it.map(::k) },
     )
 }
 
