@@ -64,6 +64,7 @@ class ParseReleaseTest {
 
     @Test fun withoutATagUsesTheName() {
         assertEquals(Release("1.18.0", DEFAULT_RELEASE_URL), parseRelease("""{"name":"OpenEmux 1.18.0"}"""))
+        assertEquals(Release("1.18.0", DEFAULT_RELEASE_URL), parseRelease("""{"tag_name":null,"name":"OpenEmux 1.18.0"}"""))
     }
 
     @Test fun withoutAVersionIsNull() {

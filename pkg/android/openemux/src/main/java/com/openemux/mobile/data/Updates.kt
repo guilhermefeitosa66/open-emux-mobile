@@ -49,7 +49,8 @@ const val DEFAULT_RELEASE_URL = "https://github.com/guilhermefeitosa66/OpenEmux/
 /** Reads a `releases/latest` reply; null for anything that does not name a version. */
 fun parseRelease(json: String): Release? {
     val obj = try { JSONObject(json) } catch (_: JSONException) { return null }
-    val tag = obj.optString("tag_name").ifBlank { obj.optString("name") }
+    // optString turns a JSON null into "null", which would hide the name.
+    val tag = obj.optString("tag_name").takeUnless { obj.isNull("tag_name") }.orEmpty().ifBlank { obj.optString("name") }
     val version = UpdateVersion.parse(tag)?.joinToString(".") ?: return null
     // Only a GitHub page is opened; anything else falls back to the latest release.
     val page = obj.optString("html_url").takeIf { it.startsWith("https://github.com/") } ?: DEFAULT_RELEASE_URL
