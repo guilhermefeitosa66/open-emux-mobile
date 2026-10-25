@@ -15562,6 +15562,12 @@ void input_driver_poll(void)
    }
 
 #ifdef HAVE_OVERLAY
+#if defined(ANDROID)
+   /* OpenEmux: the toggles are reported every frame, not only while an
+    * overlay is polled - a connected gamepad hides it, and its hotkeys
+    * flip them all the same. */
+   input_overlay_states();
+#endif
    if (      input_st->overlay_ptr
          && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
    {

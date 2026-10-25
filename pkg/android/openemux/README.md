@@ -58,8 +58,9 @@ when the content closes, and the library must survive that.
    driver (`input/input_overlay_alpha.c`). When either state changes, the
    activity's `onToggleStates()` hears it once, so the pause sheet shows the
    engine's fast forward. `android_app_toggle_states()` in
-   `frontend/drivers/platform_unix.c`, called from the overlay's alpha pass
-   in `input/input_driver.c`.
+   `frontend/drivers/platform_unix.c`, called from `input_overlay_states()`
+   in `input/input_driver.c` on every input poll, whether or not an overlay
+   is shown (a connected gamepad hides it).
 
 Upstream behaviour is kept: the base `RetroActivityCommon` returns false
 from the first two and ignores the overlay change and the toggles, so the stock RetroArch

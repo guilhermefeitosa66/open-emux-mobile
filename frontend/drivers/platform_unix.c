@@ -108,7 +108,6 @@
 #ifdef ANDROID
 void android_app_toggle_states(bool fast_forward, bool turbo)
 {
-#ifdef ANDROID
    JNIEnv *env = jni_thread_getenv();
 
    if (!env || !g_android || !g_android->onToggleStates)
@@ -118,7 +117,6 @@ void android_app_toggle_states(bool fast_forward, bool turbo)
          g_android->onToggleStates,
          fast_forward ? JNI_TRUE : JNI_FALSE,
          turbo        ? JNI_TRUE : JNI_FALSE);
-#endif
 }
 
 static void frontend_unix_set_sustained_performance_mode(bool on);

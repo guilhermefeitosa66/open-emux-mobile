@@ -39,8 +39,7 @@ class GameActivity : RetroActivityFuture() {
     @Volatile private var sheetOpen = false
 
     /** Written on the engine thread (onToggleStates): whether fast forward is on, for the pause sheet. */
-    @Volatile var fastForwardOn = false
-        private set
+    @Volatile private var fastForwardOn = false
     private var stickKey = 0
 
     // The NDS overlay last shown: its orientation, and the layout each orientation was left on (engine thread only).
