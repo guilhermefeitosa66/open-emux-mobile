@@ -30,9 +30,8 @@ tools/build.sh          # ndk-build the engine (arm64-v8a, x86_64) in ../phoenix
 ```
 
 Any change to C code (the engine hooks) needs the ndk-build step; Gradle only picks up
-the prebuilt `libretroarch-activity.so` from `../phoenix-common/libs`. The only tests are
-JVM unit tests for the pure layout logic (`./gradlew testDebugUnitTest`); the UI has
-only been exercised on an x86_64 emulator.
+the prebuilt `libretroarch-activity.so` from `../phoenix-common/libs`. There are no tests
+for the Android frontend; it has only been exercised on an x86_64 emulator.
 
 `local.properties` (untracked) holds the ScreenScraper dev credential
 (`screenscraper.devid`, `screenscraper.devpassword`), injected as `BuildConfig.SS_*`.
