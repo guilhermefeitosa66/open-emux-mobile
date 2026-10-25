@@ -19,6 +19,7 @@ import com.openemux.mobile.ui.GamepadBus
 import com.openemux.mobile.ui.InputMode
 import com.openemux.mobile.ui.Oe
 import com.openemux.mobile.ui.OpenEmuxRoot
+import com.openemux.mobile.ui.ProvideWindowLayout
 import com.openemux.mobile.ui.ThemePref
 
 class MainActivity : ComponentActivity() {
@@ -34,7 +35,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val dark = Oe.dark
             LaunchedEffect(dark) { systemBars(dark) }
-            OpenEmuxRoot()
+            ProvideWindowLayout { OpenEmuxRoot() }
         }
     }
 

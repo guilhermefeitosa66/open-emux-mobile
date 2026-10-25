@@ -54,7 +54,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -67,6 +66,7 @@ import com.openemux.mobile.ui.HintBar
 import com.openemux.mobile.ui.Icon
 import com.openemux.mobile.ui.Icons
 import com.openemux.mobile.ui.ListRow
+import com.openemux.mobile.ui.LocalWindowLayout
 import com.openemux.mobile.ui.Oe
 import com.openemux.mobile.ui.OpenEmuxTheme
 import com.openemux.mobile.ui.RadioCard
@@ -160,8 +160,8 @@ fun PauseSheet(
         val context = LocalContext.current
         val states = remember(refresh) { session.states() }
         val cart = remember { session.cartPath?.let { BitmapFactory.decodeFile(it)?.asImageBitmap() } }
-        // Landscape is short: the main page goes in two columns when they fit, and whatever still overflows scrolls.
-        val landscape = LocalConfiguration.current.let { it.screenWidthDp > it.screenHeightDp && it.screenWidthDp >= 640 }
+        // A wide window (a phone on its side) is short: the main page goes in two columns when they fit, and whatever still overflows scrolls.
+        val landscape = LocalWindowLayout.current.wide
 
         fun command(cmd: String, message: String? = null, after: () -> Unit = {}) {
             scope.launch {
