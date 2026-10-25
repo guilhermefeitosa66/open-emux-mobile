@@ -70,6 +70,7 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -81,6 +82,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -120,7 +122,8 @@ fun ShelfScreen() {
     // The focused shelf keeps clear of the top and of the bars over the bottom.
     MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyColumn(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down), state = listState) {
         item {
-            Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            // The list clips at its top: the room above the header is the focus ring's.
+            Row(Modifier.padding(start = 20.dp, end = 20.dp, top = FocusOutset), verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.oe_logo), contentDescription = null, modifier = Modifier.height(34.dp))
                 // On a narrow screen the credit wraps under the name instead of pushing the button.
                 FlowRow(
@@ -447,7 +450,7 @@ fun LibraryScreen(filter: String) {
     MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
         Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 10.dp, bottom = TabBarHeight + hintBarInset + 24.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = FocusOutset, bottom = TabBarHeight + hintBarInset + 24.dp),
         horizontalArrangement = Arrangement.spacedBy(spec.gap.dp),
         verticalItemSpacing = if (shown == ViewMode.List) 0.dp else 18.dp,
     ) {
@@ -597,8 +600,10 @@ private fun LandscapeLibrary(
                 )
             }
             // The focused game stays in the middle; the first and last rest at the row's edges.
+            // The last game sits at the row's end, which is the left in a right-to-left layout.
+            val rowEnd = if (LocalLayoutDirection.current == LayoutDirection.Rtl) FocusDirection.Left else FocusDirection.Right
             CenteredFocusScroll { LazyRow(
-                Modifier.fillMaxSize().holdFocusAtEnd(FocusDirection.Right),
+                Modifier.fillMaxSize().holdFocusAtEnd(rowEnd),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = margin),
                 horizontalArrangement = Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.CenterVertically,
