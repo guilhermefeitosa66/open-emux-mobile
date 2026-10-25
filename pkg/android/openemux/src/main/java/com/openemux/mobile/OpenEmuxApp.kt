@@ -3,6 +3,7 @@ package com.openemux.mobile
 import android.app.Application
 import android.net.ConnectivityManager
 import android.net.Network
+import com.openemux.mobile.data.AchievementsStore
 import com.openemux.mobile.data.Covers
 import com.openemux.mobile.data.Importer
 import com.openemux.mobile.data.Labels
@@ -17,6 +18,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import java.io.File
 
 class OpenEmuxApp : Application() {
     lateinit var library: Library
@@ -31,6 +33,8 @@ class OpenEmuxApp : Application() {
         private set
     lateinit var setup: Setup
         private set
+    lateinit var achievements: AchievementsStore
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -39,7 +43,8 @@ class OpenEmuxApp : Application() {
         library = Library(this)
         covers = Covers(this)
         labels = Labels(library.paths)
-        launcher = GameLauncher(this, library, covers, labels)
+        achievements = AchievementsStore(this, File(library.paths.launch, "current/retroarch.cfg"))
+        launcher = GameLauncher(this, library, covers, labels, achievements)
         importer = Importer(this, library)
         setup = Setup(library.paths)
         CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {

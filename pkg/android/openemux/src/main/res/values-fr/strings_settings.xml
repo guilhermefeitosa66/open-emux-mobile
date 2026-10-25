@@ -133,4 +133,30 @@
     <string name="settings_setup_dont_close">Ne fermez pas l’app avant la fin.</string>
     <string name="settings_setup_resume_note">Ce qui a déjà été téléchargé est conservé. Réessayer reprend là où ça s’est arrêté.</string>
     <string name="settings_setup_source">Les fichiers proviennent du buildbot officiel de libretro.</string>
+
+    <!-- RetroAchievements -->
+    <string name="settings_section_achievements">Succès</string>
+    <string name="ra_not_signed_in">Non connecté</string>
+    <string name="ra_signed_in_as">Connecté en tant que %1$s</string>
+    <string name="ra_signed_in_tracking_off">Connecté en tant que %1$s · suivi désactivé</string>
+    <string name="ra_signed_in">Connecté en tant que</string>
+    <string name="ra_intro">Connectez-vous une fois et chaque jeu auquel vous jouez débloque des succès sur votre profil RetroAchievements. Votre mot de passe sert uniquement à la connexion et n’est jamais enregistré.</string>
+    <string name="ra_username">Nom d’utilisateur</string>
+    <string name="ra_password">Mot de passe</string>
+    <string name="ra_show_password">Afficher le mot de passe</string>
+    <string name="ra_hide_password">Masquer le mot de passe</string>
+    <string name="ra_sign_in">Se connecter</string>
+    <string name="ra_signing_in">Connexion...</string>
+    <string name="ra_sign_out">Se déconnecter</string>
+    <string name="ra_error_unreachable">Impossible de joindre RetroAchievements. Vérifiez votre connexion.</string>
+    <string name="ra_error_missing">Saisissez votre nom d’utilisateur et votre mot de passe.</string>
+    <string name="ra_no_account">Pas encore de compte ?</string>
+    <string name="ra_create_account">Créez-en un sur retroachievements.org</string>
+    <string name="ra_while_playing">Pendant le jeu</string>
+    <string name="ra_track">Suivre les succès</string>
+    <string name="ra_track_desc">Débloquez des succès dans chaque jeu qui en a</string>
+    <string name="ra_hardcore">Mode hardcore</string>
+    <string name="ra_hardcore_desc">Rapporte plus de points. Le chargement d’états et l’avance rapide sont désactivés</string>
+    <string name="ra_apply_note">Les changements s’appliquent au prochain lancement d’un jeu. Les succès s’affichent en haut de l’écran quand vous les débloquez.</string>
+    <string name="ra_see_progress">Suivez votre progression sur retroachievements.org</string>
 </resources>

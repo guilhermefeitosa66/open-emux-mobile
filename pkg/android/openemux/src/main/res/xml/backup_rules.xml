@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and older. The RetroAchievements token stays on the device:
+     its preferences and the launch config that carries it. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="cheevos.xml" />
+    <exclude domain="file" path="launch" />
+</full-backup-content>

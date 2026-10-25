@@ -16,13 +16,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -38,21 +42,31 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openemux.mobile.AppLocale
+import com.openemux.mobile.data.AchievementsState
 import com.openemux.mobile.data.CART_COLORS
 import com.openemux.mobile.data.Console
 import com.openemux.mobile.data.ImportResult
 import com.openemux.mobile.data.KNOWN_BIOS
+import com.openemux.mobile.data.LoginResult
+import com.openemux.mobile.data.RaLogin
 import com.openemux.mobile.data.SHADERS
 import com.openemux.mobile.data.shaderById
 import com.retroarch.BuildConfig
@@ -127,6 +141,26 @@ fun SettingsScreen() {
             ListRow(
                 stringResource(R.string.settings_language), divider = true, onClick = { languageSheet = true },
                 value = AppLocale.LANGUAGES.firstOrNull { it.first == language }?.let { "${it.third} ${it.second}" } ?: stringResource(R.string.settings_theme_system),
+            )
+        }
+
+        SectionHeader(stringResource(R.string.settings_section_achievements))
+        Card(Modifier.padding(horizontal = 20.dp)) {
+            val ra by a.app.achievements.state.collectAsState()
+            ListRow(
+                stringResource(R.string.ra_title),
+                subtitle = when {
+                    !ra.signedIn -> stringResource(R.string.ra_not_signed_in)
+                    ra.enabled -> stringResource(R.string.ra_signed_in_as, ra.username)
+                    else -> stringResource(R.string.ra_signed_in_tracking_off, ra.username)
+                },
+                minHeight = 60.dp,
+                leading = {
+                    Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Oe.AccentTint), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Trophy, Oe.AccentText, 22.dp)
+                    }
+                },
+                onClick = { a.nav.navigate(Routes.ACHIEVEMENTS) },
             )
         }
 
@@ -415,6 +449,142 @@ fun BiosScreen() {
             stringResource(R.string.settings_bios_footer),
             style = Type.Small.copy(color = Oe.Faint), modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 28.dp),
         )
+    }
+}
+
+@Composable
+fun AchievementsScreen() {
+    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
+    val a = LocalActions.current
+    val store = a.app.achievements
+    val state by store.state.collectAsState()
+
+    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().imePadding()) {
+        Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
+            BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
+            FitText(stringResource(R.string.ra_title), Type.Display, Modifier.padding(top = 4.dp))
+        }
+        if (state.signedIn) AchievementsAccount(state) else AchievementsSignIn(state.lastUsername)
+        Spacer(Modifier.height(28.dp))
+    }
+}
+
+@Composable
+private fun AchievementsSignIn(lastUsername: String) {
+    val a = LocalActions.current
+    val context = LocalContext.current
+    val uri = LocalUriHandler.current
+    val scope = rememberCoroutineScope()
+    var username by remember { mutableStateOf(lastUsername) }
+    // Not saveable: the password must not reach the saved-instance bundle.
+    var password by remember { mutableStateOf("") }
+    var revealed by remember { mutableStateOf(false) }
+    var busy by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    fun signIn() {
+        if (busy) return
+        val attempt = password
+        busy = true
+        error = null
+        scope.launch {
+            when (val r = RaLogin.login(username, attempt)) {
+                is LoginResult.Ok -> if (!a.app.achievements.setAccount(r.username, r.token)) error = context.getString(R.string.ra_error_unreachable)
+                is LoginResult.Refused -> error = r.message ?: context.getString(R.string.ra_error_unreachable)
+                LoginResult.Unreachable -> error = context.getString(R.string.ra_error_unreachable)
+                LoginResult.Missing -> error = context.getString(R.string.ra_error_missing)
+            }
+            password = ""
+            busy = false
+        }
+    }
+
+    Text(
+        stringResource(R.string.ra_intro),
+        style = Type.Small.copy(fontSize = 14.sp, lineHeight = 20.sp), modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 8.dp),
+    )
+    Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        OeTextField(
+            stringResource(R.string.ra_username), username, { username = it },
+            isError = error != null, readOnly = busy, contentType = ContentType.Username,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Ascii, imeAction = ImeAction.Next, autoCorrectEnabled = false),
+        )
+        OeTextField(
+            stringResource(R.string.ra_password), password, { password = it },
+            isError = error != null, readOnly = busy, password = true, revealed = revealed,
+            onReveal = { revealed = !revealed }, revealLabel = stringResource(if (revealed) R.string.ra_hide_password else R.string.ra_show_password),
+            contentType = ContentType.Password,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done, autoCorrectEnabled = false),
+            keyboardActions = KeyboardActions(onDone = { signIn() }),
+        )
+        error?.let { message ->
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Oe.DangerBg).padding(horizontal = 14.dp, vertical = 12.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
+                verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Icon(Icons.Alert, Oe.Danger, 20.dp, stroke = 2.4f)
+                Text(message, style = Type.Body.copy(fontSize = 14.sp, color = Oe.Danger))
+            }
+        }
+        PrimaryButton(
+            stringResource(if (busy) R.string.ra_signing_in else R.string.ra_sign_in), { signIn() },
+            Modifier.fillMaxWidth(), height = 54.dp, enabled = !busy,
+        )
+    }
+    Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp)) {
+        Text(stringResource(R.string.ra_no_account), style = Type.Small)
+        Text(
+            stringResource(R.string.ra_create_account), style = Type.Small.copy(color = Oe.AccentText),
+            modifier = Modifier.padding(top = 2.dp).gamepadFocus(corner = 6.dp).clip(RoundedCornerShape(6.dp))
+                .clickable(role = Role.Button) { uri.openUri("https://retroachievements.org/createaccount.php") },
+        )
+    }
+}
+
+@Composable
+private fun AchievementsAccount(state: AchievementsState) {
+    val store = LocalActions.current.app.achievements
+    val uri = LocalUriHandler.current
+    Card(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp)) {
+        Row(
+            Modifier.fillMaxWidth().padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(Modifier.size(44.dp).clip(CircleShape).background(Oe.AccentSoft), contentAlignment = Alignment.Center) {
+                Text(state.username.take(1).uppercase(), style = Type.Section.copy(color = Oe.AccentOnSoft, fontSize = 18.sp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.ra_signed_in), style = Type.Small)
+                Text(state.username, style = Type.Section.copy(fontSize = 16.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Box(
+                Modifier.height(36.dp).gamepadFocus(corner = 18.dp).clip(RoundedCornerShape(18.dp)).background(Oe.Raised)
+                    .clickable(role = Role.Button) { store.signOut() }.padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(R.string.ra_sign_out), style = Type.Button.copy(color = Oe.Text, fontSize = 14.sp)) }
+        }
+    }
+
+    SectionHeader(stringResource(R.string.ra_while_playing))
+    Card(Modifier.padding(horizontal = 20.dp)) {
+        SwitchRow(stringResource(R.string.ra_track), stringResource(R.string.ra_track_desc), state.enabled, { store.setEnabled(it) })
+        SwitchRow(
+            stringResource(R.string.ra_hardcore), stringResource(R.string.ra_hardcore_desc), state.hardcore, { store.setHardcore(it) },
+            enabled = state.enabled, divider = true,
+        )
+    }
+
+    Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Icon(Icons.Info, Oe.Muted, 18.dp)
+        Column {
+            Text(stringResource(R.string.ra_apply_note), style = Type.Small)
+            Text(
+                stringResource(R.string.ra_see_progress), style = Type.Small.copy(color = Oe.AccentText),
+                modifier = Modifier.padding(top = 6.dp).gamepadFocus(corner = 6.dp).clip(RoundedCornerShape(6.dp))
+                    .clickable(role = Role.Button) { uri.openUri("https://retroachievements.org/user/" + Uri.encode(state.username)) },
+            )
+        }
     }
 }
 

@@ -124,4 +124,30 @@
     <string name="settings_setup_dont_close">முடியும் வரை ஆப்பை மூட வேண்டாம்.</string>
     <string name="settings_setup_resume_note">ஏற்கனவே பதிவிறக்கியவை வைக்கப்படும்; மீண்டும் முயன்றால் நின்ற இடத்திலிருந்து தொடரும்.</string>
     <string name="settings_setup_source">கோப்புகள் அதிகாரப்பூர்வ libretro buildbot இலிருந்து வருகின்றன.</string>
+
+    <!-- RetroAchievements -->
+    <string name="settings_section_achievements">சாதனைகள்</string>
+    <string name="ra_not_signed_in">உள்நுழையவில்லை</string>
+    <string name="ra_signed_in_as">%1$s ஆக உள்நுழைந்துள்ளீர்கள்</string>
+    <string name="ra_signed_in_tracking_off">%1$s ஆக உள்நுழைந்துள்ளீர்கள் · கண்காணிப்பு முடக்கம்</string>
+    <string name="ra_signed_in">உள்நுழைந்த கணக்கு</string>
+    <string name="ra_intro">ஒருமுறை உள்நுழையுங்கள்; நீங்கள் விளையாடும் ஒவ்வொரு விளையாட்டும் உங்கள் RetroAchievements சுயவிவரத்தில் சாதனைகளைத் திறக்கும். உங்கள் கடவுச்சொல் உள்நுழைய மட்டுமே பயன்படும், ஒருபோதும் சேமிக்கப்படாது.</string>
+    <string name="ra_username">பயனர்பெயர்</string>
+    <string name="ra_password">கடவுச்சொல்</string>
+    <string name="ra_show_password">கடவுச்சொல்லைக் காட்டு</string>
+    <string name="ra_hide_password">கடவுச்சொல்லை மறை</string>
+    <string name="ra_sign_in">உள்நுழை</string>
+    <string name="ra_signing_in">உள்நுழைகிறது...</string>
+    <string name="ra_sign_out">வெளியேறு</string>
+    <string name="ra_error_unreachable">RetroAchievements-ஐ அணுக முடியவில்லை. உங்கள் இணைப்பைச் சரிபார்க்கவும்.</string>
+    <string name="ra_error_missing">உங்கள் பயனர்பெயரையும் கடவுச்சொல்லையும் உள்ளிடவும்.</string>
+    <string name="ra_no_account">இன்னும் கணக்கு இல்லையா?</string>
+    <string name="ra_create_account">retroachievements.org-இல் ஒன்றை உருவாக்குங்கள்</string>
+    <string name="ra_while_playing">விளையாடும்போது</string>
+    <string name="ra_track">சாதனைகளைக் கண்காணி</string>
+    <string name="ra_track_desc">சாதனைகள் உள்ள ஒவ்வொரு விளையாட்டிலும் அவற்றைத் திறக்கவும்</string>
+    <string name="ra_hardcore">ஹார்ட்கோர் பயன்முறை</string>
+    <string name="ra_hardcore_desc">அதிக புள்ளிகள் கிடைக்கும். நிலைகளை ஏற்றுவதும் வேகமாக்கலும் முடக்கப்படும்</string>
+    <string name="ra_apply_note">அடுத்த முறை விளையாட்டு தொடங்கும்போது மாற்றங்கள் பொருந்தும். சாதனைகளைத் திறக்கும்போது அவை திரையின் மேல் பகுதியில் தோன்றும்.</string>
+    <string name="ra_see_progress">உங்கள் முன்னேற்றத்தை retroachievements.org-இல் பாருங்கள்</string>
 </resources>

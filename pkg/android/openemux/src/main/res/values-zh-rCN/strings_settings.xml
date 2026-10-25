@@ -115,4 +115,30 @@
     <string name="settings_setup_dont_close">完成前请不要关闭应用。</string>
     <string name="settings_setup_resume_note">已下载的内容会保留，重试时会从中断处继续。</string>
     <string name="settings_setup_source">文件来自 libretro 官方 buildbot。</string>
+
+    <!-- RetroAchievements -->
+    <string name="settings_section_achievements">成就</string>
+    <string name="ra_not_signed_in">未登录</string>
+    <string name="ra_signed_in_as">已登录为 %1$s</string>
+    <string name="ra_signed_in_tracking_off">已登录为 %1$s · 未开启追踪</string>
+    <string name="ra_signed_in">已登录为</string>
+    <string name="ra_intro">登录一次，之后玩的每个游戏都会在你的 RetroAchievements 个人资料上解锁成就。密码仅用于登录，绝不会被保存。</string>
+    <string name="ra_username">用户名</string>
+    <string name="ra_password">密码</string>
+    <string name="ra_show_password">显示密码</string>
+    <string name="ra_hide_password">隐藏密码</string>
+    <string name="ra_sign_in">登录</string>
+    <string name="ra_signing_in">正在登录...</string>
+    <string name="ra_sign_out">退出登录</string>
+    <string name="ra_error_unreachable">无法连接 RetroAchievements。请检查网络连接。</string>
+    <string name="ra_error_missing">请输入用户名和密码。</string>
+    <string name="ra_no_account">还没有账号？</string>
+    <string name="ra_create_account">在 retroachievements.org 注册一个</string>
+    <string name="ra_while_playing">游戏时</string>
+    <string name="ra_track">追踪成就</string>
+    <string name="ra_track_desc">在所有支持成就的游戏中解锁成就</string>
+    <string name="ra_hardcore">硬核模式</string>
+    <string name="ra_hardcore_desc">可获得更多积分。读取存档和快进将被关闭</string>
+    <string name="ra_apply_note">更改将在下次启动游戏时生效。解锁成就时会显示在屏幕顶部。</string>
+    <string name="ra_see_progress">在 retroachievements.org 查看进度</string>
 </resources>

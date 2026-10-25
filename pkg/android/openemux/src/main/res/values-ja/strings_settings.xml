@@ -115,4 +115,30 @@
     <string name="settings_setup_dont_close">完了するまでアプリを閉じないでください。</string>
     <string name="settings_setup_resume_note">ダウンロード済みの分は残ります。再試行すると中断したところから続きます。</string>
     <string name="settings_setup_source">ファイルは libretro 公式の buildbot から取得します。</string>
+
+    <!-- RetroAchievements -->
+    <string name="settings_section_achievements">実績</string>
+    <string name="ra_not_signed_in">未ログイン</string>
+    <string name="ra_signed_in_as">%1$s でログイン中</string>
+    <string name="ra_signed_in_tracking_off">%1$s でログイン中 · 記録オフ</string>
+    <string name="ra_signed_in">ログイン中のアカウント</string>
+    <string name="ra_intro">一度ログインすれば、プレイするすべてのゲームで RetroAchievements のプロフィールに実績が解除されます。パスワードはログインにのみ使われ、保存されることはありません。</string>
+    <string name="ra_username">ユーザー名</string>
+    <string name="ra_password">パスワード</string>
+    <string name="ra_show_password">パスワードを表示</string>
+    <string name="ra_hide_password">パスワードを隠す</string>
+    <string name="ra_sign_in">ログイン</string>
+    <string name="ra_signing_in">ログインしています...</string>
+    <string name="ra_sign_out">ログアウト</string>
+    <string name="ra_error_unreachable">RetroAchievements に接続できませんでした。接続を確認してください。</string>
+    <string name="ra_error_missing">ユーザー名とパスワードを入力してください。</string>
+    <string name="ra_no_account">アカウントをお持ちでない場合</string>
+    <string name="ra_create_account">retroachievements.org で作成</string>
+    <string name="ra_while_playing">プレイ中</string>
+    <string name="ra_track">実績を記録</string>
+    <string name="ra_track_desc">実績のあるすべてのゲームで実績を解除します</string>
+    <string name="ra_hardcore">ハードコアモード</string>
+    <string name="ra_hardcore_desc">獲得ポイントが増えます。ステートロードと早送りは使えません</string>
+    <string name="ra_apply_note">変更は次にゲームを起動したときに反映されます。実績は解除されると画面上部に表示されます。</string>
+    <string name="ra_see_progress">retroachievements.org で進捗を見る</string>
 </resources>

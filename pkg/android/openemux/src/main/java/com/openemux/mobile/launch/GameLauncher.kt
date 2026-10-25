@@ -19,12 +19,14 @@ import androidx.core.content.res.ResourcesCompat
 import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import com.openemux.mobile.data.AchievementsStore
 import com.openemux.mobile.data.Console
 import com.openemux.mobile.data.Covers
 import com.openemux.mobile.data.Labels
 import com.openemux.mobile.data.Library
 import com.openemux.mobile.data.NdsLayouts
 import com.openemux.mobile.data.Rom
+import com.openemux.mobile.data.configKeys
 import com.openemux.mobile.game.GameActivity
 import com.openemux.mobile.game.GameExtras
 import com.retroarch.R
@@ -109,6 +111,7 @@ class GameLauncher(
     private val library: Library,
     private val covers: Covers,
     private val labels: Labels,
+    private val achievements: AchievementsStore,
 ) {
     private val paths = library.paths
 
@@ -148,6 +151,9 @@ class GameLauncher(
     /** Starts the game from [from], in the library's own task, so it opens inside the app. */
     suspend fun launch(from: Activity, rom: Rom, resume: Boolean, slot: Int? = null) {
         val cart = cartBitmap(rom)
+        val cheevos = achievements.state.value
+        // Hardcore refuses loading a state: start fresh rather than have the engine refuse it.
+        val hardcore = cheevos.hardcoreActive
         val intent = withContext(Dispatchers.IO) {
             prepareEngine()
             val dir = File(paths.launch, "current").apply { deleteRecursively(); mkdirs() }
@@ -163,6 +169,7 @@ class GameLauncher(
                 rom.console, bounds.width(), bounds.height(), File(dir, "skin"),
                 cutout = if (bounds.height() >= bounds.width()) cutout.top else maxOf(cutout.left, cutout.right),
                 ndsLayouts = ndsLayouts,
+                hardcore = hardcore,
             )
 
             val shader = library.effectiveShader(rom)
@@ -182,7 +189,7 @@ class GameLauncher(
             listOf(paths.states(rom.console), paths.saves(rom.console), paths.system, paths.screenshots, paths.playtime)
                 .forEach { it.mkdirs() }
             val config = File(dir, "retroarch.cfg")
-            config.writeText(buildConfig(rom, resume, dir, skin))
+            config.writeText(buildConfig(rom, resume && !hardcore, dir, skin, cheevos.configKeys(), hardcore))
 
             library.updateRom(rom.key) { it.copy(lastPlayed = System.currentTimeMillis()) }
 
@@ -200,13 +207,14 @@ class GameLauncher(
                 putExtra(GameExtras.SHADERS_DIR, paths.shaders.absolutePath)
                 putExtra(GameExtras.SHADER, shader.id)
                 putExtra(GameExtras.CORE_NAME, library.effectiveCore(rom).name)
-                if (slot != null) putExtra(GameExtras.LOAD_SLOT, slot)
+                putExtra(GameExtras.HARDCORE, hardcore)
+                if (slot != null && !hardcore) putExtra(GameExtras.LOAD_SLOT, slot)
             }
         }
         from.startActivity(intent, ActivityOptions.makeCustomAnimation(from, R.anim.game_enter, R.anim.hold).toBundle())
     }
 
-    private fun buildConfig(rom: Rom, resume: Boolean, dir: File, skin: File): String {
+    private fun buildConfig(rom: Rom, resume: Boolean, dir: File, skin: File, cheevos: Map<String, String>, hardcore: Boolean): String {
         val settings = linkedMapOf(
             "video_driver" to "gl",
             "menu_driver" to "glui",
@@ -244,7 +252,8 @@ class GameLauncher(
             "sort_screenshots_by_content_enable" to "false",
             "savestates_in_content_dir" to "false",
             "savefiles_in_content_dir" to "false",
-            "savestate_auto_save" to "true",
+            // A hardcore session starts fresh: saving on quit would overwrite the softcore auto state.
+            "savestate_auto_save" to (!hardcore).toString(),
             "savestate_auto_load" to resume.toString(),
             "savestate_thumbnail_enable" to "true",
             "state_slot" to "0",
@@ -276,7 +285,15 @@ class GameLauncher(
             "notification_show_fast_forward" to "true",
             "video_font_enable" to "true",
             "fps_show" to "false",
+            // rcheevos keeps its badge cache under the thumbnails directory.
+            "thumbnails_directory" to File(paths.internal, "thumbnails").absolutePath,
         )
+        settings.putAll(cheevos)
+        // RetroArch still fast-forwards in hardcore; the skin and the pause sheet leave it out, and so do the keys.
+        if (hardcore) {
+            settings["input_toggle_fast_forward"] = "nul"
+            settings["input_hold_fast_forward"] = "nul"
+        }
         // The PS skin has both sticks: Beetle PSX and PCSX ReARMed read them as a DualShock.
         if (rom.console == Console.PS) settings["input_libretro_device_p1"] = "517"
         return settings.entries.joinToString("\n") { (k, v) -> "$k = \"$v\"" } + "\n"

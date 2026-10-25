@@ -51,10 +51,12 @@ class SkinRenderer(private val context: Context) {
     /**
      * [cutout] is the camera cutout's depth along the long edge: the engine's
      * window, and so the overlay, only covers the screen past it.
+     * [hardcore] greys out the strip's fast forward and takes its touch area away:
+     * the engine still fast-forwards in RetroAchievements hardcore, the app does not offer it.
      */
     fun render(
         console: Console, width: Int, height: Int, outDir: File, cutout: Int = 0,
-        ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null,
+        ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false,
     ): File {
         outDir.mkdirs()
         val portraitW = minOf(width, height)
@@ -92,7 +94,7 @@ class SkinRenderer(private val context: Context) {
             val h = if (spec.portrait) portraitH else portraitW
             val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val toggle = if (spec.keypadOpen) spec.name.removePrefix("keypad-") else "keypad-${spec.name}"
-            val layout = Layout(Canvas(bitmap), console, unit, spec.aspect, spec.keypadOpen, toggle, spec.layoutNext)
+            val layout = Layout(Canvas(bitmap), console, unit, spec.aspect, spec.keypadOpen, toggle, spec.layoutNext, hardcore)
             val descs = if (spec.portrait) layout.portrait(h) else layout.landscape(w)
             val image = spec.name.replace('@', '-') + ".png"
             File(outDir, image).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
@@ -152,6 +154,8 @@ class SkinRenderer(private val context: Context) {
         private val keypadOpen: Boolean, private val toggle: String,
         /** The overlay of the next NDS screen layout, for the strip's layout key. */
         private val layoutNext: String?,
+        /** RetroAchievements hardcore: the strip's fast forward is drawn off and does nothing. */
+        private val hardcore: Boolean,
     ) {
         private val skin: Skin = console.skin
         private val colors: SkinColors = skin.colors
@@ -424,14 +428,17 @@ class SkinRenderer(private val context: Context) {
                     }
                 )
                 path.transform(Matrix().apply { setScale(size / 24f, size / 24f); postTranslate(cx - size / 2f, cy - size / 2f) })
+                val off = hardcore && action == "toggle_fast_forward"
                 val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = colors.icon
+                    // At 0.45, like the pause sheet's disabled tiles.
+                    color = if (off) (colors.icon and 0x00FFFFFF) or (0x73 shl 24) else colors.icon
                     if (action == "turbo_fire_toggle" || action == "screens") {
                         style = Paint.Style.STROKE; strokeWidth = 1.8f * size / 24f; strokeJoin = Paint.Join.ROUND
                     }
                 }
                 c.drawPath(path, paint)
                 val area = RectF(box.left + slot * i, box.top, box.left + slot * (i + 1), box.bottom)
+                if (off) return@forEachIndexed
                 descs += if (action == "screens") Desc("overlay_next", area, next = layoutNext) else Desc(action, area)
             }
         }

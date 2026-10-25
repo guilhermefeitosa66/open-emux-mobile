@@ -124,4 +124,30 @@
     <string name="settings_setup_dont_close">Schließ die App nicht, bevor alles fertig ist.</string>
     <string name="settings_setup_resume_note">Bereits Heruntergeladenes bleibt erhalten. Ein neuer Versuch macht dort weiter, wo es aufgehört hat.</string>
     <string name="settings_setup_source">Die Dateien stammen vom offiziellen libretro-Buildbot.</string>
+
+    <!-- RetroAchievements -->
+    <string name="settings_section_achievements">Erfolge</string>
+    <string name="ra_not_signed_in">Nicht angemeldet</string>
+    <string name="ra_signed_in_as">Angemeldet als %1$s</string>
+    <string name="ra_signed_in_tracking_off">Angemeldet als %1$s · Erfassung aus</string>
+    <string name="ra_signed_in">Angemeldet als</string>
+    <string name="ra_intro">Melde dich einmal an, und jedes Spiel, das du spielst, schaltet Erfolge in deinem RetroAchievements-Profil frei. Dein Passwort wird nur zur Anmeldung verwendet und nie gespeichert.</string>
+    <string name="ra_username">Benutzername</string>
+    <string name="ra_password">Passwort</string>
+    <string name="ra_show_password">Passwort anzeigen</string>
+    <string name="ra_hide_password">Passwort verbergen</string>
+    <string name="ra_sign_in">Anmelden</string>
+    <string name="ra_signing_in">Anmeldung läuft...</string>
+    <string name="ra_sign_out">Abmelden</string>
+    <string name="ra_error_unreachable">RetroAchievements ist nicht erreichbar. Prüfe deine Verbindung.</string>
+    <string name="ra_error_missing">Gib deinen Benutzernamen und dein Passwort ein.</string>
+    <string name="ra_no_account">Noch kein Konto?</string>
+    <string name="ra_create_account">Erstelle eins auf retroachievements.org</string>
+    <string name="ra_while_playing">Beim Spielen</string>
+    <string name="ra_track">Erfolge erfassen</string>
+    <string name="ra_track_desc">Erfolge in jedem Spiel freischalten, das welche hat</string>
+    <string name="ra_hardcore">Hardcore-Modus</string>
+    <string name="ra_hardcore_desc">Bringt mehr Punkte. Spielstände laden und Vorspulen sind deaktiviert</string>
+    <string name="ra_apply_note">Änderungen gelten ab dem nächsten Spielstart. Erfolge erscheinen oben auf dem Bildschirm, sobald du sie freischaltest.</string>
+    <string name="ra_see_progress">Fortschritt auf retroachievements.org ansehen</string>
 </resources>

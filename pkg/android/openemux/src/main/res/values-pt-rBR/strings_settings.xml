@@ -124,4 +124,30 @@
     <string name="settings_setup_dont_close">Não feche o app até terminar.</string>
     <string name="settings_setup_resume_note">O que já foi baixado fica salvo; tentar de novo continua de onde parou.</string>
     <string name="settings_setup_source">Os arquivos vêm do buildbot oficial do libretro.</string>
+
+    <!-- RetroAchievements -->
+    <string name="settings_section_achievements">Conquistas</string>
+    <string name="ra_not_signed_in">Não conectado</string>
+    <string name="ra_signed_in_as">Conectado como %1$s</string>
+    <string name="ra_signed_in_tracking_off">Conectado como %1$s · sem acompanhar</string>
+    <string name="ra_signed_in">Conectado como</string>
+    <string name="ra_intro">Entre uma vez e cada jogo que você jogar desbloqueia conquistas no seu perfil do RetroAchievements. Sua senha só é usada para entrar e nunca é salva.</string>
+    <string name="ra_username">Usuário</string>
+    <string name="ra_password">Senha</string>
+    <string name="ra_show_password">Mostrar senha</string>
+    <string name="ra_hide_password">Ocultar senha</string>
+    <string name="ra_sign_in">Entrar</string>
+    <string name="ra_signing_in">Entrando...</string>
+    <string name="ra_sign_out">Sair</string>
+    <string name="ra_error_unreachable">Não foi possível acessar o RetroAchievements. Verifique sua conexão.</string>
+    <string name="ra_error_missing">Digite seu usuário e sua senha.</string>
+    <string name="ra_no_account">Ainda não tem conta?</string>
+    <string name="ra_create_account">Crie uma em retroachievements.org</string>
+    <string name="ra_while_playing">Durante o jogo</string>
+    <string name="ra_track">Acompanhar conquistas</string>
+    <string name="ra_track_desc">Desbloqueie conquistas em todo jogo que tiver</string>
+    <string name="ra_hardcore">Modo hardcore</string>
+    <string name="ra_hardcore_desc">Vale mais pontos. Carregar estados e acelerar ficam desativados</string>
+    <string name="ra_apply_note">As mudanças valem a partir do próximo jogo. As conquistas aparecem no topo da tela quando você as desbloqueia.</string>
+    <string name="ra_see_progress">Veja seu progresso em retroachievements.org</string>
 </resources>

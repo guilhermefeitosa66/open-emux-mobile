@@ -81,4 +81,8 @@
     <string name="game_screens_bottom">Bottom screen only</string>
     <string name="game_screens_stacked">One above the other</string>
     <string name="game_screens_side">Side by side</string>
+
+    <!-- RetroAchievements hardcore -->
+    <string name="game_hardcore_tag">HARDCORE</string>
+    <string name="game_hardcore_note">Hardcore mode is on: loading a state and fast forward are off for this game. Turn it off in Settings › RetroAchievements.</string>
 </resources>

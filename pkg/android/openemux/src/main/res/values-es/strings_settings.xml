@@ -133,4 +133,30 @@
     <string name="settings_setup_dont_close">No cierres la app hasta que termine.</string>
     <string name="settings_setup_resume_note">Lo ya descargado se conserva; al reintentar, sigue donde se quedó.</string>
     <string name="settings_setup_source">Los archivos vienen del buildbot oficial de libretro.</string>
+
+    <!-- RetroAchievements -->
+    <string name="settings_section_achievements">Logros</string>
+    <string name="ra_not_signed_in">Sin iniciar sesión</string>
+    <string name="ra_signed_in_as">Sesión iniciada como %1$s</string>
+    <string name="ra_signed_in_tracking_off">Sesión iniciada como %1$s · seguimiento desactivado</string>
+    <string name="ra_signed_in">Sesión iniciada como</string>
+    <string name="ra_intro">Inicia sesión una vez y cada juego que juegues desbloqueará logros en tu perfil de RetroAchievements. Tu contraseña solo se usa para iniciar sesión y nunca se guarda.</string>
+    <string name="ra_username">Usuario</string>
+    <string name="ra_password">Contraseña</string>
+    <string name="ra_show_password">Mostrar contraseña</string>
+    <string name="ra_hide_password">Ocultar contraseña</string>
+    <string name="ra_sign_in">Iniciar sesión</string>
+    <string name="ra_signing_in">Iniciando sesión...</string>
+    <string name="ra_sign_out">Cerrar sesión</string>
+    <string name="ra_error_unreachable">No se pudo conectar con RetroAchievements. Revisa tu conexión.</string>
+    <string name="ra_error_missing">Escribe tu usuario y tu contraseña.</string>
+    <string name="ra_no_account">¿Aún no tienes cuenta?</string>
+    <string name="ra_create_account">Crea una en retroachievements.org</string>
+    <string name="ra_while_playing">Mientras juegas</string>
+    <string name="ra_track">Seguir logros</string>
+    <string name="ra_track_desc">Desbloquea logros en cada juego que los tenga</string>
+    <string name="ra_hardcore">Modo hardcore</string>
+    <string name="ra_hardcore_desc">Vale más puntos. Cargar estados y el avance rápido se desactivan</string>
+    <string name="ra_apply_note">Los cambios se aplican la próxima vez que inicies un juego. Los logros aparecen en la parte superior de la pantalla al desbloquearlos.</string>
+    <string name="ra_see_progress">Mira tu progreso en retroachievements.org</string>
 </resources>
