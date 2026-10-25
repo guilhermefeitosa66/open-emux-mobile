@@ -236,13 +236,21 @@ class Library(private val context: Context) {
     private fun loadIndex() {
         val file = paths.index
         if (!file.exists()) return
-        val roms = runCatching { decodeLibraryIndex(file.readText(), paths::roms) }.getOrNull() ?: return
+        val text = runCatching { file.readText() }.getOrNull() ?: return
+        val roms = runCatching { decodeLibraryIndex(text, paths::roms) }.getOrNull() ?: return
+        // An index whose every key was dropped (a console or extension this build no longer
+        // knows) proves nothing about the files: let the scan decide, not the empty state.
+        if (roms.isEmpty() && text.lines().drop(1).any { it.isNotBlank() }) return
         indexed = roms.map { it.key }
         _roms.value = roms
         _loaded.value = true
     }
 
-    /** A failed write only costs the fast start next time. */
+    /**
+     * A failed write only costs the fast start next time. Synchronized: a resume scan, an
+     * import's scan and [delete] can overlap, and they share the tmp file and [indexed].
+     */
+    @Synchronized
     private fun saveIndex(roms: List<Rom>) {
         val keys = roms.map { it.key }
         if (keys == indexed) return
