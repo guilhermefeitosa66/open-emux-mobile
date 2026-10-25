@@ -192,15 +192,18 @@ fun ShelfScreen() {
                     if (playing.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                         Column(Modifier.padding(top = 28.dp)) {
                             SectionHeading(stringResource(R.string.library_continue_playing), stringResource(R.string.library_see_recent)) { a.nav.navigateTab(Routes.RECENT) }
+                            // No more continue cards than the grid below has columns, so the two line up.
+                            val slots = minOf(spec.continueCount, columns)
+                            val shown = playing.take(slots)
                             Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
-                                playing.forEach { rom ->
+                                shown.forEach { rom ->
                                     ContinueCard(
                                         rom, meta.roms[rom.key]?.lastPlayed ?: 0L, if (spec.maxColumns > 2) 104.dp else 100.dp,
                                         Modifier.weight(1f), Modifier.restorableFocus("continue-${rom.key}", focusedShelf),
                                     )
                                 }
                                 // Fewer games than slots: the cards keep their width.
-                                repeat(spec.continueCount - playing.size) { Spacer(Modifier.weight(1f)) }
+                                repeat(slots - shown.size) { Spacer(Modifier.weight(1f)) }
                             }
                         }
                     }
