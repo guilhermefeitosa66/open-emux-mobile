@@ -237,7 +237,8 @@ fun ShelfScreen() {
                                         },
                                         onEnd = { moved ->
                                             val order = live
-                                            if (moved && order != null) {
+                                            // A drag that ends where it began leaves the stored order (and "Reset order") untouched.
+                                            if (moved && order != null && order != present) {
                                                 // Only the shelves on screen moved; the others keep their slots in the full order.
                                                 val it = order.iterator()
                                                 lib.setConsoleOrder(lib.orderedConsoles().map { c -> if (c in present) it.next() else c })
@@ -305,13 +306,16 @@ private fun Modifier.reorderGestures(onStart: () -> Unit, onDrag: (Offset) -> Un
             }
             if (released != null) return@awaitEachGesture
             start()
+            // The farthest the finger got from where the press turned long: a still finger's jitter never adds up to a drag.
+            var origin: Offset? = null
             var travel = 0f
             while (true) {
                 val change = awaitPointerEvent(PointerEventPass.Initial).changes.firstOrNull { it.id == down.id } ?: break
                 change.consume()
                 if (!change.pressed) break
+                val from = origin ?: change.previousPosition.also { origin = it }
+                travel = maxOf(travel, (change.position - from).getDistance())
                 val delta = change.position - change.previousPosition
-                travel += delta.getDistance()
                 if (delta != Offset.Zero) drag(delta)
             }
             end(travel > viewConfiguration.touchSlop)
@@ -347,6 +351,8 @@ private fun ShelfCard(console: Console?, short: String, name: String, count: Str
         // Drawn for a 210dp fan; a narrower card scales its widths and end offsets (heights follow each cartridge's aspect), top offsets stay.
         val scale = fanWidth / FAN_MAX_DP
         val placements = listOf(Triple(92.dp, 26.dp, -9f), Triple(52.dp, 16.dp, -2f), Triple(8.dp, 30.dp, 7f))
+        // How far in from the end the cartridges actually reach: a shelf with one or two leaves the text more room.
+        var fanExtent = 0.dp
         fan.forEachIndexed { i, rom ->
             val (right, top, angle) = placements[i + (3 - fan.size)]
             val w = when {
@@ -355,29 +361,30 @@ private fun ShelfCard(console: Console?, short: String, name: String, count: Str
                 rom.console.cartAspect < 1.65f -> 100.dp
                 else -> 118.dp
             }
+            fanExtent = maxOf(fanExtent, (right + w) * scale)
             Box(Modifier.align(Alignment.TopEnd).padding(end = right * scale, top = top).width(w * scale).rotate(angle)) {
                 Cartridge(rom.console, labelFor(rom), rom.title, a.app.library.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
             }
         }
         val tag = Type.Tag.copy(color = ink.copy(alpha = 0.72f), fontSize = 12.sp, letterSpacing = 1.sp)
         // The text ends where the fan begins, so it never runs under the cartridges.
-        val textEnd = (fanWidth + 8f).dp
+        val textEnd = fanExtent + 8.dp
         if (compact) {
             Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(start = 14.dp, end = textEnd)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     ShelfIconTile(console, 24.dp, 8.dp, 18.dp, 14.dp)
-                    Text(short, style = tag, maxLines = 1, modifier = Modifier.padding(start = 6.dp))
+                    Text(short, style = tag, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.dp))
                 }
                 Text(name, style = Type.Title.copy(fontSize = 17.sp, lineHeight = 20.sp, color = ink), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
-                Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), modifier = Modifier.padding(top = 4.dp))
+                Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
             }
         } else {
             Row(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(start = 16.dp, end = textEnd), verticalAlignment = Alignment.CenterVertically) {
                 ShelfIconTile(console, 40.dp, 12.dp, 28.dp, 20.dp)
                 Column(Modifier.padding(start = 12.dp)) {
-                    Text(short, style = tag, maxLines = 1)
+                    Text(short, style = tag, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(name, style = Type.Title.copy(fontSize = 19.sp, lineHeight = 22.sp, color = ink), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), modifier = Modifier.padding(top = 4.dp))
+                    Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
                 }
             }
         }

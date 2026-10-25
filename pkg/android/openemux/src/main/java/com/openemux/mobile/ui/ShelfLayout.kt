@@ -1,7 +1,5 @@
 package com.openemux.mobile.ui
 
-import kotlin.math.floor
-
 // The shelf's geometry, in dp, kept free of Compose so the JVM tests reach it.
 
 /** Padding on each side of the shelf grid and the gap between its cards. */
@@ -19,11 +17,8 @@ const val FAN_MAX_DP = 210f
 const val FAN_MIN_DP = 110f
 
 /** How many cards fit side by side in [widthDp], each at least [SHELF_MIN_CARD_DP] wide. */
-fun shelfColumns(widthDp: Float, maxColumns: Int = 2): Int {
-    if (widthDp <= 0f) return 1
-    val fit = floor((widthDp - 2 * SHELF_SIDE_DP + SHELF_GAP_DP) / (SHELF_MIN_CARD_DP + SHELF_GAP_DP)).toInt()
-    return fit.coerceIn(1, maxOf(1, maxColumns))
-}
+fun shelfColumns(widthDp: Float, maxColumns: Int = 2): Int =
+    gridColumns(widthDp - 2 * SHELF_SIDE_DP, SHELF_MIN_CARD_DP, SHELF_GAP_DP, floor = 1).coerceAtMost(maxOf(1, maxColumns))
 
 /** The width of each card when [widthDp] holds [columns] of them. */
 fun cardWidthDp(widthDp: Float, columns: Int): Float =
