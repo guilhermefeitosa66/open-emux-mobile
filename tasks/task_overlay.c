@@ -985,6 +985,23 @@ static bool task_overlay_load_desc(
       }
    }
 
+   /* OpenEmux: the frontend state this desc's image shows (a skin's
+    * "on" look for a toggle). */
+   strlcpy_lit(conf_key + _len, "_lit_by", sizeof(conf_key) - _len);
+   desc->lit_by = OVERLAY_LIT_BY_NONE;
+   {
+      char lit_by[32];
+      if (config_get_array(conf, conf_key, lit_by, sizeof(lit_by)))
+      {
+         desc->lit_by = input_overlay_lit_by_parse(lit_by);
+         if (desc->lit_by)
+            loader->flags |= OVERLAY_LOADER_HAS_LIT_BY;
+         else
+            RARCH_WARN("[Overlay] Unknown state \"%s\" in %s.\n",
+                  lit_by, conf_key);
+      }
+   }
+
    strlcpy_lit(conf_key + _len, "_reach_up", sizeof(conf_key) - _len);
    if (config_get_float(conf, conf_key, &tmp_float))
       desc->reach_up = tmp_float;

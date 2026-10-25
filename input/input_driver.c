@@ -6049,6 +6049,31 @@ static const unsigned *input_overlay_led_map(void)
    return config_get_ptr()->uints.led_map;
 }
 
+/* The frontend states an image can be lit by (_lit_by), as a mask:
+ * bit (OVERLAY_LIT_BY_* - 1) set while that state is on. */
+static uint32_t input_overlay_states(void)
+{
+   uint32_t states = 0;
+
+   if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_FASTMOTION)
+      states |= 1u << (OVERLAY_LIT_BY_FAST_FORWARD - 1);
+   /* input_turbo_locked makes the turbo hotkey flip this bool. */
+   if (config_get_ptr()->bools.input_turbo_enable)
+      states |= 1u << (OVERLAY_LIT_BY_TURBO - 1);
+
+   if (states != input_driver_st.overlay_states_last)
+   {
+      input_driver_st.overlay_states_last = states;
+#if defined(ANDROID)
+      /* OpenEmux: the frontend follows the toggles, once per change */
+      android_app_toggle_states(
+            !!(states & (1u << (OVERLAY_LIT_BY_FAST_FORWARD - 1))),
+            !!(states & (1u << (OVERLAY_LIT_BY_TURBO - 1))));
+#endif
+   }
+   return states;
+}
+
 /**
  * input_overlay_post_poll:
  *
@@ -6062,6 +6087,7 @@ static void input_overlay_post_poll(
    size_t i;
 
    input_overlay_alpha_pass(ol, opacity, show_input, opacity,
+         input_overlay_states(),
          input_driver_st.overlay_leds_lit, input_overlay_led_map());
 
    for (i = 0; i < ol->active->size; i++)
@@ -6450,6 +6476,7 @@ static void input_overlay_poll_clear(
 void input_overlay_set_alpha_mod(input_overlay_t *ol, float mod)
 {
    input_overlay_alpha_pass(ol, mod, false, mod,
+         input_overlay_states(),
          input_driver_st.overlay_leds_lit, input_overlay_led_map());
 }
 
@@ -11600,6 +11627,8 @@ static void input_overlay_loaded(retro_task_t *task,
       ol->flags   |= INPUT_OVERLAY_IS_OSK;
    if (data->flags & OVERLAY_LOADER_HAS_LEDS)
       ol->flags   |= INPUT_OVERLAY_HAS_LEDS;
+   if (data->flags & OVERLAY_LOADER_HAS_LIT_BY)
+      ol->flags   |= INPUT_OVERLAY_HAS_LIT_BY;
 
    /* One block for the sent alphas and the pass's scratch, sized for
     * the page with the most images. Without it every alpha is set

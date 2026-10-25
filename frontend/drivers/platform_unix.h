@@ -176,6 +176,7 @@ struct android_app
    jmethodID onExternalMenuRequested;
    jmethodID onExternalMenuInput;
    jmethodID onOverlayChanged;
+   jmethodID onToggleStates;
 
    jmethodID isPlayStoreBuild;
    jmethodID isMetaQuestBuild;
@@ -413,6 +414,10 @@ bool android_app_external_menu_input(int type, int keycode, int action,
 /* OpenEmux: tells the activity which overlay is now shown, so it can
  * match the core to it (the NDS screen layout of each overlay). */
 void android_app_overlay_changed(const char *name);
+
+/* OpenEmux: tells the activity whether fast forward and turbo are on,
+ * when either changes, so its pause sheet shows the engine's state. */
+void android_app_toggle_states(bool fast_forward, bool turbo);
 bool android_get_vfs_authorized_locations(
       struct retro_vfs_authorized_locations *locations);
 #endif
