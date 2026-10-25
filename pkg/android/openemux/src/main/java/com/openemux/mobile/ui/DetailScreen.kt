@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -124,7 +125,7 @@ fun DetailScreen(key: String) {
                 )
             }
         )
-        Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+        MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
             Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
                 RoundIconButton(Icons.Back, stringResource(R.string.detail_back), { a.nav.popBackStack() }, background = Oe.Control.copy(alpha = 0.8f))
                 Spacer(Modifier.weight(1f))
@@ -210,7 +211,8 @@ fun DetailScreen(key: String) {
                 ListRow(stringResource(R.string.detail_cheats), value = stringResource(R.string.detail_coming_soon), divider = true)
             }
             Spacer(Modifier.height(28.dp))
-        }
+            Spacer(Modifier.height(hintBarInset))
+        } }
     }
 
     when (sheet) {
@@ -250,7 +252,7 @@ private fun StateThumb(st: SaveState, modifier: Modifier, onClick: () -> Unit) {
 
 @Composable
 fun ColorSwatches(selected: String, modifier: Modifier = Modifier, onPick: (String) -> Unit) {
-    Row(modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    FocusRow(modifier, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
         CART_COLORS.forEach { c ->
             Box(
                 Modifier.size(38.dp).gamepadFocus(corner = 19.dp).clip(CircleShape)
@@ -338,7 +340,7 @@ private fun ShaderSheet(rom: Rom, onClose: () -> Unit) {
                 Text(stringResource(R.string.detail_pin_for_rom), style = Type.Tag.copy(color = Oe.Faint, fontSize = 12.sp, letterSpacing = 1.sp))
                 HorizontalDivider(Modifier.padding(start = 10.dp).weight(1f), color = Oe.Divider)
             }
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            FocusRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SHADERS.forEach { s ->
                     ShaderTile(s.id, s.name(), choice == s.id) { lib.updateRom(rom.key) { it.copy(shader = s.id) } }
                 }
@@ -356,8 +358,9 @@ private fun StatesSheet(states: List<SaveState>, onPick: (SaveState) -> Unit, on
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(R.string.detail_save_states), style = Type.Title.copy(fontSize = 22.sp))
             Text(stringResource(R.string.detail_states_sheet_hint), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 14.dp))
-            LazyVerticalGrid(
+            MarginFocusScroll { LazyVerticalGrid(
                 GridCells.Fixed(2), Modifier.height(420.dp),
+                contentPadding = PaddingValues(vertical = FocusOutset),
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(states) { st ->
@@ -372,7 +375,7 @@ private fun StatesSheet(states: List<SaveState>, onPick: (SaveState) -> Unit, on
                         Text(formatAgo(st.modified), style = Type.Caption, modifier = Modifier.padding(top = 5.dp, start = 2.dp))
                     }
                 }
-            }
+            } }
         }
     }
 }

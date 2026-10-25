@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -62,7 +63,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openemux.mobile.data.SHADERS
 import com.openemux.mobile.ui.DISABLED_ALPHA
+import com.openemux.mobile.ui.FocusOutset
 import com.openemux.mobile.ui.HintBar
+import com.openemux.mobile.ui.MarginFocusScroll
 import com.openemux.mobile.ui.Icon
 import com.openemux.mobile.ui.Icons
 import com.openemux.mobile.ui.ListRow
@@ -224,7 +227,7 @@ fun PauseSheet(
                     SheetIconButton(Icons.Close, stringResource(R.string.game_back_to_game), onResume)
                 }
 
-                Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
+                MarginFocusScroll { Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState())) {
                 if (toast != null) {
                     Row(
                         Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Oe.OkBg).padding(12.dp),
@@ -284,8 +287,8 @@ fun PauseSheet(
                         }
                     }
                 }
-                }
-                HintBar(listOf("A" to stringResource(R.string.game_choose), "B" to stringResource(R.string.game_back), "START" to stringResource(R.string.game_back_to_game)), Modifier.padding(top = 12.dp), tall = true)
+                } }
+                HintBar(listOf("A" to stringResource(R.string.game_choose), "B" to stringResource(R.string.game_back), "START" to stringResource(R.string.game_back_to_game)), Modifier.padding(top = 12.dp))
             }
         }
     }
@@ -403,9 +406,10 @@ private fun StatesPage(states: List<PauseSession.State>, onPick: (PauseSession.S
         return
     }
     val focused = remember { mutableStateOf<String?>(null) }
-    LazyVerticalGrid(
+    MarginFocusScroll { LazyVerticalGrid(
         GridCells.Adaptive(160.dp),
-        Modifier.padding(top = 16.dp).height(380.dp),
+        Modifier.padding(top = 16.dp - FocusOutset).height(380.dp),
+        contentPadding = PaddingValues(vertical = FocusOutset),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -425,7 +429,7 @@ private fun StatesPage(states: List<PauseSession.State>, onPick: (PauseSession.S
                 Text(formatAgo(st.modified), style = Type.Caption, modifier = Modifier.padding(top = 5.dp, start = 2.dp))
             }
         }
-    }
+    } }
 }
 
 @Composable
