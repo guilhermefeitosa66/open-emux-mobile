@@ -37,6 +37,10 @@ class GameActivity : RetroActivityFuture() {
 
     /** Read on the engine thread: whether the pause sheet takes the gamepad. */
     @Volatile private var sheetOpen = false
+
+    /** Written on the engine thread (onToggleStates): whether fast forward is on, for the pause sheet. */
+    @Volatile var fastForwardOn = false
+        private set
     private var stickKey = 0
 
     // The NDS overlay last shown: its orientation, and the layout each orientation was left on (engine thread only).
@@ -79,6 +83,15 @@ class GameActivity : RetroActivityFuture() {
     override fun onPause() {
         flushPlaytime()
         super.onPause()
+    }
+
+    /**
+     * Called on the engine thread when fast forward or turbo goes on or off, whatever flipped it: the skin's strip,
+     * the pause sheet or a gamepad hotkey. The strip draws its own "on" look (overlayN_descM_lit_by); the pause
+     * sheet reads fast forward from here.
+     */
+    override fun onToggleStates(fastForward: Boolean, turbo: Boolean) {
+        fastForwardOn = fastForward
     }
 
     /**
@@ -200,7 +213,7 @@ class GameActivity : RetroActivityFuture() {
 
     private fun showPauseSheet() {
         if (dialog?.isShowing == true || isFinishing) return
-        val session = PauseSession.fromIntent(intent, sessionStart)
+        val session = PauseSession.fromIntent(intent, sessionStart, fastForwardOn)
         // The sheet follows the app's theme; it may have changed since this process started.
         ThemePref.load(this)
         Oe.syncSystem(this)

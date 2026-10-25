@@ -6057,7 +6057,7 @@ static uint32_t input_overlay_states(void)
 
    if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_FASTMOTION)
       states |= 1u << (OVERLAY_LIT_BY_FAST_FORWARD - 1);
-   /* input_turbo_locked makes the turbo hotkey flip this bool. */
+   /* The turbo hotkey flips this bool (CMD_EVENT_TURBO_FIRE_TOGGLE). */
    if (config_get_ptr()->bools.input_turbo_enable)
       states |= 1u << (OVERLAY_LIT_BY_TURBO - 1);
 

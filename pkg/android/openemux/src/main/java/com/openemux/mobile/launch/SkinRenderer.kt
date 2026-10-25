@@ -37,14 +37,28 @@ import java.util.Locale
  */
 class SkinRenderer(private val context: Context) {
 
+    private companion object {
+        /** The app accent (Oe.Accent) and its light tone (Oe.AccentOnSoft, dark), for a toggle that is on. */
+        const val ACCENT = 0xFF7C3AED.toInt()
+        const val ACCENT_RING = 0xFFD4C4FF.toInt()
+    }
+
     /** One overlay: [rotate] is the one turning the screen switches to, [layoutNext] the NDS layout key's target. */
     private class Spec(
         val name: String, val portrait: Boolean, val aspect: Float, val rotate: String,
         val keypadOpen: Boolean = false, val layoutNext: String? = null,
     )
 
-    /** [radial] marks an analog stick, whose rect is its range; [next] is the overlay an overlay_next switches to. */
-    private class Desc(val name: String, val rect: RectF, val radial: Boolean = false, val next: String? = null)
+    /**
+     * [radial] marks an analog stick, whose rect is its range; [next] is the overlay an overlay_next switches to;
+     * [lit] is a toggle's "on" image, drawn over its rect only while the engine has that state on.
+     */
+    private class Desc(
+        val name: String, val rect: RectF, val radial: Boolean = false, val next: String? = null, val lit: Lit? = null,
+    )
+
+    /** The image of a desc lit by an engine state (overlayN_descM_lit_by: fast_forward or turbo). */
+    private class Lit(val state: String, val bitmap: Bitmap)
 
     private val inter: Typeface = ResourcesCompat.getFont(context, R.font.inter_bold) ?: Typeface.DEFAULT_BOLD
     private val grotesk: Typeface = ResourcesCompat.getFont(context, R.font.grotesk_bold) ?: Typeface.DEFAULT_BOLD
@@ -100,12 +114,19 @@ class SkinRenderer(private val context: Context) {
             val descs = if (spec.portrait) layout.portrait(h) else layout.landscape(w)
             val image = spec.name.replace('@', '-') + ".png"
             File(outDir, image).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+            descs.forEach { d ->
+                d.lit?.let { lit ->
+                    File(outDir, litImage(image, lit)).outputStream().use { lit.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
+                }
+            }
             writeOverlay(cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture)
         }
         val file = File(outDir, "skin.cfg")
         file.writeText(cfg.toString())
         return file
     }
+
+    private fun litImage(image: String, lit: Lit) = image.removeSuffix(".png") + "-lit-${lit.state}.png"
 
     private fun writeOverlay(
         cfg: StringBuilder, index: Int, name: String, other: String, image: String,
@@ -127,8 +148,9 @@ class SkinRenderer(private val context: Context) {
         cfg.append("${p}_alpha_mod = 1.0\n")
         cfg.append("${p}_descs = ${descs.size + 1}\n")
         descs.forEachIndexed { i, d ->
-            // Touch areas a little larger than what is drawn: thumbs are wide.
-            val grow = if (d.radial) 1f else 1.12f
+            // Touch areas a little larger than what is drawn: thumbs are wide. A lit image is stretched over its
+            // desc's range, so that stays exactly what was drawn.
+            val grow = if (d.radial || d.lit != null) 1f else 1.12f
             val hw = d.rect.width() / 2f * grow
             val hh = d.rect.height() / 2f * grow
             cfg.append(
@@ -139,6 +161,10 @@ class SkinRenderer(private val context: Context) {
             )
             if (d.radial) cfg.append("${p}_desc${i}_saturate_pct = 0.65\n")
             d.next?.let { cfg.append("${p}_desc${i}_next_target = \"$it\"\n") }
+            d.lit?.let {
+                cfg.append("${p}_desc${i}_overlay = \"${litImage(image, it)}\"\n")
+                cfg.append("${p}_desc${i}_lit_by = \"${it.state}\"\n")
+            }
         }
         // Unreachable switch that lets auto-rotate find the other orientation.
         val n = descs.size
@@ -421,30 +447,61 @@ class SkinRenderer(private val context: Context) {
             actions.forEachIndexed { i, action ->
                 val cx = box.left + slot * (i + 0.5f)
                 val cy = box.centerY()
-                val path = PathParser.createPathFromPathData(
-                    when (action) {
-                        "save_state" -> Icons.SaveState
-                        "load_state" -> Icons.LoadState
-                        "turbo_fire_toggle" -> "M13 2L4 14h7l-1 8 9-12h-7z"
-                        // Two screens, one over the other.
-                        "screens" -> "M6 3h12a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM6 13h12a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"
-                        else -> "M3 6v12l9-6zM12 6v12l9-6z"
-                    }
-                )
-                path.transform(Matrix().apply { setScale(size / 24f, size / 24f); postTranslate(cx - size / 2f, cy - size / 2f) })
                 val off = hardcore && action == "toggle_fast_forward"
-                val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    // At 0.45, like the pause sheet's disabled tiles.
-                    color = if (off) (colors.icon and 0x00FFFFFF) or (0x73 shl 24) else colors.icon
-                    if (action == "turbo_fire_toggle" || action == "screens") {
-                        style = Paint.Style.STROKE; strokeWidth = 1.8f * size / 24f; strokeJoin = Paint.Join.ROUND
-                    }
-                }
-                c.drawPath(path, paint)
+                // At 0.45, like the pause sheet's disabled tiles.
+                val color = if (off) (colors.icon and 0x00FFFFFF) or (0x73 shl 24) else colors.icon
+                c.drawPath(stripIcon(action, cx, cy, size), stripPaint(action, size, color))
                 val area = RectF(box.left + slot * i, box.top, box.left + slot * (i + 1), box.bottom)
                 if (off) return@forEachIndexed
                 descs += if (action == "screens") Desc("overlay_next", area, next = layoutNext) else Desc(action, area)
+                when (action) {
+                    "turbo_fire_toggle" -> descs += litPill(action, "turbo", cx, cy, slot, size)
+                    "toggle_fast_forward" -> descs += litPill(action, "fast_forward", cx, cy, slot, size)
+                }
             }
+        }
+
+        private fun stripIcon(action: String, cx: Float, cy: Float, size: Float): Path {
+            val path = PathParser.createPathFromPathData(
+                when (action) {
+                    "save_state" -> Icons.SaveState
+                    "load_state" -> Icons.LoadState
+                    "turbo_fire_toggle" -> "M13 2L4 14h7l-1 8 9-12h-7z"
+                    // Two screens, one over the other.
+                    "screens" -> "M6 3h12a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM6 13h12a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1z"
+                    else -> "M3 6v12l9-6zM12 6v12l9-6z"
+                }
+            )
+            path.transform(Matrix().apply { setScale(size / 24f, size / 24f); postTranslate(cx - size / 2f, cy - size / 2f) })
+            return path
+        }
+
+        private fun stripPaint(action: String, size: Float, color: Int) = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            if (action == "turbo_fire_toggle" || action == "screens") {
+                style = Paint.Style.STROKE; strokeWidth = 1.8f * size / 24f; strokeJoin = Paint.Join.ROUND
+            }
+        }
+
+        /**
+         * A toggle's "on" look, shown by the engine while [state] is on: the app accent's pill, 46 x 30 (no wider than
+         * the slot less 8), its light inner ring, and the icon over it in white. A "nul" desc, so it presses nothing.
+         */
+        private fun litPill(action: String, state: String, cx: Float, cy: Float, slot: Float, size: Float): Desc {
+            val w = maxOf(1, minOf(s(46f), slot - s(8f)).toInt())
+            val h = maxOf(1, s(30f).toInt())
+            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val canvas = Canvas(bitmap)
+            val radius = s(10f)
+            val ring = s(1.5f)
+            canvas.drawRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ACCENT })
+            canvas.drawRoundRect(
+                RectF(ring / 2f, ring / 2f, w - ring / 2f, h - ring / 2f), radius - ring / 2f, radius - ring / 2f,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ACCENT_RING; style = Paint.Style.STROKE; strokeWidth = ring },
+            )
+            canvas.drawPath(stripIcon(action, w / 2f, h / 2f, size), stripPaint(action, size, 0xFFFFFFFF.toInt()))
+            val rect = RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f)
+            return Desc("nul", rect, lit = Lit(state, bitmap))
         }
 
         private fun label(text: String, left: Float, top: Float, w: Float, font: Float, spacing: Float, alpha: Int = 0xB3, color: Int = colors.ink) {
