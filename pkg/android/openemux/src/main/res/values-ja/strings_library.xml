@@ -79,4 +79,8 @@
     <string name="library_shelf_reset_order">既定の並び順に戻す</string>
     <string name="library_shelf_order_tip">棚を長押ししてドラッグすると並び順を変えられます。アプリ全体に反映されます。</string>
     <string name="detail_hardcore_no_load">ハードコアモードではステートロードは使えません</string>
+    <string name="update_available_title">バージョン %1$s が利用可能です</string>
+    <string name="update_installed">現在のバージョン: %1$s</string>
+    <string name="update_download">ダウンロード</string>
+    <string name="update_not_now">後で</string>
 </resources>

@@ -16,4 +16,5 @@
     <string name="about_licenses_note">Todo lo que esta app incluye o descarga, con su licencia. Los textos de las licencias se mantienen en su inglés original.</string>
     <string name="about_section_app">App y bibliotecas</string>
     <string name="about_section_cores">Emuladores (núcleos)</string>
+    <string name="about_up_to_date">Actualizado</string>
 </resources>

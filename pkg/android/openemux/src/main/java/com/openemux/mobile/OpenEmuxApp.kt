@@ -9,6 +9,7 @@ import com.openemux.mobile.data.Importer
 import com.openemux.mobile.data.Labels
 import com.openemux.mobile.data.Library
 import com.openemux.mobile.data.Setup
+import com.openemux.mobile.data.UpdateStore
 import com.openemux.mobile.launch.GameLauncher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +36,8 @@ class OpenEmuxApp : Application() {
         private set
     lateinit var achievements: AchievementsStore
         private set
+    lateinit var updates: UpdateStore
+        private set
 
     override fun onCreate() {
         super.onCreate()
@@ -47,7 +50,10 @@ class OpenEmuxApp : Application() {
         launcher = GameLauncher(this, library, covers, labels, achievements)
         importer = Importer(this, library)
         setup = Setup(library.paths)
-        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+        val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+        updates = UpdateStore.create(this)
+        updates.checkOnce(appScope)
+        appScope.launch {
             combine(library.roms, artworkRetry) { roms, _ -> roms }.collectLatest { roms ->
                 coroutineScope {
                     launch { covers.prefetch(roms) }

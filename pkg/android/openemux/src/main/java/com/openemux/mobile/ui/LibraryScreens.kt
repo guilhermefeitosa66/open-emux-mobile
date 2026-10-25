@@ -141,6 +141,7 @@ fun ShelfScreen() {
                 val consoles = Console.entries.count { c -> roms.any { it.console == c } }
                 Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 6.dp))
             }
+            UpdateBanner(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
             ArtworkSyncPill(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
         }
         if (roms.isEmpty()) {

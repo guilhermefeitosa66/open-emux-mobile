@@ -83,4 +83,8 @@
     <string name="library_shelf_reset_order">Rétablir l’ordre par défaut</string>
     <string name="library_shelf_order_tip">Maintenez une étagère et faites-la glisser pour changer l’ordre. Il s’applique à toute l’app.</string>
     <string name="detail_hardcore_no_load">Le chargement d’états est désactivé en mode hardcore</string>
+    <string name="update_available_title">Version %1$s disponible</string>
+    <string name="update_installed">Vous avez la %1$s</string>
+    <string name="update_download">Télécharger</string>
+    <string name="update_not_now">Plus tard</string>
 </resources>

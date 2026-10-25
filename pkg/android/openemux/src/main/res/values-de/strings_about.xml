@@ -16,4 +16,5 @@
     <string name="about_licenses_note">Alles, was diese App mitbringt oder herunterlädt, mit der jeweiligen Lizenz. Die Lizenztexte bleiben im englischen Original.</string>
     <string name="about_section_app">App und Bibliotheken</string>
     <string name="about_section_cores">Emulatoren (Kerne)</string>
+    <string name="about_up_to_date">Auf dem neuesten Stand</string>
 </resources>
