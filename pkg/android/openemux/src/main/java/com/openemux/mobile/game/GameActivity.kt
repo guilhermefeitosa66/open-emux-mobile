@@ -40,8 +40,13 @@ class GameActivity : RetroActivityFuture() {
 
     /** Written on the engine thread (onToggleStates): whether fast forward is on, for the pause sheet. */
     @Volatile private var fastForwardOn = false
-    /** What the pause sheet's fast-forward tile asked for, applied once the engine runs again; null = untouched. */
+    /**
+     * What the pause sheet's fast-forward tile asked for and the engine has not been sent yet; null = nothing pending.
+     * A sheet opened before it is applied shows it and takes it over.
+     */
     @Volatile private var fastForwardWanted: Boolean? = null
+    /** Bumped each time the pause sheet opens, so a deferred fast-forward toggle knows a newer sheet took over. */
+    @Volatile private var sheetCount = 0
     private var stickKey = 0
 
     // The NDS overlay last shown: its orientation, and the layout each orientation was left on (engine thread only).
@@ -214,22 +219,31 @@ class GameActivity : RetroActivityFuture() {
 
     /**
      * The engine turns fast forward off on any toggle it gets while paused (runloop.c, "Don't allow fastmotion
-     * while paused"), so the sheet's choice is sent only after the resume has taken: wait until the engine is
-     * running again, then toggle if its state still differs. Engine thread work: call from a background thread.
+     * while paused"), so the sheet's choice is sent only after the resume has taken: wait until the engine reports
+     * it is playing, then toggle if its state still differs. Blocks: call from a background thread. Gives up, and
+     * leaves the choice to the next sheet, when that sheet opens first.
      */
-    private fun applyFastForward(wanted: Boolean) {
+    private fun applyFastForward(sheet: Int) {
         repeat(20) {
-            if (!RaCommand.isPaused()) {
+            if (sheetCount != sheet) return
+            if (RaCommand.isPlaying()) {
+                val wanted = fastForwardWanted ?: return
+                if (sheetCount != sheet) return
                 if (fastForwardOn != wanted) RaCommand.send("FAST_FORWARD")
+                fastForwardWanted = null
                 return
             }
             Thread.sleep(50)
         }
+        // Never seen running: drop the choice, so the next sheet shows the engine's own state.
+        if (sheetCount == sheet) fastForwardWanted = null
     }
 
     private fun showPauseSheet() {
         if (dialog?.isShowing == true || isFinishing) return
-        val session = PauseSession.fromIntent(intent, sessionStart, fastForwardOn)
+        val sheet = ++sheetCount
+        // A choice from the previous sheet not sent yet is what the tile shows, and this sheet's dismissal sends it.
+        val session = PauseSession.fromIntent(intent, sessionStart, fastForwardWanted ?: fastForwardOn)
         // The sheet follows the app's theme; it may have changed since this process started.
         ThemePref.load(this)
         Oe.syncSystem(this)
@@ -261,11 +275,10 @@ class GameActivity : RetroActivityFuture() {
         d.setContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         d.setOnDismissListener {
             sheetOpen = false
-            val wanted = fastForwardWanted
-            fastForwardWanted = null
+            val pending = fastForwardWanted != null
             Thread {
                 RaCommand.resume()
-                if (wanted != null) applyFastForward(wanted)
+                if (pending) applyFastForward(sheet)
             }.start()
         }
         d.window?.let { window ->
