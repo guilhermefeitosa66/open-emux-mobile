@@ -3,6 +3,8 @@ package com.openemux.mobile.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,22 +17,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openemux.mobile.data.Console
+import com.openemux.mobile.data.UpdateState
 import com.retroarch.BuildConfig
 import com.retroarch.R
 import java.io.File
@@ -55,7 +63,7 @@ fun AboutScreen() {
     GamepadButtons(hints = listOf("A" to stringResource(R.string.about_hint_open), "B" to stringResource(R.string.settings_hint_back)))
     val a = LocalActions.current
     val open = openUrl()
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth()) {
+    MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth()) {
         Column(Modifier.padding(horizontal = 20.dp)) {
             BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
         }
@@ -63,6 +71,7 @@ fun AboutScreen() {
             Image(painterResource(R.drawable.oe_logo), contentDescription = null, modifier = Modifier.size(88.dp))
             Text("OpenEmux", style = Type.Display, modifier = Modifier.padding(top = 12.dp))
             Text(stringResource(R.string.about_version, BuildConfig.VERSION_NAME), style = Type.Small, modifier = Modifier.padding(top = 4.dp))
+            UpdateStatus(open)
             Text(stringResource(R.string.about_comments), style = Type.Body.copy(color = Oe.Muted), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 12.dp))
             Row(Modifier.padding(top = 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text(stringResource(R.string.library_powered_by) + " RetroArch", style = Type.Caption.copy(color = Oe.Faint))
@@ -93,6 +102,26 @@ fun AboutScreen() {
             stringResource(R.string.about_authors), style = Type.Caption.copy(color = Oe.Faint), textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth().padding(20.dp),
         )
+        Spacer(Modifier.height(hintBarInset))
+    } }
+}
+
+/** "Up to date" or the newer version after a check; nothing while it is off, running or failed. */
+@Composable
+private fun UpdateStatus(open: (String) -> Unit) {
+    val state by LocalActions.current.app.updates.state.collectAsState()
+    val pill = Modifier.padding(top = 8.dp).clip(RoundedCornerShape(50))
+    when (val s = state) {
+        UpdateState.UpToDate -> Text(
+            stringResource(R.string.about_up_to_date), style = Type.Caption.copy(color = Oe.OkText, fontWeight = FontWeight.SemiBold),
+            modifier = pill.background(Oe.OkBg).padding(horizontal = 12.dp, vertical = 5.dp),
+        )
+        is UpdateState.Available -> Text(
+            stringResource(R.string.update_available_title, s.release.version), style = Type.Caption.copy(color = Oe.AccentOnSoft, fontWeight = FontWeight.SemiBold),
+            modifier = Modifier.padding(top = 8.dp).gamepadFocus(corner = 50.dp).clip(RoundedCornerShape(50)).background(Oe.AccentSoft)
+                .clickable(role = Role.Button) { open(s.release.url) }.padding(horizontal = 12.dp, vertical = 5.dp),
+        )
+        UpdateState.Unknown -> Unit
     }
 }
 
@@ -132,7 +161,7 @@ fun LicensesScreen() {
         Notice("openemux-artwork (box art)", "Community box art, mirrored from libretro-thumbnails", "https://github.com/guilhermefeitosa66/openemux-artwork"),
         Notice("ScreenScraper (cartridge labels)", "Data and media © ScreenScraper.fr and contributors", "https://www.screenscraper.fr/"),
     )
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth()) {
+    MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth()) {
         Column(Modifier.padding(horizontal = 20.dp)) {
             BackLink(stringResource(R.string.settings_about)) { a.nav.popBackStack() }
             Text(stringResource(R.string.about_licenses), style = Type.Display, modifier = Modifier.padding(top = 8.dp))
@@ -147,7 +176,8 @@ fun LicensesScreen() {
             cores.forEachIndexed { i, n -> NoticeRow(n, i > 0) { n.source?.let(open) } }
         }
         Spacer(Modifier.height(24.dp))
-    }
+        Spacer(Modifier.height(hintBarInset))
+    } }
 }
 
 @Composable

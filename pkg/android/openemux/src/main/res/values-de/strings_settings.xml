@@ -151,4 +151,6 @@
     <string name="ra_apply_note">Änderungen gelten ab dem nächsten Spielstart. Erfolge erscheinen oben auf dem Bildschirm, sobald du sie freischaltest.</string>
     <string name="ra_see_progress">Fortschritt auf retroachievements.org ansehen</string>
     <string name="nav_rail_label">Hauptnavigation</string>
+    <string name="settings_update_check">Nach Updates suchen</string>
+    <string name="settings_update_check_desc">Beim Öffnen der App auf GitHub nach einer neueren Version fragen</string>
 </resources>

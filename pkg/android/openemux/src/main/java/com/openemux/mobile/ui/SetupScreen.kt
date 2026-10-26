@@ -44,33 +44,36 @@ import java.util.Locale
 fun SetupScreen(state: Setup.State, onStart: () -> Unit) {
     GamepadButtons(hints = listOf("A" to stringResource(if (state is Setup.State.Failed) R.string.settings_setup_retry else R.string.settings_setup_start)))
     val layout = LocalWindowLayout.current
-    if (layout.nav != NavKind.TabletRail) {
-        Column(
-            Modifier.fillMaxSize().background(Oe.Bg).statusBarsPadding().navigationBarsPadding()
-                .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
-        ) {
-            Spacer(Modifier.height(48.dp))
-            SetupIntro(wide = false)
-            SetupProgress(state, onStart)
-        }
-        return
-    }
-    // A tablet: the explanation beside the progress when wide, otherwise one capped column; centred on the screen either way.
-    BoxWithConstraints(Modifier.fillMaxSize().background(Oe.Bg).statusBarsPadding().navigationBarsPadding()) {
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(horizontal = 40.dp, vertical = 40.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            if (setupColumns(layout) == 2) {
-                Row(Modifier.widthIn(max = 1040.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(72.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Column(Modifier.weight(1f)) { SetupIntro(wide = true) }
-                    Column(Modifier.weight(1f)) { SetupProgress(state, onStart) }
-                }
-            } else {
-                Column(Modifier.readingWidth()) {
-                    SetupIntro(wide = false)
-                    SetupProgress(state, onStart)
+    // No hint bar here: AppNav draws it only once the setup is done.
+    MarginFocusScroll {
+        if (layout.nav != NavKind.TabletRail) {
+            Column(
+                Modifier.fillMaxSize().background(Oe.Bg).statusBarsPadding().navigationBarsPadding()
+                    .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
+            ) {
+                Spacer(Modifier.height(48.dp))
+                SetupIntro(wide = false)
+                SetupProgress(state, onStart)
+            }
+        } else {
+            // A tablet: the explanation beside the progress when wide, otherwise one capped column; centred on the screen either way.
+            BoxWithConstraints(Modifier.fillMaxSize().background(Oe.Bg).statusBarsPadding().navigationBarsPadding()) {
+                Column(
+                    Modifier.fillMaxSize().verticalScroll(rememberScrollState()).heightIn(min = maxHeight).padding(horizontal = 40.dp, vertical = 40.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    if (setupColumns(layout) == 2) {
+                        Row(Modifier.widthIn(max = 1040.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(72.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) { SetupIntro(wide = true) }
+                            Column(Modifier.weight(1f)) { SetupProgress(state, onStart) }
+                        }
+                    } else {
+                        Column(Modifier.readingWidth()) {
+                            SetupIntro(wide = false)
+                            SetupProgress(state, onStart)
+                        }
+                    }
                 }
             }
         }

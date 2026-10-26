@@ -151,4 +151,6 @@
     <string name="ra_apply_note">As mudanças valem a partir do próximo jogo. As conquistas aparecem no topo da tela quando você as desbloqueia.</string>
     <string name="ra_see_progress">Veja seu progresso em retroachievements.org</string>
     <string name="nav_rail_label">Navegação principal</string>
+    <string name="settings_update_check">Verificar atualizações</string>
+    <string name="settings_update_check_desc">Consultar o GitHub por uma versão mais nova ao abrir o app</string>
 </resources>

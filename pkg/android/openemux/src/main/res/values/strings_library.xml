@@ -88,4 +88,8 @@
     <string name="library_import_more">Import more games</string>
     <string name="library_recently_added">Recently added</string>
     <string name="library_see_all">See all</string>
+    <string name="update_available_title">Version %1$s available</string>
+    <string name="update_installed">You have %1$s</string>
+    <string name="update_download">Download</string>
+    <string name="update_not_now">Not now</string>
 </resources>

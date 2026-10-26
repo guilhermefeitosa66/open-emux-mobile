@@ -88,4 +88,8 @@
     <string name="library_import_more">Weitere Spiele importieren</string>
     <string name="library_recently_added">Zuletzt hinzugefügt</string>
     <string name="library_see_all">Alle anzeigen</string>
+    <string name="update_available_title">Version %1$s verfügbar</string>
+    <string name="update_installed">Du hast %1$s</string>
+    <string name="update_download">Herunterladen</string>
+    <string name="update_not_now">Nicht jetzt</string>
 </resources>

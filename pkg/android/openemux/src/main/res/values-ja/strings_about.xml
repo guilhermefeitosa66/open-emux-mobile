@@ -16,4 +16,5 @@
     <string name="about_licenses_note">このアプリが同梱またはダウンロードするすべてのものと、そのライセンスです。ライセンス本文は原文の英語のままです。</string>
     <string name="about_section_app">アプリとライブラリ</string>
     <string name="about_section_cores">エミュレーター（コア）</string>
+    <string name="about_up_to_date">最新です</string>
 </resources>

@@ -191,7 +191,7 @@ fun OpenEmuxRoot() {
                         ArtworkDoneToast(Modifier.align(Alignment.BottomCenter).padding(bottom = TabBarHeight + 12.dp))
                         HintBar(GamepadBus.hints, Modifier.align(Alignment.BottomCenter).padding(bottom = TabBarHeight))
                     } else {
-                        HintBar(GamepadBus.hints, Modifier.align(Alignment.BottomCenter).navigationBarsPadding(), tall = true)
+                        HintBar(GamepadBus.hints, Modifier.align(Alignment.BottomCenter).navigationBarsPadding())
                     }
                     launching?.let { LaunchingOverlay(it) }
                 }
@@ -353,4 +353,4 @@ val RailWidth: Dp
 
 private val MAIN_TABS = listOf(Routes.SHELF, Routes.RECENT, Routes.IMPORT, Routes.SETTINGS)
 val BottomSpace: Modifier
-    @Composable get() = Modifier.height(TabBarHeight + 24.dp)
+    @Composable get() = Modifier.height(TabBarHeight + hintBarInset + 24.dp)

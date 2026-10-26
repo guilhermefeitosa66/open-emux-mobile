@@ -59,7 +59,7 @@ private val KEYPAD_KEY = SkinKey("", KEYPAD_BIND, R.string.data_skin_keypad)
 /** The console key that opens [Skin.keypad] in place of the face buttons. */
 const val KEYPAD_BIND = "keypad"
 
-class Skin(
+data class Skin(
     val name: String,
     val family: SkinFamily,
     val colors: SkinColors,
@@ -172,8 +172,8 @@ val Console.skin: Skin
         Console.A7800 -> skin(
             "ATARI 7800", SkinFamily.AB,
             DARK.with(body = 0xFF1C1C21, strip = 0xFF121216, ink = 0xFFB4B4C0, pill = 0xFF2E2E35),
-            // prosystem: button 1 is B, 2 is A, the console's Reset is X.
-            standard(Slots.TWO, buttons(listOf("2" to "a", "1" to "b"), listOf(0xFFB8343A))),
+            // The ProLine's left button is 1, the one 2600 games read. prosystem: 1 is B, 2 is A, the console's Reset is X.
+            standard(Slots.TWO, buttons(two("1", "2"), listOf(0xFFB8343A))),
             keys("SELECT" to "select", "PAUSE" to "start", "RESET" to "x"),
         )
         Console.LYNX -> skin(
@@ -412,6 +412,38 @@ val Console.skin: Skin
             keys("START" to "start"),
         )
     }
+
+// Gearcoleco against blueMSX, whose binds the ColecoVision skin carries (platforms/libretro/libretro.cpp, keymap and
+// input descriptors): the fires and keypad pairs swap, * and # swap, 9 and 0 are read from the left stick in either direction.
+private val GEARCOLECO_BINDS = mapOf(
+    "a" to "b", "b" to "a", "x" to "y", "y" to "x", "l" to "r", "r" to "l",
+    "l2" to "r2", "r2" to "l2", "l3" to "r3", "r3" to "l3", "select" to "start", "start" to "select",
+    "r_x_minus" to "l_y_minus", "r_x_plus" to "l_x_plus",
+)
+
+/** Binds a core reads differently from the core the console's skin is written for, by core id. */
+private val CORE_BINDS = mapOf("gearcoleco" to GEARCOLECO_BINDS)
+
+/**
+ * The skin with its binds as [coreId] reads them; the drawing stays the console's.
+ * A core with no entry, or none at all, gets the skin as it is.
+ */
+fun Skin.forCore(coreId: String?): Skin {
+    val map = CORE_BINDS[coreId] ?: return this
+    fun b(bind: String?) = bind?.let { map[it] ?: it }
+    fun k(key: SkinKey) = SkinKey(key.label, b(key.bind), key.labelRes)
+    val clusters = clusters.map { cl ->
+        when (cl) {
+            is SkinCluster.DPad -> SkinCluster.DPad(cl.side, cl.row, cl.size, cl.binds.map { map[it] ?: it })
+            is SkinCluster.Stick -> cl
+            is SkinCluster.Face -> SkinCluster.Face(cl.side, cl.row, cl.slots, cl.buttons.map { SkinButton(it.label, b(it.bind), it.bg, it.fg) })
+        }
+    }
+    return copy(
+        shouldersLeft = shouldersLeft.map(::k), shouldersRight = shouldersRight.map(::k), clusters = clusters,
+        pills = pills.map(::k), keypad = keypad.map { it.map(::k) },
+    )
+}
 
 /** A DeSmuME screen layout: its id in overlay names, its core option value, the picture's aspect and its name. */
 class ScreenLayout(val id: String, val value: String, val aspect: Float, @StringRes val label: Int)

@@ -86,4 +86,8 @@
     <string name="library_import_more">ゲームをさらにインポート</string>
     <string name="library_recently_added">最近追加したゲーム</string>
     <string name="library_see_all">すべて表示</string>
+    <string name="update_available_title">バージョン %1$s が利用可能です</string>
+    <string name="update_installed">現在のバージョン: %1$s</string>
+    <string name="update_download">ダウンロード</string>
+    <string name="update_not_now">後で</string>
 </resources>

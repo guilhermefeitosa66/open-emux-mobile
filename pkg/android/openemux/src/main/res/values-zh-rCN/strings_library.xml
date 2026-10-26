@@ -86,4 +86,8 @@
     <string name="library_import_more">导入更多游戏</string>
     <string name="library_recently_added">最近添加</string>
     <string name="library_see_all">查看全部</string>
+    <string name="update_available_title">版本 %1$s 可用</string>
+    <string name="update_installed">当前版本 %1$s</string>
+    <string name="update_download">下载</string>
+    <string name="update_not_now">以后再说</string>
 </resources>

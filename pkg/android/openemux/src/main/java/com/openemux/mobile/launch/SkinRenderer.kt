@@ -22,6 +22,7 @@ import com.openemux.mobile.data.SkinFamily
 import com.openemux.mobile.data.SkinKey
 import com.openemux.mobile.data.SkinRow
 import com.openemux.mobile.data.SkinSide
+import com.openemux.mobile.data.forCore
 import com.openemux.mobile.data.skin
 import com.openemux.mobile.ui.Icons
 import com.retroarch.R
@@ -56,9 +57,10 @@ class SkinRenderer(private val context: Context) {
      */
     fun render(
         console: Console, width: Int, height: Int, outDir: File, cutout: Int = 0,
-        ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false,
+        ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false, coreId: String? = null,
     ): File {
         outDir.mkdirs()
+        val skin = console.skin.forCore(coreId)
         val portraitW = minOf(width, height)
         val portraitH = maxOf(width, height) - cutout
         val unit = portraitW / 390f
@@ -82,7 +84,7 @@ class SkinRenderer(private val context: Context) {
             specs += Spec("portrait", true, console.gameAspect, "landscape")
             specs += Spec("landscape", false, console.gameAspect, "portrait")
             // The keypad is an overlay of its own per orientation, switched to by the keypad key.
-            if (console.skin.keypad.isNotEmpty()) {
+            if (skin.keypad.isNotEmpty()) {
                 specs += Spec("keypad-portrait", true, console.gameAspect, "keypad-landscape", keypadOpen = true)
                 specs += Spec("keypad-landscape", false, console.gameAspect, "keypad-portrait", keypadOpen = true)
             }
@@ -94,7 +96,7 @@ class SkinRenderer(private val context: Context) {
             val h = if (spec.portrait) portraitH else portraitW
             val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val toggle = if (spec.keypadOpen) spec.name.removePrefix("keypad-") else "keypad-${spec.name}"
-            val layout = Layout(Canvas(bitmap), console, unit, spec.aspect, spec.keypadOpen, toggle, spec.layoutNext, hardcore)
+            val layout = Layout(Canvas(bitmap), skin, unit, spec.aspect, spec.keypadOpen, toggle, spec.layoutNext, hardcore)
             val descs = if (spec.portrait) layout.portrait(h) else layout.landscape(w)
             val image = spec.name.replace('@', '-') + ".png"
             File(outDir, image).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
@@ -149,7 +151,10 @@ class SkinRenderer(private val context: Context) {
      * wide in portrait and 390 tall in landscape): [unit] pixels each.
      */
     private inner class Layout(
-        private val c: Canvas, private val console: Console, private val unit: Float, private val aspect: Float,
+        private val c: Canvas,
+        /** The console's skin with the launched core's binds. */
+        private val skin: Skin,
+        private val unit: Float, private val aspect: Float,
         /** Whether the keypad takes the face buttons' place; [toggle] is the overlay its key switches to. */
         private val keypadOpen: Boolean, private val toggle: String,
         /** The overlay of the next NDS screen layout, for the strip's layout key. */
@@ -157,7 +162,6 @@ class SkinRenderer(private val context: Context) {
         /** RetroAchievements hardcore: the strip's fast forward is drawn off and does nothing. */
         private val hardcore: Boolean,
     ) {
-        private val skin: Skin = console.skin
         private val colors: SkinColors = skin.colors
         private val descs = mutableListOf<Desc>()
 

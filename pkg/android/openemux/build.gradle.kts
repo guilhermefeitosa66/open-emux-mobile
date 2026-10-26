@@ -78,6 +78,11 @@ android {
         }
     }
 
+    // The JVM tests call android.util.Log; the stub answers instead of throwing.
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -115,5 +120,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("androidx.window:window:1.4.0")
+
+    // org.json is only a stub on the plain JVM.
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20240303")
 }
