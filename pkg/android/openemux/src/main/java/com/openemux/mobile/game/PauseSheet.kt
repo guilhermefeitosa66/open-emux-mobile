@@ -337,7 +337,7 @@ fun PauseSheet(
                 }
                 } }
                 if (panel && page == Page.Main) QuitButton(Modifier.padding(top = 12.dp), onQuit)
-                HintBar(listOf("A" to stringResource(R.string.game_choose), "B" to stringResource(R.string.game_back), "START" to stringResource(R.string.game_back_to_game)), Modifier.padding(top = 12.dp), tall = true)
+                HintBar(listOf("A" to stringResource(R.string.game_choose), "B" to stringResource(R.string.game_back), "START" to stringResource(R.string.game_back_to_game)), Modifier.padding(top = 12.dp))
             }
         }
     }

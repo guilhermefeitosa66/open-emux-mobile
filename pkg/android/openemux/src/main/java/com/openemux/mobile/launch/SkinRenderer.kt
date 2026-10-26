@@ -240,7 +240,7 @@ class SkinRenderer(private val context: Context) {
         }
 
         /** Tablet portrait (TabJogoRetrato): the picture across the top, the strip, then L · menu · R and the controls. */
-        fun tabletPortrait(width: Int, height: Int): List<Desc> {
+        fun tabletPortrait(width: Int, height: Int): List<OverlayDesc> {
             val g = SkinGeometry.portrait(width / unit, height / unit, aspect)
             picture = px(g.picture)
             fill(RectF(0f, picture.bottom, width.toFloat(), height.toFloat()), colors.body)
@@ -257,7 +257,7 @@ class SkinRenderer(private val context: Context) {
          * Tablet landscape (TabJogoGBA, TabJogoNDS): the picture centred between two side columns, the strip under it,
          * the NDS layout key over it rather than in the strip.
          */
-        fun tabletLandscape(width: Int, height: Int): List<Desc> {
+        fun tabletLandscape(width: Int, height: Int): List<OverlayDesc> {
             val wd = width / unit
             val g = SkinGeometry.landscape(wd, height / unit, aspect, footprint(), layoutKey = layoutNext != null)
             picture = px(g.picture)
@@ -306,7 +306,7 @@ class SkinRenderer(private val context: Context) {
             c.drawPath(stripIcon("screens", box.left + s(20f), box.centerY(), icon), stripPaint("screens", icon, colors.menuInk))
             val name = screenLayout?.let { context.getString(it.label).uppercase(context.resources.configuration.locales[0]) }.orEmpty()
             label(name, b.x + 30f, b.y + b.h / 2f - 5.5f, b.w - 36f, 10f, 0.06f, alpha = 0xFF, color = colors.menuInk)
-            descs += Desc("overlay_next", box, next = layoutNext)
+            descs += OverlayDesc("overlay_next", box, next = layoutNext)
         }
 
         private fun px(b: Box) = RectF(b.x * unit, b.y * unit, b.right * unit, b.bottom * unit)

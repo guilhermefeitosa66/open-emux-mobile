@@ -167,7 +167,9 @@ class GameLauncher(
             val cutoutDepth = if (bounds.height() >= bounds.width()) cutout.top else maxOf(cutout.left, cutout.right)
             // A skin in the iOS emulators' format (the user's own, else the one the app ships for the console)
             // takes the drawn skin's place; a broken one falls back to it.
-            val tablet = context.resources.configuration.smallestScreenWidthDp >= 600
+            // One tablet decision for both skins, from the same metrics they are drawn for.
+            val density = context.resources.displayMetrics.density
+            val tablet = SkinGeometry.tablet(bounds.width(), bounds.height(), density)
             val imported = ImportedSkinRenderer.find(context, paths.base, rom.console)?.let {
                 runCatching {
                     ImportedSkinRenderer().render(it, rom.console, bounds.width(), bounds.height(), File(dir, "skin"), cutoutDepth, tablet, hardcore)
@@ -182,7 +184,7 @@ class GameLauncher(
                 ndsLayouts = ndsLayouts,
                 hardcore = hardcore,
                 coreId = core.id,
-                density = context.resources.displayMetrics.density,
+                density = density,
             )
 
             val shader = library.effectiveShader(rom)
