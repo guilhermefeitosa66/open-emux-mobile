@@ -241,6 +241,7 @@ class GameLauncher(
             "video_notch_write_over_enable" to "false",
             "input_overlay_enable" to "true",
             // The skin's turbo toggle: once on, every held button repeats (engine opt-in).
+            // Every session starts with it off, as the strip's "on" pill (skin.cfg _lit_by) shows.
             "input_turbo_locked" to "true",
             "input_turbo_mode" to "0",
             "input_turbo_enable" to "false",

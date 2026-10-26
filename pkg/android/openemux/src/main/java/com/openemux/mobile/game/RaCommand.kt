@@ -54,7 +54,11 @@ object RaCommand {
         }
     }.getOrNull()
 
-    fun isPaused(): Boolean = ask("GET_STATUS")?.contains("PAUSED") == true
+    // The reply is "GET_STATUS <PAUSED|PLAYING> <system>,<file>": match the state word, not a file name that holds it.
+    fun isPaused(): Boolean = ask("GET_STATUS")?.startsWith("GET_STATUS PAUSED") == true
+
+    /** True only on a reply saying the content runs: no reply (a timeout) is not taken as running. */
+    fun isPlaying(): Boolean = ask("GET_STATUS")?.startsWith("GET_STATUS PLAYING") == true
 
     fun resume() {
         if (isPaused()) send("PAUSE_TOGGLE")

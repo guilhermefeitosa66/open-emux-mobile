@@ -105,6 +105,9 @@ enum OVERLAY_LOADER_FLAGS
    OVERLAY_LOADER_IS_OSK       = (1 << 1),
    /* A desc of the pack names the LED its image shows (_led). */
    OVERLAY_LOADER_HAS_LEDS     = (1 << 3),
+   /* A desc of the pack names the frontend state its image shows
+    * (_lit_by). */
+   OVERLAY_LOADER_HAS_LIT_BY   = (1 << 5),
    /* The pack's images were decoded together before the first
     * overlay was parsed (task_overlay_predecode) */
    OVERLAY_LOADER_PREDECODED   = (1 << 4)
@@ -127,7 +130,19 @@ enum INPUT_OVERLAY_FLAGS
     * takes no touches and answers no pointer queries, so the pen
     * reaches the core through the input driver. Level-triggered from
     * the run loop. */
-   INPUT_OVERLAY_STYLUS_HIDDEN = (1 << 7)
+   INPUT_OVERLAY_STYLUS_HIDDEN = (1 << 7),
+   /* The pack names images lit by frontend state
+    * (overlayN_descM_lit_by): each shows only while its state is on. */
+   INPUT_OVERLAY_HAS_LIT_BY = (1 << 8)
+};
+
+/* The frontend states an image can be lit by (overlayN_descM_lit_by).
+ * Bit (state - 1) of a states mask is set while that state is on. */
+enum overlay_lit_by
+{
+   OVERLAY_LIT_BY_NONE         = 0,
+   OVERLAY_LIT_BY_FAST_FORWARD = 1,
+   OVERLAY_LIT_BY_TURBO        = 2
 };
 
 enum OVERLAY_FLAGS
@@ -291,6 +306,9 @@ struct overlay_desc
    /* The LED (1-based, as ledN_map counts) whose state this desc's
     * image shows under the overlay LED driver; 0 for none. */
    uint8_t led;
+   /* The frontend state (enum overlay_lit_by) this desc's image shows:
+    * the image is hidden while that state is off. 0 for none. */
+   uint8_t lit_by;
    uint8_t flags;
 };
 
@@ -479,7 +497,7 @@ struct input_overlay
 
    unsigned next_index;
 
-   uint8_t flags;
+   uint16_t flags;
 };
 
 /* Holds general layout information for an
@@ -542,27 +560,35 @@ void input_overlay_free_overlay(struct overlay *overlay);
 void input_overlay_leds_enable(bool enable);
 void input_overlay_set_led(int led, bool lit);
 
-/* Whether the LED driver hides image @image of the active page: the
- * image of a desc naming an unlit LED (_led) when the pack names its
- * LED images, else the image of a "nul" desc an unlit LED's @led_map
- * entry points at - a button that does something is never an LED.
- * @led_map is NULL when the overlay LED driver is not in use, and
- * nothing is hidden. Bit n of @lit is LED n + 1. */
+/* Whether image @image of the active page is hidden: the image of a
+ * desc lit by a frontend state (_lit_by) that is off in @states (bit
+ * n: state n + 1 is on), whether or not the LED driver is in use; and
+ * under the LED driver, the image of a desc naming an unlit LED (_led)
+ * when the pack names its LED images, else the image of a "nul" desc
+ * an unlit LED's @led_map entry points at - a button that does
+ * something is never an LED. @led_map is NULL when the overlay LED
+ * driver is not in use, and no LED image is hidden. Bit n of @lit is
+ * LED n + 1. */
 bool input_overlay_image_hidden(const input_overlay_t *ol,
-      unsigned image, uint32_t lit, const unsigned *led_map);
+      unsigned image, uint32_t states,
+      uint32_t lit, const unsigned *led_map);
 
-/* Sets alpha 0 on every image of the active page that
+/* Sets alpha 0 on every LED image of the active page that
  * input_overlay_image_hidden() would hide. */
 void input_overlay_hide_leds(input_overlay_t *ol,
       uint32_t lit, const unsigned *led_map);
 
-/* Every image of the active page to its alpha: @mod, 0 for one the LED
- * driver hides, and with @show_input a pressed desc's
- * alpha_mod * @opacity. Only an image whose alpha differs from the
- * last one handed to the driver is set. */
+/* Every image of the active page to its alpha: @mod, 0 for one that
+ * input_overlay_image_hidden() hides, and with @show_input a pressed
+ * desc's alpha_mod * @opacity. Only an image whose alpha differs from
+ * the last one handed to the driver is set. */
 void input_overlay_alpha_pass(input_overlay_t *ol, float mod,
-      bool show_input, float opacity,
+      bool show_input, float opacity, uint32_t states,
       uint32_t lit, const unsigned *led_map);
+
+/* The overlay_lit_by value a pack's _lit_by string names, or
+ * OVERLAY_LIT_BY_NONE for one it does not know. */
+uint8_t input_overlay_lit_by_parse(const char *name);
 
 /* The driver was handed a page: nothing it holds is known any more. */
 void input_overlay_alpha_forget(input_overlay_t *ol);

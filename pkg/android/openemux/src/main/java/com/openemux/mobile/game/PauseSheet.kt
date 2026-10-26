@@ -96,6 +96,8 @@ data class PauseSession(
     val startedAt: Long,
     /** RetroAchievements hardcore: the engine refuses loading states; the app leaves fast forward out too. */
     val hardcore: Boolean = false,
+    /** Whether the engine has fast forward on as the sheet opens (GameActivity.onToggleStates). */
+    val fastForward: Boolean = false,
 ) {
     data class State(val slot: Int, val file: File, val thumb: File?, val modified: Long)
 
@@ -124,7 +126,7 @@ data class PauseSession(
     }
 
     companion object {
-        fun fromIntent(intent: Intent, startedAt: Long) = PauseSession(
+        fun fromIntent(intent: Intent, startedAt: Long, fastForward: Boolean = false) = PauseSession(
             title = intent.getStringExtra(GameExtras.TITLE) ?: "",
             cartPath = intent.getStringExtra(GameExtras.CART),
             statesDir = File(intent.getStringExtra(GameExtras.STATES_DIR) ?: "/"),
@@ -134,13 +136,16 @@ data class PauseSession(
             coreName = intent.getStringExtra(GameExtras.CORE_NAME) ?: "",
             startedAt = startedAt,
             hardcore = intent.getBooleanExtra(GameExtras.HARDCORE, false),
+            fastForward = fastForward,
         )
     }
 }
 
-/** Survives the dialog: toggles the engine keeps for the whole session. */
+/**
+ * Survives the dialog: toggles the engine keeps for the whole session. Fast forward is not here: the engine reports
+ * it (PauseSession.fastForward), so the sheet agrees with the skin's strip and the gamepad hotkey.
+ */
 private object SessionToggles {
-    var fastForward = false
     var muted = false
     var shader: String? = null
 }
@@ -154,11 +159,18 @@ fun PauseSheet(
     onQuit: () -> Unit,
     /** NDS: switches to the next screen layout and names it; null for other consoles. */
     onScreens: (() -> String)? = null,
+    /**
+     * Fast forward on (true) or off, as the tile now shows. Sent by the activity after the sheet closes: the engine
+     * refuses to turn it on while paused.
+     */
+    onFastForward: (Boolean) -> Unit = {},
 ) {
     OpenEmuxTheme {
         var page by remember { mutableStateOf(Page.Main) }
         var toast by remember { mutableStateOf<String?>(null) }
         var refresh by remember { mutableIntStateOf(0) }
+        // Flipped at once on a tap; the engine's own value comes in again the next time the sheet opens.
+        var fastForward by remember { mutableStateOf(session.fastForward && !session.hardcore) }
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
         val states = remember(refresh) { session.states() }
@@ -247,6 +259,7 @@ fun PauseSheet(
                         Page.Main -> MainPage(
                             landscape = landscape,
                             hardcore = session.hardcore,
+                            fastForward = fastForward,
                             stateCount = states.count { !it.isAutoSlot() },
                             onSave = {
                                 val next = (states.filter { it.slot > 0 }.maxOfOrNull { it.slot } ?: 0) + 1
@@ -256,8 +269,9 @@ fun PauseSheet(
                             },
                             onLoad = { page = Page.States },
                             onFastForward = {
-                                SessionToggles.fastForward = !SessionToggles.fastForward
-                                command("FAST_FORWARD", context.getString(if (SessionToggles.fastForward) R.string.game_toast_fast_forward_on else R.string.game_toast_fast_forward_off))
+                                fastForward = !fastForward
+                                onFastForward(fastForward)
+                                toast = context.getString(if (fastForward) R.string.game_toast_fast_forward_on else R.string.game_toast_fast_forward_off)
                             },
                             onScreenshot = { command("SCREENSHOT", context.getString(R.string.game_toast_screenshot)) },
                             onScreens = onScreens?.let { next -> { toast = next() } },
@@ -308,6 +322,7 @@ private fun SheetIconButton(path: String, label: String, onClick: () -> Unit) {
 private fun MainPage(
     landscape: Boolean,
     hardcore: Boolean,
+    fastForward: Boolean,
     stateCount: Int,
     onSave: () -> Unit,
     onLoad: () -> Unit,
@@ -335,7 +350,7 @@ private fun MainPage(
                 BigButton(stringResource(R.string.game_load), Icons.LoadState, Oe.Raised, Oe.Text, Modifier.weight(1f), onLoad, enabled = !hardcore)
             }
             Row(Modifier.padding(top = 18.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                ActionTile(stringResource(R.string.game_fast_forward), Icons.FastForward, SessionToggles.fastForward, filled = true, enabled = !hardcore, onClick = onFastForward)
+                ActionTile(stringResource(R.string.game_fast_forward), Icons.FastForward, fastForward, filled = true, enabled = !hardcore, onClick = onFastForward)
                 ActionTile(stringResource(R.string.game_screenshot), Icons.Camera, false, onClick = onScreenshot)
                 ActionTile(stringResource(R.string.game_shader), Icons.Shader, false, onClick = onShader)
                 if (onScreens != null) ActionTile(stringResource(R.string.game_screens), Icons.Screens, false, onClick = onScreens)

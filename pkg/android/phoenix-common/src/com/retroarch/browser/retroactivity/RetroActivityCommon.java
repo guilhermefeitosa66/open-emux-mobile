@@ -1136,6 +1136,14 @@ public class RetroActivityCommon extends NativeActivity
   {
   }
 
+  /**
+   * OpenEmux: fast forward or turbo went on or off. Called from the
+   * engine thread, once per change.
+   */
+  public void onToggleStates(boolean fastForward, boolean turbo)
+  {
+  }
+
   public int getVolumeCount()
   {
     int ret = 0;

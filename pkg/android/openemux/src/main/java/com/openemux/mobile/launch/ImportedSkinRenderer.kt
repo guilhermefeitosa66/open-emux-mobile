@@ -19,6 +19,8 @@ import org.json.JSONObject
 import java.io.File
 import java.util.Locale
 import java.util.zip.ZipFile
+import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /**
  * Turns a controller skin in the package format of the iOS emulators Delta
@@ -34,8 +36,6 @@ import java.util.zip.ZipFile
  * every item becomes a touch area bound to a RetroPad button or a hotkey.
  */
 class ImportedSkinRenderer {
-
-    private class Desc(val name: String, val rect: RectF)
 
     /** Where the representation lands on screen: mapping units times [s], from ([ox], [oy]). */
     private class Placement(val s: Float, val ox: Float, val oy: Float) {
@@ -69,8 +69,9 @@ class ImportedSkinRenderer {
                 val w = if (portrait) portraitW else portraitH
                 val h = if (portrait) portraitH else portraitW
                 val image = "$orient.png"
-                val (descs, viewport) = drawOverlay(zip, rep, portrait, w, h, File(outDir, image))
-                writeOverlay(cfg, i, orient, other, image, descs, w, h, viewport)
+                val (descs, viewport) = drawOverlay(zip, rep, portrait, w, h, outDir, image)
+                // The skin's own extended edges already widen the touch areas.
+                OverlayWriter.write(cfg, i, orient, other, image, descs, w, h, viewport, grow = 1f)
             }
             return File(outDir, "skin.cfg").apply { writeText(cfg.toString()) }
         }
@@ -85,7 +86,9 @@ class ImportedSkinRenderer {
             listOf("edgeToEdge", "standard").firstNotNullOfOrNull { reps.optJSONObject(family)?.optJSONObject(it)?.optJSONObject(orient) }
         } ?: error("no $orient representation")
 
-    private fun drawOverlay(zip: ZipFile, rep: JSONObject, portrait: Boolean, w: Int, h: Int, out: File): Pair<List<Desc>, RectF> {
+    private fun drawOverlay(
+        zip: ZipFile, rep: JSONObject, portrait: Boolean, w: Int, h: Int, outDir: File, image: String,
+    ): Pair<List<OverlayDesc>, RectF> {
         val size = rep.getJSONObject("mappingSize")
         val mw = size.getDouble("width").toFloat()
         val mh = size.getDouble("height").toFloat()
@@ -129,10 +132,9 @@ class ImportedSkinRenderer {
         if (rep.optBoolean("translucent", false)) paint.alpha = 0xB3
         canvas.drawBitmap(rasterize(zip, assetName(rep.getJSONObject("assets")), art), null, art, paint)
         if (screen != null) canvas.drawRect(viewport, Paint().apply { xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR) })
-        out.outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
 
         val defaultEdges = rep.optJSONObject("extendedEdges")
-        val descs = mutableListOf<Desc>()
+        val descs = mutableListOf<OverlayDesc>()
         val items = rep.optJSONArray("items") ?: JSONArray()
         for (i in 0 until items.length()) {
             val item = items.getJSONObject(i)
@@ -147,22 +149,68 @@ class ImportedSkinRenderer {
                 is JSONObject -> directional(inputs, touch, item.has("thumbstick"), descs)
                 is JSONArray -> {
                     val binds = (0 until inputs.length()).mapNotNull { bind(inputs.getString(it)) }
-                    if (binds.isNotEmpty()) descs += Desc(binds.joinToString("|"), touch)
+                    if (binds.isNotEmpty()) descs += OverlayDesc(binds.joinToString("|"), touch)
+                    OverlayWriter.LIT_BY[binds.singleOrNull()]?.let { state ->
+                        descs += litPill(bitmap, state, place.rect(f.getDouble("x"), f.getDouble("y"), f.getDouble("width"), f.getDouble("height")), place.s)
+                    }
                 }
             }
         }
+        OverlayWriter.saveImages(outDir, image, bitmap, descs)
         return descs to viewport
     }
 
+    /**
+     * A toggle's "on" look over its item's [frame] in the drawn [art], [s] pixels per mapping unit: the accent pill of
+     * the drawn skins' strip (46 x 30 at 80 % of the frame's height, no wider than the frame less 8 units), with the
+     * skin's own glyph lifted off the art and drawn over it in white, so it works for any skin, not only the bundled ones.
+     */
+    private fun litPill(art: Bitmap, state: String, frame: RectF, s: Float): OverlayDesc {
+        val h = frame.height() * 0.8f
+        val bitmap = OverlayWriter.pill(minOf(h * 46f / 30f, frame.width() - 8f * s).toInt(), h.toInt(), h / 3f, h / 20f)
+        val left = (frame.centerX() - bitmap.width / 2f).roundToInt()
+        val top = (frame.centerY() - bitmap.height / 2f).roundToInt()
+        glyph(art, left, top, bitmap.width, bitmap.height)?.let { Canvas(bitmap).drawBitmap(it, 0f, 0f, null) }
+        val rect = RectF(left.toFloat(), top.toFloat(), (left + bitmap.width).toFloat(), (top + bitmap.height).toFloat())
+        return OverlayDesc("nul", rect, lit = OverlayLit(state, bitmap))
+    }
+
+    /**
+     * The glyph in the [w] x [h] box of [art] at ([left], [top]): whatever differs from the color around it (the median
+     * of the box's edge), as white with that difference for alpha; null when nothing stands out.
+     */
+    private fun glyph(art: Bitmap, left: Int, top: Int, w: Int, h: Int): Bitmap? {
+        val px = IntArray(w * h)
+        // Only the part of the box inside the art is read; the rest stays transparent.
+        val x0 = maxOf(0, left)
+        val y0 = maxOf(0, top)
+        val x1 = minOf(art.width, left + w)
+        val y1 = minOf(art.height, top + h)
+        if (x1 > x0 && y1 > y0) art.getPixels(px, (y0 - top) * w + (x0 - left), w, x0, y0, x1 - x0, y1 - y0)
+        val edge = (0 until w).flatMap { listOf(px[it], px[(h - 1) * w + it]) } + (0 until h).flatMap { listOf(px[it * w], px[it * w + w - 1]) }
+        fun median(shift: Int) = edge.map { (it shr shift) and 0xFF }.sorted()[edge.size / 2]
+        val bg = intArrayOf(median(16), median(8), median(0))
+        val diff = IntArray(px.size) { i ->
+            val c = px[i]
+            val d = maxOf(abs(((c shr 16) and 0xFF) - bg[0]), abs(((c shr 8) and 0xFF) - bg[1]), abs((c and 0xFF) - bg[2]))
+            d * ((c ushr 24) and 0xFF) / 0xFF
+        }
+        val most = diff.maxOrNull() ?: 0
+        if (most < GLYPH_MIN_DIFF) return null
+        // The faintest fifth is the art's own shading; the glyph's anti-aliased edge ramps up to its full colour.
+        val alphas = IntArray(px.size) { i -> (((diff[i] - most * 0.2f) / (most * 0.5f)).coerceIn(0f, 1f) * 0xFF).toInt() shl 24 or 0xFFFFFF }
+        return Bitmap.createBitmap(alphas, w, h, Bitmap.Config.ARGB_8888)
+    }
+
     /** A D-pad as a 3x3 grid, diagonals included, or a stick as an analog stick. */
-    private fun directional(inputs: JSONObject, box: RectF, thumbstick: Boolean, descs: MutableList<Desc>) {
+    private fun directional(inputs: JSONObject, box: RectF, thumbstick: Boolean, descs: MutableList<OverlayDesc>) {
         val names = listOf("up", "down", "left", "right").map { inputs.optString(it) }
         if (names.any { it.startsWith("rightAnalogStick") || it.startsWith("cStick") }) {
-            descs += Desc(RADIAL_RIGHT, box)
+            descs += OverlayDesc(RADIAL_RIGHT, box, radial = true)
             return
         }
         if (names.any { it.startsWith("analogStick") }) {
-            descs += Desc(RADIAL, box)
+            descs += OverlayDesc(RADIAL, box, radial = true)
             return
         }
         val up = bind(inputs.optString("up"))
@@ -170,16 +218,16 @@ class ImportedSkinRenderer {
         val left = bind(inputs.optString("left"))
         val right = bind(inputs.optString("right"))
         if (thumbstick || up == null || down == null || left == null || right == null) {
-            descs += Desc(RADIAL, box)
+            descs += OverlayDesc(RADIAL, box, radial = true)
             return
         }
         val cw = box.width() / 3f
         val ch = box.height() / 3f
         fun cell(col: Int, row: Int) = RectF(box.left + col * cw, box.top + row * ch, box.left + (col + 1) * cw, box.top + (row + 1) * ch)
         descs += listOf(
-            Desc(up, cell(1, 0)), Desc(down, cell(1, 2)), Desc(left, cell(0, 1)), Desc(right, cell(2, 1)),
-            Desc("$up|$left", cell(0, 0)), Desc("$up|$right", cell(2, 0)),
-            Desc("$down|$left", cell(0, 2)), Desc("$down|$right", cell(2, 2)),
+            OverlayDesc(up, cell(1, 0)), OverlayDesc(down, cell(1, 2)), OverlayDesc(left, cell(0, 1)), OverlayDesc(right, cell(2, 1)),
+            OverlayDesc("$up|$left", cell(0, 0)), OverlayDesc("$up|$right", cell(2, 0)),
+            OverlayDesc("$down|$left", cell(0, 2)), OverlayDesc("$down|$right", cell(2, 2)),
         )
     }
 
@@ -237,46 +285,13 @@ class ImportedSkinRenderer {
         }
     }
 
-    private fun writeOverlay(
-        cfg: StringBuilder, index: Int, name: String, other: String, image: String,
-        descs: List<Desc>, w: Int, h: Int, picture: RectF,
-    ) {
-        val p = "overlay$index"
-        cfg.append("${p}_name = \"$name\"\n")
-        // GL counts y from the bottom.
-        cfg.append(
-            String.format(
-                Locale.US, "%s_viewport = \"%.5f,%.5f,%.5f,%.5f\"\n",
-                p, picture.left / w, (h - picture.bottom) / h, picture.width() / w, picture.height() / h,
-            )
-        )
-        cfg.append("${p}_overlay = \"$image\"\n")
-        cfg.append("${p}_full_screen = true\n")
-        cfg.append("${p}_normalized = true\n")
-        cfg.append("${p}_range_mod = 1.0\n")
-        cfg.append("${p}_alpha_mod = 1.0\n")
-        cfg.append("${p}_descs = ${descs.size + 1}\n")
-        descs.forEachIndexed { i, d ->
-            val radial = d.name == RADIAL || d.name == RADIAL_RIGHT
-            cfg.append(
-                String.format(
-                    Locale.US, "%s_desc%d = \"%s,%.5f,%.5f,%s,%.5f,%.5f\"\n",
-                    p, i, d.name, d.rect.centerX() / w, d.rect.centerY() / h, if (radial) "radial" else "rect",
-                    d.rect.width() / 2f / w, d.rect.height() / 2f / h,
-                )
-            )
-            if (radial) cfg.append("${p}_desc${i}_saturate_pct = 0.65\n")
-        }
-        // Unreachable switch that lets auto-rotate find the other orientation.
-        val n = descs.size
-        cfg.append("${p}_desc$n = \"overlay_next,0.5,0.5,rect,0.00001,0.00001\"\n")
-        cfg.append("${p}_desc${n}_next_target = \"$other\"\n")
-    }
-
     companion object {
         private const val TAG = "ImportedSkin"
         private const val RADIAL = "analog_left"
         private const val RADIAL_RIGHT = "analog_right"
+
+        /** The least difference from its surroundings a toggle's glyph has, out of 255 per channel. */
+        private const val GLYPH_MIN_DIFF = 48
 
         /** Where the skins' buttons sit on the RetroPad, for the consoles whose names differ (as in data/Skin.kt). */
         private val CONSOLE_BINDS = mapOf(

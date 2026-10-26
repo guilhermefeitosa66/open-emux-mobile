@@ -14,8 +14,9 @@
  */
 
 /* The alpha each image of the overlay's page is handed: the page's
- * opacity, a pressed desc's highlight, and 0 for an image the LED
- * driver hides. Kept apart from input_driver.c so that
+ * opacity, a pressed desc's highlight, and 0 for a hidden image: one
+ * the LED driver hides, or one lit by a frontend state that is off.
+ * Kept apart from input_driver.c so that
  * samples/tasks/overlay can compile this file as it is against a stub
  * driver.
  *
@@ -29,7 +30,12 @@
  * ledN_map, which names a slot of whatever page is loaded, is for a
  * pack that names none, and reaches the image at that slot whatever
  * its desc does when pressed: an LED pack may put its lights on keys
- * or buttons. */
+ * or buttons.
+ *
+ * A desc lit by a frontend state (overlayN_descM_lit_by = fast_forward
+ * or turbo) shows its image only while that state is on, with or
+ * without the LED driver: a skin draws a toggle's "on" look that way
+ * over its button. */
 
 #include <boolean.h>
 
@@ -38,6 +44,8 @@
 #endif
 
 #ifdef HAVE_OVERLAY
+
+#include <string.h>
 
 #include "input_overlay.h"
 #include "../led/led_defines.h"
@@ -65,12 +73,41 @@ void input_overlay_alpha_forget(input_overlay_t *ol)
       ol->alpha_sent[i] = -1.0f;
 }
 
+uint8_t input_overlay_lit_by_parse(const char *name)
+{
+   if (name)
+   {
+      if (!strcmp(name, "fast_forward"))
+         return OVERLAY_LIT_BY_FAST_FORWARD;
+      if (!strcmp(name, "turbo"))
+         return OVERLAY_LIT_BY_TURBO;
+   }
+   return OVERLAY_LIT_BY_NONE;
+}
+
 bool input_overlay_image_hidden(const input_overlay_t *ol,
-      unsigned image, uint32_t lit, const unsigned *led_map)
+      unsigned image, uint32_t states,
+      uint32_t lit, const unsigned *led_map)
 {
    size_t i;
 
-   if (!led_map || !ol || !ol->active)
+   if (!ol || !ol->active)
+      return false;
+
+   if (ol->flags & INPUT_OVERLAY_HAS_LIT_BY)
+   {
+      for (i = 0; i < ol->active->size; i++)
+      {
+         const struct overlay_desc *desc = &ol->active->descs[i];
+         if (     desc->lit_by
+               && desc->image_index == image
+               && OVERLAY_HAS_IMAGE(&desc->image)
+               && !(states & (1u << (desc->lit_by - 1))))
+            return true;
+      }
+   }
+
+   if (!led_map)
       return false;
 
    if (ol->flags & INPUT_OVERLAY_HAS_LEDS)
@@ -123,7 +160,7 @@ void input_overlay_hide_leds(input_overlay_t *ol,
 }
 
 void input_overlay_alpha_pass(input_overlay_t *ol, float mod,
-      bool show_input, float opacity,
+      bool show_input, float opacity, uint32_t states,
       uint32_t lit, const unsigned *led_map)
 {
    size_t i;
@@ -143,16 +180,16 @@ void input_overlay_alpha_pass(input_overlay_t *ol, float mod,
     * a pressed one twice. */
    for (i = 0; i < n; i++)
    {
-      float a = (led_map && input_overlay_image_hidden(ol,
-                  (unsigned)i, lit, led_map)) ? 0.0f : mod;
+      float a = input_overlay_image_hidden(ol,
+                  (unsigned)i, states, lit, led_map) ? 0.0f : mod;
       if (want)
          want[i] = a;
       else
          ol->iface->set_alpha(ol->iface_data, (unsigned)i, a);
    }
 
-   /* A pressed desc is lit, unless the LED driver has hidden its
-    * image: that stays hidden whatever is pressed. */
+   /* A pressed desc is lit, unless its image is hidden (an unlit LED,
+    * a state that is off): that stays hidden whatever is pressed. */
    if (show_input)
    {
       for (i = 0; i < ol->active->size; i++)
@@ -161,8 +198,8 @@ void input_overlay_alpha_pass(input_overlay_t *ol, float mod,
          if (     !desc->touch_mask
                || !OVERLAY_HAS_IMAGE(&desc->image)
                || desc->image_index >= n
-               || (led_map && input_overlay_image_hidden(ol,
-                     desc->image_index, lit, led_map)))
+               || input_overlay_image_hidden(ol,
+                     desc->image_index, states, lit, led_map))
             continue;
          if (want)
             want[desc->image_index] = desc->alpha_mod * opacity;

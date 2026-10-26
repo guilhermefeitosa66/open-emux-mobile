@@ -37,6 +37,16 @@ class GameActivity : RetroActivityFuture() {
 
     /** Read on the engine thread: whether the pause sheet takes the gamepad. */
     @Volatile private var sheetOpen = false
+
+    /** Written on the engine thread (onToggleStates): whether fast forward is on, for the pause sheet. */
+    @Volatile private var fastForwardOn = false
+    /**
+     * What the pause sheet's fast-forward tile asked for and the engine has not been sent yet; null = nothing pending.
+     * A sheet opened before it is applied shows it and takes it over.
+     */
+    @Volatile private var fastForwardWanted: Boolean? = null
+    /** Bumped each time the pause sheet opens, so a deferred fast-forward toggle knows a newer sheet took over. */
+    @Volatile private var sheetCount = 0
     private var stickKey = 0
 
     // The NDS overlay last shown: its orientation, and the layout each orientation was left on (engine thread only).
@@ -79,6 +89,15 @@ class GameActivity : RetroActivityFuture() {
     override fun onPause() {
         flushPlaytime()
         super.onPause()
+    }
+
+    /**
+     * Called on the engine thread when fast forward or turbo goes on or off, whatever flipped it: the skin's strip,
+     * the pause sheet or a gamepad hotkey. The strip draws its own "on" look (overlayN_descM_lit_by); the pause
+     * sheet reads fast forward from here.
+     */
+    override fun onToggleStates(fastForward: Boolean, turbo: Boolean) {
+        fastForwardOn = fastForward
     }
 
     /**
@@ -198,9 +217,33 @@ class GameActivity : RetroActivityFuture() {
         if (!isFinishing) resumedAt = System.currentTimeMillis()
     }
 
+    /**
+     * The engine turns fast forward off on any toggle it gets while paused (runloop.c, "Don't allow fastmotion
+     * while paused"), so the sheet's choice is sent only after the resume has taken: wait until the engine reports
+     * it is playing, then toggle if its state still differs. Blocks: call from a background thread. Gives up, and
+     * leaves the choice to the next sheet, when that sheet opens first.
+     */
+    private fun applyFastForward(sheet: Int) {
+        repeat(20) {
+            if (sheetCount != sheet) return
+            if (RaCommand.isPlaying()) {
+                val wanted = fastForwardWanted ?: return
+                if (sheetCount != sheet) return
+                if (fastForwardOn != wanted) RaCommand.send("FAST_FORWARD")
+                fastForwardWanted = null
+                return
+            }
+            Thread.sleep(50)
+        }
+        // Never seen running: drop the choice, so the next sheet shows the engine's own state.
+        if (sheetCount == sheet) fastForwardWanted = null
+    }
+
     private fun showPauseSheet() {
         if (dialog?.isShowing == true || isFinishing) return
-        val session = PauseSession.fromIntent(intent, sessionStart)
+        val sheet = ++sheetCount
+        // A choice from the previous sheet not sent yet is what the tile shows, and this sheet's dismissal sends it.
+        val session = PauseSession.fromIntent(intent, sessionStart, fastForwardWanted ?: fastForwardOn)
         // The sheet follows the app's theme; it may have changed since this process started.
         ThemePref.load(this)
         Oe.syncSystem(this)
@@ -224,12 +267,20 @@ class GameActivity : RetroActivityFuture() {
                             Thread { RaCommand.send("QUIT") }.start()
                         },
                         onScreens = if (ndsScreens) ({ getString(nextNdsLayout().label) }) else null,
+                        onFastForward = { fastForwardWanted = it },
                     )
                 }
             }
         }
         d.setContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        d.setOnDismissListener { sheetOpen = false; Thread { RaCommand.resume() }.start() }
+        d.setOnDismissListener {
+            sheetOpen = false
+            val pending = fastForwardWanted != null
+            Thread {
+                RaCommand.resume()
+                if (pending) applyFastForward(sheet)
+            }.start()
+        }
         d.window?.let { window ->
             window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             // Keep the engine's window focused: unfocused, it stops polling
