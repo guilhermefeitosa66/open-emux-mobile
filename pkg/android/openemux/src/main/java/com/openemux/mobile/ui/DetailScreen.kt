@@ -155,12 +155,13 @@ fun DetailScreen(key: String) {
         }
     }
     val actions: @Composable (Dp) -> Unit = { restart ->
+        val height = if (tabletop) 54.dp else 52.dp
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (auto != null) {
-                PrimaryButton(stringResource(R.string.detail_continue), { a.play(rom, true, null) }, Modifier.weight(1f).restorableFocus("play", playFocus, initial = true), icon = Icons.Play, height = if (tabletop) 54.dp else 52.dp)
-                SecondaryButton(stringResource(R.string.detail_restart), { a.play(rom, false, null) }, Modifier.width(restart), height = if (tabletop) 54.dp else 52.dp)
+                PrimaryButton(stringResource(R.string.detail_continue), { a.play(rom, true, null) }, Modifier.weight(1f).restorableFocus("play", playFocus, initial = true), icon = Icons.Play, height = height)
+                SecondaryButton(stringResource(R.string.detail_restart), { a.play(rom, false, null) }, Modifier.width(restart), height = height)
             } else {
-                PrimaryButton(stringResource(R.string.detail_play), { a.play(rom, false, null) }, Modifier.weight(1f).restorableFocus("play", playFocus, initial = true), icon = Icons.Play, height = if (tabletop) 54.dp else 52.dp)
+                PrimaryButton(stringResource(R.string.detail_play), { a.play(rom, false, null) }, Modifier.weight(1f).restorableFocus("play", playFocus, initial = true), icon = Icons.Play, height = height)
             }
         }
     }

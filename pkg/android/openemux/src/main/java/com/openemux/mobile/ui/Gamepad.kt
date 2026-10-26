@@ -145,9 +145,12 @@ val FocusMargin = 24.dp
 /** The hint bar's height, its divider included. */
 val HintBarHeight = 40.dp
 
-/** What the hint bar covers at the bottom of the screen: it shows in gamepad mode, so nothing outside it. */
+/**
+ * What the hint bar covers at the bottom of the screen: it shows in gamepad mode, so nothing outside it.
+ * In tabletop it sits on the bottom half, under the deck, and covers nothing on the top one.
+ */
 val hintBarInset: Dp
-    @Composable get() = if (InputMode.gamepad) HintBarHeight else 0.dp
+    @Composable get() = if (InputMode.gamepad && !LocalTabletop.current) HintBarHeight else 0.dp
 
 /**
  * The focus highlight from the design: a 3dp ring 3dp outside the item with
