@@ -157,7 +157,7 @@ fun ShelfScreen() {
             if (spec.tablet) item(span = { GridItemSpan(maxLineSpan) }) {
                 TabletShelfHeader(spec, roms)
             } else item(span = { GridItemSpan(maxLineSpan) }) {
-                Column(Modifier.bleed(SHELF_SIDE_DP.dp)) {
+                Column(Modifier.bleed(spec.sidePadding.dp)) {
                     // The grid clips at its top: the room above the header is the focus ring's.
                     Row(Modifier.padding(start = 20.dp, end = 20.dp, top = FocusOutset), verticalAlignment = Alignment.CenterVertically) {
                         Image(painterResource(R.drawable.oe_logo), contentDescription = null, modifier = Modifier.height(34.dp))
