@@ -9,6 +9,7 @@
     <string name="game_playing_now">Läuft gerade · %1$s</string>
     <string name="game_playing_for">Seit %1$d Min. im Spiel · %2$s</string>
     <string name="game_tap_to_load">Zum Laden tippen</string>
+    <string name="game_paused">Pausiert</string>
     <string name="game_shader_this_session">Nur für diese Sitzung</string>
     <string name="game_toast_saved_slot">Spielstand auf Platz %1$d gespeichert</string>
     <string name="game_toast_fast_forward_on">Vorspulen beim Fortsetzen</string>

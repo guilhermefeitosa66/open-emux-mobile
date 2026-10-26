@@ -9,6 +9,7 @@
     <string name="game_playing_now">Jogando agora · %1$s</string>
     <string name="game_playing_for">Jogando há %1$d min · %2$s</string>
     <string name="game_tap_to_load">Toque para carregar</string>
+    <string name="game_paused">Pausado</string>
     <string name="game_shader_this_session">Vale só para esta partida</string>
     <string name="game_toast_saved_slot">Estado salvo no slot %1$d</string>
     <string name="game_toast_fast_forward_on">Acelerado ao voltar</string>

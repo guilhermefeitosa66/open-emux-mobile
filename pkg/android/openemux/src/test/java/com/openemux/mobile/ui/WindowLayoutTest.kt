@@ -110,4 +110,14 @@ class WindowLayoutTest {
         assertTrue(GridSpec.Carts.max == 220f && GridSpec.Covers.max == 170f)
         assertFalse(GridSpec.List.max.isFinite())
     }
+
+    @Test
+    fun aTabletIs600dpAcrossItsShortSideEitherWayUp() {
+        assertFalse(WindowLayout.of(914f, 411f).tablet)   // phone landscape: Expanded width, still a phone
+        assertFalse(WindowLayout.of(411f, 914f).tablet)
+        assertFalse(WindowLayout.of(960f, 552f).tablet)   // 7" landscape under 600dp tall
+        assertTrue(WindowLayout.of(600f, 960f).tablet)
+        assertTrue(WindowLayout.of(800f, 1280f).tablet)   // 10" portrait
+        assertTrue(WindowLayout.of(1280f, 800f).tablet)   // 10" landscape
+    }
 }

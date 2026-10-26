@@ -39,7 +39,7 @@ class SkinRenderer(private val context: Context) {
     /** One overlay: [rotate] is the one turning the screen switches to, [layoutNext] the NDS layout key's target. */
     private class Spec(
         val name: String, val portrait: Boolean, val aspect: Float, val rotate: String,
-        val keypadOpen: Boolean = false, val layoutNext: String? = null,
+        val keypadOpen: Boolean = false, val layoutNext: String? = null, val layout: ScreenLayout? = null,
     )
 
     private val inter: Typeface = ResourcesCompat.getFont(context, R.font.inter_bold) ?: Typeface.DEFAULT_BOLD
@@ -50,16 +50,19 @@ class SkinRenderer(private val context: Context) {
      * window, and so the overlay, only covers the screen past it.
      * [hardcore] greys out the strip's fast forward and takes its touch area away:
      * the engine still fast-forwards in RetroAchievements hardcore, the app does not offer it.
+     * [density] picks the shape: a window 600dp or more across its short side draws the tablet skin (SkinGeometry).
      */
     fun render(
         console: Console, width: Int, height: Int, outDir: File, cutout: Int = 0,
         ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false, coreId: String? = null,
+        density: Float,
     ): File {
         outDir.mkdirs()
         val skin = console.skin.forCore(coreId)
         val portraitW = minOf(width, height)
         val portraitH = maxOf(width, height) - cutout
-        val unit = portraitW / 390f
+        val tablet = SkinGeometry.tablet(width, height, density)
+        val unit = SkinGeometry.unit(portraitW, density, tablet)
 
         val specs = mutableListOf<Spec>()
         if (ndsLayouts != null) {
@@ -71,7 +74,7 @@ class SkinRenderer(private val context: Context) {
                 val saved = layouts.indexOfFirst { it.id == (if (orient == "portrait") port else land).id }
                 val other = if (orient == "portrait") "landscape@${land.id}" else "portrait@${port.id}"
                 (layouts.drop(saved) + layouts.take(saved)).forEach { l ->
-                    specs += Spec("$orient@${l.id}", orient == "portrait", l.aspect, other, layoutNext = "$orient@${NdsLayouts.next(orient, l.id).id}")
+                    specs += Spec("$orient@${l.id}", orient == "portrait", l.aspect, other, layoutNext = "$orient@${NdsLayouts.next(orient, l.id).id}", layout = l)
                 }
             }
             // RetroArch opens the first overlay: the saved portrait layout.
@@ -92,8 +95,13 @@ class SkinRenderer(private val context: Context) {
             val h = if (spec.portrait) portraitH else portraitW
             val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val toggle = if (spec.keypadOpen) spec.name.removePrefix("keypad-") else "keypad-${spec.name}"
-            val layout = Layout(Canvas(bitmap), skin, unit, spec.aspect, spec.keypadOpen, toggle, spec.layoutNext, hardcore)
-            val descs = if (spec.portrait) layout.portrait(h) else layout.landscape(w)
+            val layout = Layout(Canvas(bitmap), skin, unit, spec.aspect, spec.keypadOpen, toggle, spec.layoutNext, hardcore, spec.layout)
+            val descs = when {
+                tablet && spec.portrait -> layout.tabletPortrait(w, h)
+                tablet -> layout.tabletLandscape(w, h)
+                spec.portrait -> layout.portrait(h)
+                else -> layout.landscape(w)
+            }
             val image = spec.name.replace('@', '-') + ".png"
             OverlayWriter.saveImages(outDir, image, bitmap, descs)
             bitmap.recycle()
@@ -123,6 +131,8 @@ class SkinRenderer(private val context: Context) {
         private val layoutNext: String?,
         /** RetroAchievements hardcore: the strip's fast forward is drawn off and does nothing. */
         private val hardcore: Boolean,
+        /** The NDS layout this overlay shows, named on the tablet's layout key. */
+        private val screenLayout: ScreenLayout?,
     ) {
         private val colors: SkinColors = skin.colors
         private val descs = mutableListOf<OverlayDesc>()
@@ -233,9 +243,97 @@ class SkinRenderer(private val context: Context) {
             return descs
         }
 
+        /** Tablet portrait (TabJogoRetrato): the picture across the top, the strip, then L · menu · R and the controls. */
+        fun tabletPortrait(width: Int, height: Int): List<OverlayDesc> {
+            val g = SkinGeometry.portrait(width / unit, height / unit, aspect)
+            picture = px(g.picture)
+            fill(RectF(0f, picture.bottom, width.toFloat(), height.toFloat()), colors.body)
+            strip(px(g.strip), 22f, opaque = true)
+            frame(g)
+            if (keypadOpen) keypad(g.rx, g.rows.center, 180f, minOf(320f, g.pillsTop - g.menu.bottom - 30f))
+            val pills = skin.pills.filter { it.bind != null }
+            pills.forEachIndexed { i, key -> pill(key, g.picture.cx + (i - (pills.size - 1) / 2f) * 96f, g.pillsTop, 60f, 24f, 11f) }
+            label(skin.name, g.name.x, g.name.y, g.name.w, 11f, 0.18f)
+            return descs
+        }
+
+        /**
+         * Tablet landscape (TabJogoGBA, TabJogoNDS): the picture centred between two side columns, the strip under it,
+         * the NDS layout key over it rather than in the strip.
+         */
+        fun tabletLandscape(width: Int, height: Int): List<OverlayDesc> {
+            val wd = width / unit
+            val g = SkinGeometry.landscape(wd, height / unit, aspect, footprint(), depth(), layoutKey = layoutNext != null)
+            picture = px(g.picture)
+            fill(RectF(0f, 0f, width.toFloat(), height.toFloat()), colors.body)
+            c.drawRect(picture, Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR) })
+            strip(px(g.strip), 22f, opaque = true, screens = false)
+            g.layoutKey?.let { layoutKey(it) }
+            frame(g)
+            val side = g.lx * 2f
+            if (keypadOpen) keypad(g.rx, g.rows.center, side - 16f, minOf(280f, g.pillsTop - g.menu.bottom - 24f))
+            val pills = skin.pills.filter { it.bind != null }
+            if (pills.size == 1) pill(pills[0], g.rx, g.pillsTop, 60f, 24f, 10f)
+            else {
+                val half = (pills.size + 1) / 2
+                val l = pills.take(half)
+                val r = pills.drop(half)
+                l.forEachIndexed { i, key -> pill(key, g.lx + (i - (l.size - 1) / 2f) * 84f, g.pillsTop, 60f, 24f, 10f) }
+                r.forEachIndexed { i, key -> pill(key, g.rx + (i - (r.size - 1) / 2f) * 84f, g.pillsTop, 60f, 24f, 10f) }
+            }
+            label(skin.name, g.name.x, g.name.y, g.name.w, 10f, 0.16f)
+            return descs
+        }
+
+        /** The shoulders, the menu key and the clusters, where [g] puts them. */
+        private fun frame(g: TabletFrame) {
+            shoulderRow(skin.shouldersLeft, g.shouldersLeft.x, g.shouldersLeft.right, g.shouldersLeft.y, g.shouldersLeft.h, 15f)
+            shoulderRow(skin.shouldersRight, g.shouldersRight.x, g.shouldersRight.right, g.shouldersRight.y, g.shouldersRight.h, 15f)
+            menu(px(g.menu))
+            clusters(g.lx, g.rx, rows = mapOf(SkinRow.UPPER to g.rows.upper, SkinRow.CENTER to g.rows.center, SkinRow.LOWER to g.rows.lower), k = g.k, dpadK = g.k)
+        }
+
+        /** The clusters drawn: the keypad takes the right side's place while it is open. */
+        private fun shown() = skin.clusters.filter { !(keypadOpen && it.side == SkinSide.RIGHT) }
+
+        /** The widest cluster at full size, in units: what a tablet's side column must hold. */
+        private fun footprint(): Float = shown().maxOfOrNull { cl ->
+            when (cl) {
+                is SkinCluster.DPad -> cl.size
+                is SkinCluster.Stick -> cl.size
+                is SkinCluster.Face -> cl.slots.maxOf { it.dx + it.w / 2f } - cl.slots.minOf { it.dx - it.w / 2f }
+            }
+        } ?: SkinGeometry.SIDE
+
+        /** How far the lowest cluster reaches below the centre row at full size, in units: the pills go under it. */
+        private fun depth(): Float = shown().maxOfOrNull { cl ->
+            val row = when (cl.row) {
+                SkinRow.UPPER -> SkinGeometry.UPPER_ROW
+                SkinRow.CENTER -> 0f
+                SkinRow.LOWER -> SkinGeometry.LOWER_ROW
+            }
+            row + when (cl) {
+                is SkinCluster.DPad -> cl.size / 2f
+                is SkinCluster.Stick -> cl.size / 2f
+                is SkinCluster.Face -> cl.slots.maxOf { it.dy + it.h / 2f }
+            }
+        } ?: 0f
+
+        /** The NDS layout key over the picture: the screens icon and the layout's name; it steps to the next layout. */
+        private fun layoutKey(b: Box) {
+            val box = px(b)
+            c.drawRoundRect(box, box.height() / 2f, box.height() / 2f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.pill })
+            val icon = s(16f)
+            c.drawPath(stripIcon("screens", box.left + s(20f), box.centerY(), icon), stripPaint("screens", icon, colors.menuInk))
+            val name = screenLayout?.let { context.getString(it.label).uppercase(context.resources.configuration.locales[0]) }.orEmpty()
+            label(name, b.x + 30f, b.y + b.h / 2f - 5.5f, b.w - 36f, 10f, 0.06f, alpha = 0xFF, color = colors.menuInk)
+            descs += OverlayDesc("overlay_next", box, next = layoutNext)
+        }
+
+        private fun px(b: Box) = RectF(b.x * unit, b.y * unit, b.right * unit, b.bottom * unit)
+
         private fun clusters(lx: Float, rx: Float, rows: Map<SkinRow, Float>, k: Float, dpadK: Float) {
-            for (cl in skin.clusters) {
-                if (keypadOpen && cl.side == SkinSide.RIGHT) continue
+            for (cl in shown()) {
                 val cx = if (cl.side == SkinSide.LEFT) lx else rx
                 val cy = rows.getValue(cl.row)
                 when (cl) {
@@ -385,11 +483,11 @@ class SkinRenderer(private val context: Context) {
             }
         }
 
-        /** The quick actions: save, load, turbo, fast forward, in that order, then the NDS screen layout. */
-        private fun strip(box: RectF, icon: Float, opaque: Boolean) {
+        /** The quick actions: save, load, turbo, fast forward, in that order, then the NDS screen layout unless [screens] is off. */
+        private fun strip(box: RectF, icon: Float, opaque: Boolean, screens: Boolean = true) {
             fill(box, if (opaque) colors.strip else (colors.strip and 0x00FFFFFF) or (0xCC shl 24))
             val actions = listOf("save_state", "load_state", "turbo_fire_toggle", "toggle_fast_forward") +
-                listOfNotNull(layoutNext?.let { "screens" })
+                listOfNotNull(layoutNext?.takeIf { screens }?.let { "screens" })
             val slot = box.width() / actions.size
             val size = s(icon)
             actions.forEachIndexed { i, action ->

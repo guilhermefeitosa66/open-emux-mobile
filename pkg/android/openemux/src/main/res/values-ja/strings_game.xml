@@ -9,6 +9,7 @@
     <string name="game_playing_now">プレイ中 · %1$s</string>
     <string name="game_playing_for">%1$d 分プレイ中 · %2$s</string>
     <string name="game_tap_to_load">タップでロード</string>
+    <string name="game_paused">一時停止中</string>
     <string name="game_shader_this_session">このセッションのみ</string>
     <string name="game_toast_saved_slot">スロット %1$d にステートを保存しました</string>
     <string name="game_toast_fast_forward_on">再開時に早送り</string>

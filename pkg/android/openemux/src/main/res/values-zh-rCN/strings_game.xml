@@ -9,6 +9,7 @@
     <string name="game_playing_now">正在游玩 · %1$s</string>
     <string name="game_playing_for">已玩 %1$d 分钟 · %2$s</string>
     <string name="game_tap_to_load">点按读取</string>
+    <string name="game_paused">已暂停</string>
     <string name="game_shader_this_session">仅本次会话</string>
     <string name="game_toast_saved_slot">已保存到存档位 %1$d</string>
     <string name="game_toast_fast_forward_on">继续时快进</string>

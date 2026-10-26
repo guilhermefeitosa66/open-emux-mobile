@@ -56,6 +56,9 @@ data class WindowLayout(
     /** Wider than tall with room for two columns side by side. */
     val wide get() = width != SizeClass.Compact && widthDp > heightDp
 
+    /** Smallest width 600dp or more, whichever way it is held: the tablet game skin and the pause side panel. */
+    val tablet get() = minOf(widthDp, heightDp) >= 600f
+
     companion object {
         fun of(widthDp: Float, heightDp: Float, posture: Posture = Posture.Flat) =
             WindowLayout(widthDp, heightDp, SizeClass.widthOf(widthDp), SizeClass.heightOf(heightDp), posture)
