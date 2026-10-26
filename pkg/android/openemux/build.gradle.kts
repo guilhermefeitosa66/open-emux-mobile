@@ -121,7 +121,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("androidx.window:window:1.4.0")
 
-    // org.json is only a stub on the plain JVM.
     testImplementation("junit:junit:4.13.2")
+    // android.jar's org.json is a stub on the JVM: the archive tests need the real one.
     testImplementation("org.json:json:20240303")
 }

@@ -4,10 +4,13 @@ import android.app.Application
 import android.net.ConnectivityManager
 import android.net.Network
 import com.openemux.mobile.data.AchievementsStore
+import com.openemux.mobile.data.BackupManager
+import com.openemux.mobile.data.BackupRoots
 import com.openemux.mobile.data.Covers
 import com.openemux.mobile.data.Importer
 import com.openemux.mobile.data.Labels
 import com.openemux.mobile.data.Library
+import com.openemux.mobile.data.Paths
 import com.openemux.mobile.data.Setup
 import com.openemux.mobile.data.UpdateStore
 import com.openemux.mobile.launch.GameLauncher
@@ -38,11 +41,15 @@ class OpenEmuxApp : Application() {
         private set
     lateinit var updates: UpdateStore
         private set
+    lateinit var backup: BackupManager
+        private set
 
     override fun onCreate() {
         super.onCreate()
         // The :game process only needs the RetroArch side.
         if (getProcessName().endsWith(":game")) return
+        // A restore the process died in is finished or undone before anything reads the data.
+        Paths(this).let { BackupRoots(it.base, it.internal).recover() }
         library = Library(this)
         covers = Covers(this)
         labels = Labels(library.paths)
@@ -50,6 +57,7 @@ class OpenEmuxApp : Application() {
         launcher = GameLauncher(this, library, covers, labels, achievements)
         importer = Importer(this, library)
         setup = Setup(library.paths)
+        backup = BackupManager(this, library)
         val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
         updates = UpdateStore.create(this)
         updates.checkOnce(appScope)

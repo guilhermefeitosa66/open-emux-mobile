@@ -143,4 +143,47 @@
     <string name="ra_see_progress">在 retroachievements.org 查看进度</string>
     <string name="settings_update_check">检查更新</string>
     <string name="settings_update_check_desc">打开应用时向 GitHub 查询是否有新版本</string>
+
+    <!-- Back up and restore (issue #545) -->
+    <string name="settings_backup">备份与恢复</string>
+    <string name="settings_backup_desc">重新安装时保留存档和设置</string>
+    <string name="backup_intro">把 OpenEmux 保存的所有内容存到一个属于你的文件里，在新安装或新手机上再恢复回来。</string>
+    <string name="backup_section_export">导出</string>
+    <string name="backup_section_import">导入</string>
+    <string name="backup_saves">存档和即时存档</string>
+    <string name="backup_saves_desc">存档、即时存档、游戏时长、截图</string>
+    <string name="backup_settings">设置和图像</string>
+    <string name="backup_settings_desc">设置、收藏、标签、BIOS</string>
+    <string name="backup_include_roms">包含 ROM</string>
+    <plurals name="backup_roms_count">
+        <item quantity="other">%1$d 款游戏 · %2$s</item>
+    </plurals>
+    <plurals name="backup_games">
+        <item quantity="other">%d 款游戏</item>
+    </plurals>
+    <string name="backup_export">导出数据 · %1$s</string>
+    <string name="backup_export_note">恢复后会重新下载内核和封面。RetroAchievements 账号不会被保存：请重新登录。</string>
+    <string name="backup_export_note_no_roms">不包含 ROM 时，恢复后请用“导入 ROM”把游戏复制回来：存档和即时存档会按名称找到它们。</string>
+    <string name="backup_import">导入数据</string>
+    <string name="backup_import_note">用文件中的内容替换这部手机上的游戏库、存档和设置。</string>
+    <string name="backup_keep_data_lead">要卸载后更新？</string>
+    <string name="backup_keep_data">在 Android 10 及更高版本上，在卸载对话框中勾选“保留应用数据”，然后重新安装同一个应用。</string>
+    <string name="backup_exporting">正在导出…</string>
+    <string name="backup_importing">正在导入…</string>
+    <string name="backup_progress">%1$s / %2$s</string>
+    <string name="backup_cancel">取消</string>
+    <string name="backup_exported">已导出到 %1$s · %2$s</string>
+    <plurals name="backup_restored">
+        <item quantity="other">已恢复 %1$d 款游戏和 %2$d 个存档与即时存档。OpenEmux 即将重启。</item>
+    </plurals>
+    <string name="backup_confirm_title">替换你的数据？</string>
+    <string name="backup_confirm_from">来自 OpenEmux %1$s，创建于 %2$s · %3$s</string>
+    <string name="backup_confirm_note">这部手机上的游戏库、存档和设置将被替换。完成后 OpenEmux 会重启。</string>
+    <string name="backup_confirm">替换并恢复</string>
+    <string name="backup_err_invalid">此文件不是 OpenEmux 备份，或已损坏。没有做任何更改。</string>
+    <string name="backup_err_newer">此备份由更新版本的 OpenEmux 创建。请先更新应用。没有做任何更改。</string>
+    <string name="backup_err_space">可用空间不足：备份需要 %1$s，可用 %2$s。没有做任何更改。</string>
+    <string name="backup_err_write">无法写入备份。%1$s</string>
+    <string name="backup_err_read">无法读取备份。%1$s 没有做任何更改。</string>
+    <string name="backup_file_name">OpenEmux 备份 %1$s</string>
 </resources>

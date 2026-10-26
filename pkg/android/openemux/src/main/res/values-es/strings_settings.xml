@@ -161,4 +161,53 @@
     <string name="ra_see_progress">Mira tu progreso en retroachievements.org</string>
     <string name="settings_update_check">Buscar actualizaciones</string>
     <string name="settings_update_check_desc">Consultar en GitHub si hay una versión más nueva al abrir la app</string>
+
+    <!-- Back up and restore (issue #545) -->
+    <string name="settings_backup">Copia de seguridad y restauración</string>
+    <string name="settings_backup_desc">Conserva tus partidas y ajustes al reinstalar</string>
+    <string name="backup_intro">Guarda todo lo que OpenEmux conserva en un archivo tuyo y recupéralo en una instalación nueva o en un teléfono nuevo.</string>
+    <string name="backup_section_export">Exportar</string>
+    <string name="backup_section_import">Importar</string>
+    <string name="backup_saves">Partidas y estados</string>
+    <string name="backup_saves_desc">Partidas guardadas, estados guardados, tiempo de juego, capturas</string>
+    <string name="backup_settings">Ajustes e ilustraciones</string>
+    <string name="backup_settings_desc">Ajustes, favoritos, etiquetas, BIOS</string>
+    <string name="backup_include_roms">Incluir ROMs</string>
+    <plurals name="backup_roms_count">
+        <item quantity="one">%1$d juego · %2$s</item>
+        <item quantity="many">%1$d juegos · %2$s</item>
+        <item quantity="other">%1$d juegos · %2$s</item>
+    </plurals>
+    <plurals name="backup_games">
+        <item quantity="one">%d juego</item>
+        <item quantity="many">%d juegos</item>
+        <item quantity="other">%d juegos</item>
+    </plurals>
+    <string name="backup_export">Exportar datos · %1$s</string>
+    <string name="backup_export_note">Los núcleos y las portadas se descargan de nuevo tras una restauración. Tu cuenta de RetroAchievements no se guarda: vuelve a iniciar sesión.</string>
+    <string name="backup_export_note_no_roms">Sin las ROMs, vuelve a copiar tus juegos con Importar ROMs tras la restauración: las partidas y los estados los encuentran por su nombre.</string>
+    <string name="backup_import">Importar datos</string>
+    <string name="backup_import_note">Reemplaza la biblioteca, las partidas y los ajustes de este teléfono por los del archivo.</string>
+    <string name="backup_keep_data_lead">¿Desinstalas para actualizar?</string>
+    <string name="backup_keep_data">En Android 10 o posterior, marca “Conservar datos de la app” en el diálogo de desinstalación y vuelve a instalar la misma app.</string>
+    <string name="backup_exporting">Exportando…</string>
+    <string name="backup_importing">Importando…</string>
+    <string name="backup_progress">%1$s de %2$s</string>
+    <string name="backup_cancel">Cancelar</string>
+    <string name="backup_exported">Exportado a %1$s · %2$s</string>
+    <plurals name="backup_restored">
+        <item quantity="one">Se restauraron %1$d juego y %2$d partidas y estados. OpenEmux se reiniciará ahora.</item>
+        <item quantity="many">Se restauraron %1$d juegos y %2$d partidas y estados. OpenEmux se reiniciará ahora.</item>
+        <item quantity="other">Se restauraron %1$d juegos y %2$d partidas y estados. OpenEmux se reiniciará ahora.</item>
+    </plurals>
+    <string name="backup_confirm_title">¿Reemplazar tus datos?</string>
+    <string name="backup_confirm_from">De OpenEmux %1$s, creada el %2$s · %3$s</string>
+    <string name="backup_confirm_note">Se reemplazan la biblioteca, las partidas y los ajustes de este teléfono. OpenEmux se reinicia al terminar.</string>
+    <string name="backup_confirm">Reemplazar y restaurar</string>
+    <string name="backup_err_invalid">Este archivo no es una copia de seguridad de OpenEmux o está dañado. No se cambió nada.</string>
+    <string name="backup_err_newer">Esta copia la hizo un OpenEmux más reciente. Actualiza la app primero. No se cambió nada.</string>
+    <string name="backup_err_space">No hay espacio libre suficiente: la copia necesita %1$s y hay %2$s libres. No se cambió nada.</string>
+    <string name="backup_err_write">No se pudo escribir la copia de seguridad. %1$s</string>
+    <string name="backup_err_read">No se pudo leer la copia de seguridad. %1$s No se cambió nada.</string>
+    <string name="backup_file_name">Copia de OpenEmux %1$s</string>
 </resources>

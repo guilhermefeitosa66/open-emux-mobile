@@ -72,6 +72,7 @@ object Routes {
     const val CONSOLE = "settings/{console}"
     const val BIOS = "bios"
     const val ACHIEVEMENTS = "achievements"
+    const val BACKUP = "backup"
     const val ABOUT = "about"
     const val LICENSES = "about/licenses"
     const val LICENSE = "about/license/{id}"
@@ -164,6 +165,7 @@ fun OpenEmuxRoot() {
                         composable(Routes.CONSOLE) { ConsoleSettingsScreen(it.arguments?.getString("console") ?: "GBA") }
                         composable(Routes.BIOS) { BiosScreen() }
                         composable(Routes.ACHIEVEMENTS) { AchievementsScreen() }
+                        composable(Routes.BACKUP) { BackupScreen() }
                         composable(Routes.ABOUT) { AboutScreen() }
                         composable(Routes.LICENSES) { LicensesScreen() }
                         composable(Routes.LICENSE) { LicenseTextScreen(it.arguments?.getString("id").orEmpty()) }
