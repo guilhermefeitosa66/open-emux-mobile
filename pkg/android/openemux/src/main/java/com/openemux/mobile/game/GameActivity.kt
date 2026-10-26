@@ -169,8 +169,9 @@ class GameActivity : RetroActivityFuture() {
      * toggle, unlike [onExternalMenuRequested]: a sheet left open stays open.
      */
     override fun onResumedIntoPause() {
-        // showPauseSheet() itself skips a sheet already showing and a closing game.
-        runOnUiThread { showPauseSheet() }
+        runOnUiThread {
+            if (ReturnPause.shouldOpenSheet(dialog?.isShowing == true, isFinishing)) showPauseSheet()
+        }
     }
 
     /**
