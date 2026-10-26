@@ -489,6 +489,11 @@ void command_event_set_replay_garbage_collect(
 bool command_set_shader(command_t *cmd, const char *arg);
 #endif
 
+#ifdef HAVE_OVERLAY
+/* OpenEmux: OVERLAY_LOAD <path>, the skin redrawn for a new window size */
+bool command_overlay_load(command_t *cmd, const char *arg);
+#endif
+
 #ifdef HAVE_CHEATS
 void command_event_init_cheats(
       bool apply_cheats_after_load,
@@ -759,6 +764,13 @@ static const struct cmd_param cmd_params_preset[] = {
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { NULL }
 };
+#ifdef HAVE_OVERLAY
+static const struct cmd_param cmd_params_overlay[] = {
+   { "path", "Absolute path to an overlay config.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+#endif
 static const struct cmd_param cmd_params_option[] = {
    { "option", "An option name, as GET_OPTION with no argument lists.",
       CMD_PARAM_STRING, false, NULL, NULL, NULL },
@@ -1137,6 +1149,10 @@ static const struct cmd_action_map action_map[] = {
    { "HELP",             command_help,             "[command]", "List the commands, or describe one.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_help },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0, cmd_params_preset },
+#endif
+#ifdef HAVE_OVERLAY
+   /* OpenEmux: a frontend hook, not a tool */
+   { "OVERLAY_LOAD",     command_overlay_load,     "<overlay path>", "Load the overlay at the given path in place of the one shown.", CMD_INFO_NO_TOOL, cmd_params_overlay },
 #endif
    { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
    { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system and the content's file name, or that no content is loaded.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_status },

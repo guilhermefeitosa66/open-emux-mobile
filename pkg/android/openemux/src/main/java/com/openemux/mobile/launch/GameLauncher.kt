@@ -13,7 +13,6 @@ import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
-import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.core.content.res.ResourcesCompat
 import coil.imageLoader
@@ -24,7 +23,6 @@ import com.openemux.mobile.data.Console
 import com.openemux.mobile.data.Covers
 import com.openemux.mobile.data.Labels
 import com.openemux.mobile.data.Library
-import com.openemux.mobile.data.NdsLayouts
 import com.openemux.mobile.data.Rom
 import com.openemux.mobile.data.configKeys
 import com.openemux.mobile.game.GameActivity
@@ -161,31 +159,13 @@ class GameLauncher(
             val cartFile = File(dir, "cart.png")
             cartFile.outputStream().use { cart.compress(Bitmap.CompressFormat.PNG, 100, it) }
 
-            val metrics = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).maximumWindowMetrics
-            val bounds = metrics.bounds
-            val cutout = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.displayCutout())
-            val cutoutDepth = if (bounds.height() >= bounds.width()) cutout.top else maxOf(cutout.left, cutout.right)
-            // A skin in the iOS emulators' format (the user's own, else the one the app ships for the console)
-            // takes the drawn skin's place; a broken one falls back to it.
-            // One tablet decision for both skins, from the same metrics they are drawn for.
-            val density = context.resources.displayMetrics.density
-            val tablet = SkinGeometry.tablet(bounds.width(), bounds.height(), density)
-            val imported = ImportedSkinRenderer.find(context, paths.base, rom.console)?.let {
-                runCatching {
-                    ImportedSkinRenderer().render(it, rom.console, bounds.width(), bounds.height(), File(dir, "skin"), cutoutDepth, tablet, hardcore)
-                }.onFailure { e -> android.util.Log.e("ImportedSkin", "falling back to the built-in skin", e) }.getOrNull()
-            }
-            // The NDS layouts belong to the drawn skin; an imported one draws its two screens one over the other.
-            val ndsLayouts = if (rom.console == Console.NDS && imported == null) NdsLayouts.load(context.filesDir) else null
+            // The largest window: right full screen; the game redraws it for split screen or free form.
+            val size = SkinSize.of((context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).maximumWindowMetrics)
             val core = library.effectiveCore(rom)
-            val skin = imported ?: SkinRenderer(context).render(
-                rom.console, bounds.width(), bounds.height(), File(dir, "skin"),
-                cutout = cutoutDepth,
-                ndsLayouts = ndsLayouts,
-                hardcore = hardcore,
-                coreId = core.id,
-                density = density,
-            )
+            val density = context.resources.displayMetrics.density
+            val drawn = GameSkin.render(context, paths.base, rom.console, size, File(dir, "skin"), density, hardcore, core.id)
+            val skin = drawn.file
+            val ndsLayouts = drawn.ndsLayouts
 
             val shader = library.effectiveShader(rom)
             shader.preset?.let { preset ->
@@ -199,7 +179,7 @@ class GameLauncher(
                     "picodrive_input1 = \"6 button pad\"\n" +
                     // The skin opens on the saved portrait layout; the activity follows the overlay from there.
                     (ndsLayouts?.let { "desmume_screens_layout = \"${it.first.value}\"\n" } ?: "") +
-                    (if (rom.console == Console.NDS && imported != null) "desmume_screens_layout = \"top/bottom\"\n" else "")
+                    (if (rom.console == Console.NDS && drawn.packaged) "desmume_screens_layout = \"top/bottom\"\n" else "")
             )
 
             listOf(paths.states(rom.console), paths.saves(rom.console), paths.system, paths.screenshots, paths.playtime)
@@ -224,6 +204,10 @@ class GameLauncher(
                 putExtra(GameExtras.SHADER, shader.id)
                 putExtra(GameExtras.CORE_NAME, core.name)
                 putExtra(GameExtras.HARDCORE, hardcore)
+                putExtra(GameExtras.LAUNCH_DIR, dir.absolutePath)
+                putExtra(GameExtras.SKIN_SIZE, size.toString())
+                putExtra(GameExtras.SKINS_BASE, paths.base.absolutePath)
+                putExtra(GameExtras.CORE_ID, core.id)
                 if (slot != null && !hardcore) putExtra(GameExtras.LOAD_SLOT, slot)
             }
         }

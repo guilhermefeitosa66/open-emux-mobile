@@ -6465,6 +6465,36 @@ bool command_set_shader(command_t *cmd, const char *arg)
 }
 #endif
 
+#ifdef HAVE_OVERLAY
+/* OpenEmux: the frontend redraws its skin for a new window size (a Fold
+ * unfolded, split screen, a free-form resize) and swaps it in while the
+ * core runs. A fresh path every time, as input_overlay_init skips a
+ * reload of the path already shown or cached. */
+bool command_overlay_load(command_t *cmd, const char *arg)
+{
+   settings_t *settings = config_get_ptr();
+
+   if (!arg || !*arg || !path_is_absolute(arg))
+   {
+      command_reply_error(cmd, "OVERLAY_LOAD",
+            "an absolute overlay path is needed");
+      return false;
+   }
+   if (!path_is_valid(arg))
+   {
+      command_reply_error(cmd, "OVERLAY_LOAD", "no overlay at %s", arg);
+      return false;
+   }
+
+   configuration_set_string(settings, settings->paths.path_overlay, arg);
+   command_event(CMD_EVENT_OVERLAY_INIT, NULL);
+
+   if (cmd && cmd->replier)
+      cmd->replier(cmd, "OK\n", 3);
+   return true;
+}
+#endif
+
 #ifdef HAVE_CONFIGFILE
 bool command_event_save_core_config(
       const char *dir_menu_config,
