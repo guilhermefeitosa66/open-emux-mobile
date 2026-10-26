@@ -21,7 +21,7 @@ mean writing a new menu driver in C. So the split is:
 |---|---|---|
 | Library, settings, import | Kotlin + Jetpack Compose | `src/main/java/com/openemux/mobile/ui`, `data` |
 | Launch | Writes a per-game `retroarch.cfg`, shader preset, core options and the controller skin, then starts the engine | `launch/GameLauncher.kt`, `launch/SkinRenderer.kt` |
-| Engine | RetroArch's `NativeActivity`, unchanged except for two hooks | `game/GameActivity.kt` (extends `RetroActivityFuture`) |
+| Engine | RetroArch's `NativeActivity`, unchanged except for the hooks below | `game/GameActivity.kt` (extends `RetroActivityFuture`) |
 | Pause sheet | Compose, in a dialog over the engine | `game/PauseSheet.kt` |
 
 The engine runs in its own process (`:game`): RetroArch exits the process
@@ -74,8 +74,7 @@ when the content closes, and the library must survive that.
    at the window's edge; the viewport position (a lightgun's offscreen
    test) is unchanged. `android_pointer_set()` in
    `input/drivers/android_input.c`.
-
-6. **Closing the device.** When the activity is paused (a Flip closed, the
+8. **Closing the device.** When the activity is paused (a Flip closed, the
    screen off, Home), the engine writes the auto save state
    (`<rom>.state.auto`) before acknowledging `APP_CMD_PAUSE`, so it is on
    disk before Android can reclaim the process. Not on `APP_CMD_STOP`: by

@@ -5219,9 +5219,12 @@ void runloop_set_platform_paused(bool paused)
    }
    else
    {
-      runloop_state.flags &= ~RUNLOOP_FLAG_IDLE;
-      if (!paused_before)
+      /* No IDLE left: the state was freed while away (content
+       * closed), so the pause remembered belonged to other content. */
+      if (     !paused_before
+            || !(runloop_state.flags & RUNLOOP_FLAG_IDLE))
          runloop_state.flags &= ~RUNLOOP_FLAG_PAUSED;
+      runloop_state.flags &= ~RUNLOOP_FLAG_IDLE;
       paused_before        = false;
    }
 }

@@ -771,6 +771,18 @@ static void android_input_release_state_ack(struct android_app *android_app)
    android_state_ack_cmd = -1;
 }
 
+/* OpenEmux: back after a pause that saved the state. The content stays
+ * paused - not one frame runs - and the activity is told from the
+ * runloop to show its menu. */
+static void android_input_take_resume_into_menu(void)
+{
+   if (!android_resume_into_menu)
+      return;
+   android_resume_into_menu         = false;
+   android_resume_into_menu_pending = true;
+   runloop_state_get_ptr()->flags  |= RUNLOOP_FLAG_PAUSED;
+}
+
 /* Swiping the task away from Recents and the low-memory killer end the
  * process with SIGKILL, and a QUITFOCUS launch exits from the Java side's
  * onStop(); onDestroy() is not delivered first in any of them, so
@@ -959,6 +971,14 @@ static void android_input_poll_main_cmd(void)
             /* A pause's save still owed is superseded with it. Not
              * android_resume_into_menu: that waits for the focus. */
             android_autosave_pending    = false;
+
+            /* OpenEmux: unless the focus was never lost. A pause that
+             * kept it gets no APP_CMD_GAINED_FOCUS to return on, and the
+             * flag left set would pause the game at some later, unrelated
+             * focus change. */
+            if (     cmd == APP_CMD_RESUME
+                  && !retro_atomic_load_relaxed_int(&android_app->unfocused))
+               android_input_take_resume_into_menu();
          }
 
 #ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
@@ -1046,15 +1066,7 @@ static void android_input_poll_main_cmd(void)
             runloop_set_platform_paused(false);
             video_driver_unset_stub_frame();
 
-            /* OpenEmux: back after a pause that saved the state. The
-             * content stays paused - not one frame runs - and the
-             * activity is told from the runloop to show its menu. */
-            if (android_resume_into_menu)
-            {
-               android_resume_into_menu         = false;
-               android_resume_into_menu_pending = true;
-               runloop_state_get_ptr()->flags  |= RUNLOOP_FLAG_PAUSED;
-            }
+            android_input_take_resume_into_menu();
 
             /* Try to enable sensors via input driver. If that fails before the
              * input driver has initialized, enable directly via sensor API. */
