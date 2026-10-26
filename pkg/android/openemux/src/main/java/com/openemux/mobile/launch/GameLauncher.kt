@@ -164,11 +164,21 @@ class GameLauncher(
             val metrics = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).maximumWindowMetrics
             val bounds = metrics.bounds
             val cutout = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.displayCutout())
-            val ndsLayouts = if (rom.console == Console.NDS) NdsLayouts.load(context.filesDir) else null
+            val cutoutDepth = if (bounds.height() >= bounds.width()) cutout.top else maxOf(cutout.left, cutout.right)
+            // A skin in the iOS emulators' format (the user's own, else the one the app ships for the console)
+            // takes the drawn skin's place; a broken one falls back to it.
+            val tablet = context.resources.configuration.smallestScreenWidthDp >= 600
+            val imported = ImportedSkinRenderer.find(context, paths.base, rom.console)?.let {
+                runCatching {
+                    ImportedSkinRenderer().render(it, rom.console, bounds.width(), bounds.height(), File(dir, "skin"), cutoutDepth, tablet, hardcore)
+                }.onFailure { e -> android.util.Log.e("ImportedSkin", "falling back to the built-in skin", e) }.getOrNull()
+            }
+            // The NDS layouts belong to the drawn skin; an imported one draws its two screens one over the other.
+            val ndsLayouts = if (rom.console == Console.NDS && imported == null) NdsLayouts.load(context.filesDir) else null
             val core = library.effectiveCore(rom)
-            val skin = SkinRenderer(context).render(
+            val skin = imported ?: SkinRenderer(context).render(
                 rom.console, bounds.width(), bounds.height(), File(dir, "skin"),
-                cutout = if (bounds.height() >= bounds.width()) cutout.top else maxOf(cutout.left, cutout.right),
+                cutout = cutoutDepth,
                 ndsLayouts = ndsLayouts,
                 hardcore = hardcore,
                 coreId = core.id,
@@ -185,7 +195,8 @@ class GameLauncher(
                     // The skins draw the 6-button pad; Genesis Plus GX gets it from its port device (buildConfig).
                     "picodrive_input1 = \"6 button pad\"\n" +
                     // The skin opens on the saved portrait layout; the activity follows the overlay from there.
-                    (ndsLayouts?.let { "desmume_screens_layout = \"${it.first.value}\"\n" } ?: "")
+                    (ndsLayouts?.let { "desmume_screens_layout = \"${it.first.value}\"\n" } ?: "") +
+                    (if (rom.console == Console.NDS && imported != null) "desmume_screens_layout = \"top/bottom\"\n" else "")
             )
 
             listOf(paths.states(rom.console), paths.saves(rom.console), paths.system, paths.screenshots, paths.playtime)

@@ -1,0 +1,394 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OpenEmux controller skin</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="{{rootStyle}}">
+<sc-for list="{{parts}}" as="p" hint-placeholder-count="40">
+<div style="{{p.style}}">
+<sc-if value="{{p.hasIcon}}" hint-placeholder-val="{{ false }}">
+<svg viewBox="0 0 24 24" style="{{p.iconStyle}}" aria-hidden="true"><path d="{{p.icon}}" fill="{{p.iconFill}}" stroke="{{p.iconStroke}}" stroke-width="{{p.iconWidth}}" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</sc-if>
+<sc-if value="{{p.hasLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{p.labelStyle}}">{{p.label}}</span>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"console":{"editor":"enum","options":["FC","SFC","N64","GC","GB","GBC","GBA","NDS","MD","SMS","PS","PSP"],"default":"GBA"},"device":{"editor":"enum","options":["phone","tablet"],"default":"phone"},"orient":{"editor":"enum","options":["portrait","landscape"],"default":"portrait"},"showTouch":{"editor":"boolean","default":false},"$preview":{"width":360,"height":746}}'>
+// ENGINE START
+const OE = (() => {
+  const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const toHex = (r, g, b) => '#' + [r, g, b].map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
+  const mix = (a, b, t) => { const x = hex(a), y = hex(b); return toHex(x[0] + (y[0] - x[0]) * t, x[1] + (y[1] - x[1]) * t, x[2] + (y[2] - x[2]) * t); };
+  const lighten = (c, t) => mix(c, '#ffffff', t);
+  const darken = (c, t) => mix(c, '#000000', t);
+  const alpha = (c, a) => { const x = hex(c); return `rgba(${x[0]},${x[1]},${x[2]},${a})`; };
+  const r1 = (v) => Math.round(v * 10) / 10;
+
+  const ICON = {
+    save: 'M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14',
+    load: 'M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14',
+    turbo: 'M13 2.5L5 13.5h6l-1 8 8-11h-6z',
+    ff: 'M3.5 6.5v11l8-5.5zM12.5 6.5v11l8-5.5z',
+    menu: 'M5 7h14M5 12h14M5 17h14',
+    arrow: 'M12 5l7.5 12h-15z',
+    tri: 'M12 5l7 12H5z',
+    circle: 'M5.5 12a6.5 6.5 0 1 0 13 0a6.5 6.5 0 1 0 -13 0',
+    cross: 'M6.5 6.5l11 11M17.5 6.5l-11 11',
+    square: 'M6 6h12v12H6z',
+  };
+  const LEFT_STICK = { up: 'analogStickUp', down: 'analogStickDown', left: 'analogStickLeft', right: 'analogStickRight' };
+  const RIGHT_STICK = { up: 'rightAnalogStickUp', down: 'rightAnalogStickDown', left: 'rightAnalogStickLeft', right: 'rightAnalogStickRight' };
+  const SELECT_START = [{ input: 'select', label: 'SELECT' }, { input: 'start', label: 'START' }];
+  const PS_SYM = { tri: '#3FB69A', circle: '#E4505E', cross: '#7E9CD8', square: '#D687BB' };
+
+  // Colors measured on photos of each console's best-known shell (Wikimedia Commons, Evan-Amos).
+  const C = {
+    FC: {
+      name: 'NES', res: '256 × 240', aspect: 4 / 3, body: '#C9C9C7', bezel: '#2B2B2B', bar: '#2B2B2B', barIcon: '#BDBDBB',
+      panel: '#262626', dpad: '#151515', dpadMark: '#4A4A4A', pill: '#3A3A3A', labelInk: '#C1171B', brandInk: '#2B2B2B',
+      labelPos: 'below', face: { kind: 'nes', color: '#C1171B', ink: '#F4DADA' }, shoulders: [[], []], center: SELECT_START,
+    },
+    SFC: {
+      name: 'SNES', res: '256 × 224', aspect: 4 / 3, body: '#CDCDCD', bezel: '#55555B', bar: '#A9A9AB', barIcon: '#3E3E44',
+      dpad: '#2E2E33', dpadMark: '#6A6A72', faceWell: '#BDBDC0', shoulder: '#A9A9AB', shoulderInk: '#4A4A50', pill: '#8A8A92',
+      labelInk: '#5A5A60', brandInk: '#5A5A60',
+      face: { kind: 'diamond', ink: '#FFFFFF', map: {
+        top: { input: 'x', label: 'X', color: '#2D57BA' }, left: { input: 'y', label: 'Y', color: '#2E9A5C' },
+        right: { input: 'a', label: 'A', color: '#D12425' }, bottom: { input: 'b', label: 'B', color: '#E7C83E', ink: '#6B5A12' } } },
+      shoulders: [[{ input: 'l', label: 'L' }], [{ input: 'r', label: 'R' }]], center: SELECT_START,
+    },
+    N64: {
+      name: 'Nintendo 64', res: '320 × 240', aspect: 4 / 3, body: '#3C3C3F', bezel: '#202022', bar: '#2A2A2D', barIcon: '#A2A2A8',
+      dpad: '#B9B8BA', dpadMark: '#6E6D70', shoulder: '#B9B8BA', shoulderInk: '#2A2A2D', pill: '#E23B2E', labelInk: '#A8A8AE', brandInk: '#A8A8AE',
+      leftMain: 'stick', stick: { knob: '#C7C5C6' },
+      face: { kind: 'n64', colors: { a: '#2D5DB5', b: '#1F8E50', c: '#F2C21B' }, inks: { a: '#FFFFFF', b: '#FFFFFF', c: '#6A4F00' } },
+      shoulders: [[{ input: 'l', label: 'L' }], [{ input: 'r', label: 'R' }]],
+      secondary: [{ pos: 'left', kind: 'dpad' }], center: [{ input: 'start', label: 'START' }],
+    },
+    GC: {
+      name: 'GameCube', res: '640 × 480', aspect: 4 / 3, body: '#514988', bezel: '#26223F', bar: '#3A3468', barIcon: '#CFCAEE',
+      dpad: '#8F8BB0', dpadMark: '#4A4480', shoulder: '#8F8BB0', shoulderInk: '#26223F', pill: '#9C98B8', labelInk: '#CFCAEE', brandInk: '#CFCAEE',
+      leftMain: 'stick', stick: { knob: '#B9B7C6' },
+      face: { kind: 'gc', colors: { a: '#12B378', b: '#E8383F', x: '#BDBAD0', y: '#BDBAD0' }, inks: { a: '#FFFFFF', b: '#FFFFFF', x: '#4A4280', y: '#4A4280' } },
+      shoulders: [[{ input: 'l', label: 'L' }], [{ input: 'z', label: 'Z' }, { input: 'r', label: 'R' }]],
+      secondary: [{ pos: 'left', kind: 'dpad' }, { pos: 'right', kind: 'stick', right: true, knob: '#F4D400', label: 'C', ink: '#6A5A00', size: 80 }],
+      center: [{ input: 'start', label: 'START' }],
+    },
+    GB: {
+      name: 'Game Boy', res: '160 × 144', aspect: 10 / 9, body: '#C3C0BB', bezel: '#5E5C66', bar: '#A19D97', barIcon: '#3D3B40',
+      dpad: '#232325', dpadMark: '#55555A', pill: '#8A8580', pillRot: -25, labelInk: '#2E3A87', brandInk: '#2E3A87',
+      labelPos: 'below', face: { kind: 'ab', color: '#8A2A5C', ink: '#E9CFDC' }, shoulders: [[], []], center: SELECT_START,
+    },
+    GBC: {
+      name: 'Game Boy Color', res: '160 × 144', aspect: 10 / 9, body: '#9686B4', translucent: true, bezel: '#2A2830', bar: '#6C5C8C', barIcon: '#EEE7FA',
+      dpad: '#2E2C33', dpadMark: '#5C5866', pill: '#4A465A', labelInk: '#3B3152', brandInk: '#3B3152',
+      face: { kind: 'ab', color: '#34323A', ink: '#A39CB6' }, shoulders: [[], []], center: SELECT_START,
+    },
+    GBA: {
+      name: 'Game Boy Advance', res: '240 × 160', aspect: 3 / 2, body: '#5B5293', bezel: '#2C2A35', bar: '#433C78', barIcon: '#DCD6F5',
+      dpad: '#C2C2C4', dpadMark: '#7A7A84', shoulder: '#463F7E', shoulderInk: '#DCD6F5', pill: '#BDBDC0', labelInk: '#D3CDF0', brandInk: '#D3CDF0',
+      face: { kind: 'ab', color: '#C9C9CB', ink: '#4A4380' },
+      shoulders: [[{ input: 'l', label: 'L' }], [{ input: 'r', label: 'R' }]], center: SELECT_START,
+    },
+    NDS: {
+      name: 'Nintendo DS', res: '256 × 192', aspect: 4 / 3, screens: 2, body: '#B8BBC0', bezel: '#2C2D31', bar: '#8E9197', barIcon: '#26272B',
+      dpad: '#3A3A40', dpadMark: '#76767E', shoulder: '#9A9DA3', shoulderInk: '#2C2D31', pill: '#55565C', labelInk: '#55565C', brandInk: '#55565C',
+      face: { kind: 'diamond', color: '#44444B', ink: '#D2D3D8', map: {
+        top: { input: 'x', label: 'X' }, left: { input: 'y', label: 'Y' }, right: { input: 'a', label: 'A' }, bottom: { input: 'b', label: 'B' } } },
+      shoulders: [[{ input: 'l', label: 'L' }], [{ input: 'r', label: 'R' }]], center: SELECT_START,
+    },
+    MD: {
+      name: 'Mega Drive', res: '320 × 224', aspect: 4 / 3, body: '#26262A', bezel: '#121214', bar: '#1A1A1D', barIcon: '#9A9AA2',
+      dpad: '#18181B', dpadMark: '#6A6A72', pill: '#3A3A40', labelInk: '#9A9AA2', brandInk: '#9A9AA2',
+      face: { kind: 'md', color: '#1C1C20', ink: '#C9C9CF' }, shoulders: [[], []],
+      center: [{ input: 'mode', label: 'MODE' }, { input: 'start', label: 'START' }],
+    },
+    SMS: {
+      name: 'Master System', res: '256 × 192', aspect: 4 / 3, body: '#1F1F22', bezel: '#111113', bar: '#2A2A2E', barIcon: '#E04848',
+      stripe: '#CC3A39', chinIcon: '#E04848', dpad: '#141416', dpadMark: '#5A5A60', pill: '#3B3C41', labelInk: '#E04848', brandInk: '#8E8E96',
+      face: { kind: 'sms', color: '#3B3C41', ink: '#D9D9DE' }, shoulders: [[], []], center: [{ input: 'start', label: 'PAUSE' }],
+    },
+    PS: {
+      name: 'PlayStation', res: '320 × 240', aspect: 4 / 3, body: '#C2C0BD', bezel: '#3A3A3E', bar: '#A9A7A4', barIcon: '#3A3A3E',
+      dpad: '#8F8D8B', dpadMark: '#5E5C5A', shoulder: '#A3A19E', shoulderInk: '#4B494C', pill: '#77757A', labelInk: '#6A686B', brandInk: '#6A686B',
+      face: { kind: 'diamond', color: '#5A585B', map: {
+        top: { input: 'x', symbol: 'tri' }, left: { input: 'y', symbol: 'square' }, right: { input: 'a', symbol: 'circle' }, bottom: { input: 'b', symbol: 'cross' } } },
+      shoulders: [[{ input: 'l2', label: 'L2' }, { input: 'l1', label: 'L1' }], [{ input: 'r1', label: 'R1' }, { input: 'r2', label: 'R2' }]],
+      secondary: [{ pos: 'left', kind: 'stick', knob: '#3E3D40' }, { pos: 'right', kind: 'stick', right: true, knob: '#3E3D40' }],
+      center: SELECT_START,
+    },
+    PSP: {
+      name: 'PSP', res: '480 × 272', aspect: 480 / 272, body: '#151517', gloss: true, bezel: '#0B0B0C', bar: '#232326', barIcon: '#A4A6AC',
+      dpad: '#1E1E21', dpadMark: '#8E9096', shoulder: '#2A2A2E', shoulderInk: '#A4A6AC', pill: '#2A2A2E', labelInk: '#8E9096', brandInk: '#8E9096',
+      face: { kind: 'diamond', color: '#1C1C1F', symColor: '#A9ABB1', map: {
+        top: { input: 'x', symbol: 'tri' }, left: { input: 'y', symbol: 'square' }, right: { input: 'a', symbol: 'circle' }, bottom: { input: 'b', symbol: 'cross' } } },
+      shoulders: [[{ input: 'l', label: 'L' }], [{ input: 'r', label: 'R' }]],
+      secondary: [{ pos: 'left', kind: 'stick', knob: '#5A5B60', size: 76 }], center: SELECT_START,
+    },
+  };
+
+  // Face clusters: offsets from the cluster's centre, in units at scale 1.
+  const FACE = {
+    ab: () => [{ input: 'b', label: 'B', dx: -36, dy: 18, w: 62 }, { input: 'a', label: 'A', dx: 36, dy: -18, w: 62 }],
+    nes: () => [{ input: 'b', label: 'B', dx: -38, dy: 0, w: 60 }, { input: 'a', label: 'A', dx: 38, dy: 0, w: 60 }],
+    // As tall as the d-pad: the top button lines up with its up arm, the bottom one with its down arm.
+    diamond: (f) => [['top', 0, -47], ['left', -47, 0], ['right', 47, 0], ['bottom', 0, 47]]
+      .map(([pos, dx, dy]) => Object.assign({ dx, dy, w: 46 }, f.map[pos])),
+    md: () => [
+      { input: 'x', label: 'X', dx: -50, dy: -19, w: 38 }, { input: 'y', label: 'Y', dx: 0, dy: -33, w: 38 }, { input: 'z', label: 'Z', dx: 50, dy: -47, w: 38 },
+      { input: 'a', label: 'A', dx: -58, dy: 39, w: 52 }, { input: 'b', label: 'B', dx: 0, dy: 25, w: 52 }, { input: 'c', label: 'C', dx: 58, dy: 11, w: 52 }],
+    sms: () => [{ input: 'b', label: '1', dx: -38, dy: 6, w: 60, shape: 'square' }, { input: 'a', label: '2', dx: 38, dy: -6, w: 60, shape: 'square' }],
+    n64: () => [
+      { input: 'cUp', dx: 36, dy: -70, w: 34, c: true, arrow: 0 }, { input: 'cLeft', dx: 0, dy: -36, w: 34, c: true, arrow: 270 },
+      { input: 'cRight', dx: 72, dy: -36, w: 34, c: true, arrow: 90 }, { input: 'cDown', dx: 36, dy: -2, w: 34, c: true, arrow: 180 },
+      // A, B and Z in a triangle under the C buttons, Z in the controller's grey.
+      { input: 'b', label: 'B', dx: -82, dy: 0, w: 54 }, { input: 'a', label: 'A', dx: -24, dy: 46, w: 58 },
+      { input: 'z', label: 'Z', dx: -84, dy: 62, w: 44, color: '#B9B8BA', ink: '#2A2A2D' }],
+    gc: () => [
+      { input: 'a', label: 'A', dx: 0, dy: 13, w: 74 }, { input: 'b', label: 'B', dx: -62, dy: 51, w: 42 },
+      { input: 'x', label: 'X', dx: 62, dy: -7, w: 34, h: 62, shape: 'pill', rot: -18 },
+      { input: 'y', label: 'Y', dx: -14, dy: -55, w: 62, h: 34, shape: 'pill', rot: -18 }],
+  };
+
+  function layout(id, device, orient, opts) {
+    opts = opts || {};
+    const S = C[id];
+    const tab = device === 'tablet', port = orient === 'portrait';
+    const W = tab ? (port ? 800 : 1280) : (port ? 360 : 746);
+    const H = tab ? (port ? 1280 : 800) : (port ? 746 : 360);
+    const parts = [], items = [], screens = [];
+    const add = (style, extra) => { parts.push(Object.assign({ style, hasLabel: false, hasIcon: false, label: '', labelStyle: '', icon: '', iconStyle: '', iconFill: 'none', iconStroke: 'none', iconWidth: 0 }, extra || {})); };
+    const box = (x, y, w, h) => `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;box-sizing:border-box;`;
+    const center = 'display:flex;align-items:center;justify-content:center;';
+    const lbl = (label, ink, size, spacing) => ({ hasLabel: true, label, labelStyle: `font:700 ${r1(size)}px/1 'Space Grotesk',sans-serif;letter-spacing:${spacing || '.04em'};color:${ink};white-space:nowrap` });
+    const item = (inputs, x, y, w, h, ext) => items.push({ inputs, frame: { x: r1(x), y: r1(y), width: r1(w), height: r1(h) }, extendedEdges: ext });
+    const icon = (d, stroke, size, fill, width) => ({ hasIcon: true, icon: d, iconStroke: stroke, iconFill: fill || 'none', iconWidth: width == null ? 1.8 : width, iconStyle: `width:${size}px;height:${size}px;display:block` });
+
+    // Body: matte plastic, lit from above; translucent and glossy shells get their own sheen.
+    let bg = `radial-gradient(120% 70% at 50% 0%, ${lighten(S.body, 0.1)} 0%, ${S.body} 55%, ${darken(S.body, 0.1)} 100%)`;
+    if (S.translucent) bg = `repeating-linear-gradient(45deg, ${alpha('#ffffff', 0.05)} 0 2px, transparent 2px 9px), linear-gradient(160deg, ${lighten(S.body, 0.2)} 0%, ${S.body} 45%, ${darken(S.body, 0.14)} 100%)`;
+    if (S.gloss) bg = `linear-gradient(165deg, ${lighten(S.body, 0.16)} 0%, ${S.body} 30%, ${S.body} 70%, ${lighten(S.body, 0.06)} 100%)`;
+    add(box(0, 0, W, H) + `background:repeating-linear-gradient(0deg, ${alpha('#ffffff', 0.012)} 0 1px, transparent 1px 3px), ${bg};`);
+
+    // The game's screen(s), as large as the room allows, in a thin bezel. The quick actions sit in the
+    // bezel's chin, right under the picture, like a TV's buttons under its screen.
+    // Two screens touch: DeSmuME draws them with no gap, so the bezel's opening matches the picture exactly.
+    const n = S.screens || 1, gap = 0;
+    const m = tab ? 16 : 6, pad = tab ? 10 : 6;
+    const chin = tab ? 44 : (port ? 30 : 28);
+    let sw, sh;
+    if (port) {
+      const maxW = W - 2 * m - 2 * pad;
+      const maxH = H * (n === 2 ? (tab ? 0.6 : 0.56) : (tab ? 0.5 : 0.42));
+      sw = maxW; sh = sw / S.aspect;
+      if (n * sh > maxH) { sh = maxH / n; sw = sh * S.aspect; }
+    } else {
+      const minSide = tab ? 240 : 150;
+      const maxH = H - 2 * m - pad - chin;
+      const maxW = W - 2 * minSide - 2 * pad;
+      sh = maxH / n; sw = sh * S.aspect;
+      if (sw > maxW) { sw = maxW; sh = sw / S.aspect; }
+    }
+    const bw = sw + 2 * pad, bh = n * sh + pad + chin;
+    const bx = (W - bw) / 2;
+    const by = port ? m : (H - bh) / 2;
+    add(box(bx, by, bw, bh) + `border-radius:${tab ? 16 : 10}px;background:${S.bezel};box-shadow:inset 0 1px 0 ${alpha('#ffffff', 0.06)}, 0 1px 0 ${alpha('#ffffff', 0.2)};`);
+    for (let i = 0; i < n; i++) {
+      const sx = bx + pad, sy = by + pad + i * sh;
+      screens.push({ x: r1(sx), y: r1(sy), width: r1(sw), height: r1(sh) });
+      add(box(sx, sy, sw, sh) + center + `border-radius:2px;background:#0B0C0E;`,
+        opts.export ? {} : lbl(S.res, 'rgba(255,255,255,.28)', tab ? 14 : 11, '.12em'));
+    }
+
+    // The chin: save, load, turbo, fast forward.
+    const barY = by + pad + n * sh, barH = chin;
+    const acts = [['quickSave', 'save'], ['quickLoad', 'load'], ['turbo', 'turbo'], ['toggleFastForward', 'ff']];
+    const slot = bw / acts.length;
+    acts.forEach(([input, ic], i) => {
+      // Edges rounded once, so neighbouring slots meet without overlapping.
+      const x = r1(bx + slot * i), x1 = r1(bx + slot * (i + 1));
+      add(box(x, barY, x1 - x, barH) + center, icon(ICON[ic], S.chinIcon || alpha('#ffffff', 0.7), tab ? 22 : 17));
+      item([input], x, barY, x1 - x, barH);
+    });
+
+    function shoulders(y, h, l0, l1, r0, r1) {
+      const draw = (list, x0, x1, left) => {
+        if (!list.length) return;
+        const g = 8, w = Math.min(tab ? 170 : 124, (x1 - x0 - g * (list.length - 1)) / list.length);
+        list.forEach((s, i) => {
+          const x = left ? x0 + i * (w + g) : x1 - (list.length - i) * (w + g) + g;
+          const rad = left ? `${h / 2}px ${h / 3}px ${h / 3}px ${h / 3}px` : `${h / 3}px ${h / 2}px ${h / 3}px ${h / 3}px`;
+          add(box(x, y, w, h) + center + `border-radius:${rad};background:linear-gradient(180deg, ${lighten(S.shoulder, 0.12)}, ${darken(S.shoulder, 0.08)});box-shadow:0 3px 0 ${darken(S.shoulder, 0.35)}, 0 6px 10px rgba(0,0,0,.25);`,
+            lbl(s.label, S.shoulderInk, tab ? 16 : 13));
+          item([s.input], x, y, w, h, left ? { top: 10, left: 12 } : { top: 10, right: 12 });
+        });
+      };
+      draw(S.shoulders[0], l0, l1, true);
+      draw(S.shoulders[1], r0, r1, false);
+    }
+
+    function menuBtn(x, y, w, h) {
+      add(box(x, y, w, h) + center + `border-radius:${h / 2}px;background:${S.bar};box-shadow:inset 0 1px 0 ${alpha('#ffffff', 0.08)};`, icon(ICON.menu, S.barIcon, tab ? 22 : 18, 'none', 2));
+      item(['menu'], x, y, w, h);
+    }
+
+    function dpad(cx, cy, size) {
+      const t = size * 0.34, x0 = cx - size / 2, y0 = cy - size / 2, c = S.dpad;
+      // The relief goes under the whole cross: both arms' edges first, then both faces over them,
+      // so no edge shows across the middle.
+      const rad = `border-radius:${t * 0.22}px;`;
+      const edge = rad + `background:${darken(c, 0.45)};box-shadow:0 8px 14px rgba(0,0,0,.3);`;
+      add(box(cx - t / 2, y0 + 4, t, size) + edge);
+      add(box(x0, cy - t / 2 + 4, size, t) + edge);
+      const face = rad + `background:${lighten(c, 0.05)};`;
+      add(box(cx - t / 2, y0, t, size) + face);
+      add(box(x0, cy - t / 2, size, t) + face);
+      add(box(cx - t * 0.2, cy - t * 0.2, t * 0.4, t * 0.4) + `border-radius:50%;background:${darken(c, 0.16)};`);
+      const a = t * 0.36;
+      [[cx, y0 + t * 0.55, 0], [cx, y0 + size - t * 0.55, 180], [x0 + t * 0.55, cy, 270], [x0 + size - t * 0.55, cy, 90]].forEach(([mx, my, rot]) => {
+        add(box(mx - a / 2, my - a / 2, a, a) + `transform:rotate(${rot}deg);`, icon(ICON.arrow, 'none', a, S.dpadMark, 0));
+      });
+      item({ up: 'up', down: 'down', left: 'left', right: 'right' }, x0, y0, size, size, { top: 12, bottom: 12, left: 12, right: 12 });
+    }
+
+    function stick(cx, cy, size, st, right) {
+      const x = cx - size / 2, y = cy - size / 2;
+      add(box(x, y, size, size) + `border-radius:50%;background:radial-gradient(circle at 50% 40%, ${darken(S.body, 0.34)}, ${darken(S.body, 0.2)} 72%);box-shadow:inset 0 3px 7px rgba(0,0,0,.45), 0 1px 0 ${alpha('#ffffff', 0.18)};`);
+      const ks = size * 0.6, kc = st.knob;
+      add(box(cx - ks / 2, cy - ks / 2, ks, ks) + center + `border-radius:50%;background:radial-gradient(circle at 40% 35%, ${lighten(kc, 0.25)}, ${kc} 60%, ${darken(kc, 0.2)});box-shadow:0 4px 8px rgba(0,0,0,.4), inset 0 0 0 ${ks * 0.08}px ${alpha(darken(kc, 0.25), 0.35)};`,
+        st.label ? lbl(st.label, st.ink || '#333333', ks * 0.34) : {});
+      item(right ? RIGHT_STICK : LEFT_STICK, x, y, size, size);
+    }
+
+    function button(b, cx, cy, k) {
+      const f = S.face;
+      const key = b.c ? 'c' : b.input;
+      const c = b.color || (f.colors && f.colors[key]) || f.color;
+      const ink = b.ink || (f.inks && f.inks[key]) || f.ink || '#FFFFFF';
+      const w = b.w * k, h = (b.h || b.w) * k, x = cx + b.dx * k - w / 2, y = cy + b.dy * k - h / 2;
+      const radius = b.shape === 'square' ? `${Math.min(w, h) * 0.24}px` : (b.shape === 'pill' ? `${Math.min(w, h) / 2}px` : '50%');
+      let style = box(x, y, w, h) + center + (b.rot ? `transform:rotate(${b.rot}deg);` : '') +
+        `border-radius:${radius};background:radial-gradient(circle at 38% 30%, ${lighten(c, 0.22)} 0%, ${c} 55%, ${darken(c, 0.14)} 100%);box-shadow:0 ${r1(3 * k)}px 0 ${darken(c, 0.42)}, 0 ${r1(7 * k)}px ${r1(12 * k)}px rgba(0,0,0,.32);`;
+      let extra = {};
+      if (b.symbol) extra = icon(ICON[b.symbol], f.symColor || PS_SYM[b.symbol], r1(Math.min(w, h) * 0.52), 'none', 2.2);
+      else if (b.arrow != null) { extra = icon(ICON.arrow, 'none', r1(w * 0.46), ink, 0); extra.iconStyle += `;transform:rotate(${b.arrow}deg)`; }
+      else if (b.label && S.labelPos !== 'below') extra = lbl(b.label, ink, Math.max(11, Math.min(w, h) * 0.36));
+      add(style, extra);
+      if (b.label && S.labelPos === 'below') add(box(x - 10, y + h + 6 * k, w + 20, 16 * k) + center, lbl(b.label, S.labelInk, 14 * k));
+      item([b.input], x, y, w, h);
+    }
+
+    /** [room] is the width the face buttons may take: they shrink to it and centre on [rx] by their own extent. */
+    function main(lx, rx, cy, k, room) {
+      const btns = FACE[S.face.kind](S.face);
+      const ext = (b) => Math.max(b.w, b.h || b.w) / 2;
+      const minX = Math.min(...btns.map((b) => b.dx - ext(b))), maxX = Math.max(...btns.map((b) => b.dx + ext(b)));
+      const kf = Math.min(k, room / (maxX - minX));
+      const fx = Math.min(rx - ((minX + maxX) / 2) * kf, W - 8 - maxX * kf);
+      if (S.faceWell) { const s = 168 * kf; add(box(fx - s / 2, cy - s / 2, s, s) + `border-radius:50%;background:${S.faceWell};box-shadow:inset 0 2px 6px rgba(0,0,0,.18);`); }
+      if (S.leftMain === 'stick') stick(lx, cy, 112 * k, S.stick, false);
+      else dpad(lx, cy, 140 * k);
+      btns.forEach((b) => button(b, fx, cy, kf));
+    }
+
+    function secondary(lx, rx, cy, k) {
+      (S.secondary || []).forEach((s) => {
+        const x = s.pos === 'left' ? lx : rx;
+        if (s.kind === 'dpad') dpad(x, cy, 100 * k);
+        else stick(x, cy, (s.size || 92) * k, s, !!s.right);
+      });
+    }
+
+    function centerKey(c, cx, cy) {
+      const w = tab ? 66 : 54, h = tab ? 22 : 18;
+      add(box(cx - w / 2, cy - h / 2, w, h) + `border-radius:${h / 2}px;background:linear-gradient(180deg, ${lighten(S.pill, 0.12)}, ${S.pill});box-shadow:0 2px 0 ${darken(S.pill, 0.4)};` + (S.pillRot ? `transform:rotate(${S.pillRot}deg);` : ''));
+      add(box(cx - 50, cy + h / 2 + 7, 100, 14) + center, lbl(c.label, S.labelInk, tab ? 12 : 10, '.14em'));
+      item([c.input], cx - w / 2, cy - h / 2, w, h, { top: 8, bottom: 18, left: 8, right: 8 });
+    }
+
+    function brand(cx, cy) {
+      add(box(cx - 80, cy - 8, 160, 16) + center, lbl('OpenEmux', alpha(S.brandInk, 0.42), tab ? 13 : 11, '.32em'));
+    }
+
+    const hasSec = !!(S.secondary && S.secondary.length);
+    if (port) {
+      const y0 = by + bh + (tab ? 24 : 10);
+      const shH = tab ? 48 : 40;
+      if (S.stripe) add(box(0, y0 - 8, W, 3) + `background:${S.stripe};`);
+      shoulders(y0, shH, 12, W / 2 - 36, W / 2 + 36, W - 12);
+      menuBtn(W / 2 - 26, y0 + 3, 52, shH - 6);
+      const reserve = tab ? 140 : 80;
+      const aTop = y0 + shH + 12, aBot = H - reserve;
+      if (S.panel) add(box(12, aTop - 4, W - 24, H - aTop - (tab ? 70 : 40)) + `border-radius:${tab ? 26 : 18}px;background:${S.panel};box-shadow:inset 0 2px 0 ${alpha('#ffffff', 0.05)}, 0 1px 0 ${alpha('#ffffff', 0.5)};`);
+      const k = Math.min(tab ? 1.12 : 1, (aBot - aTop) / (hasSec ? 290 : 170));
+      const lx = tab ? 160 : 90, rx = W - (tab ? 160 : 96);
+      main(lx, rx, hasSec ? aTop + (aBot - aTop) * 0.36 : aTop + (aBot - aTop) * 0.42, k, W / 2 + 10);
+      if (hasSec) secondary(lx, rx, aTop + (aBot - aTop) * 0.82, k);
+      const cyKeys = H - reserve + (tab ? 44 : 22);
+      const step = tab ? 120 : 92;
+      S.center.forEach((c, i) => centerKey(c, W / 2 + (i - (S.center.length - 1) / 2) * step, cyKeys));
+      brand(W / 2, H - (tab ? 40 : 16));
+    } else {
+      const side = bx, lx = side / 2, rx = W - side / 2;
+      const shH = tab ? 48 : 38;
+      if (S.stripe) add(box(0, H - 7, W, 3) + `background:${S.stripe};`);
+      shoulders(12, shH, 12, side - 12, W - side + 12, W - 12);
+      const mY = 12 + shH + 10, mH = tab ? 40 : 30;
+      menuBtn(lx - 26, mY, 52, mH);
+      brand(rx, mY + mH / 2);
+      const top = mY + mH + 10, bot = H - (tab ? 70 : 52);
+      const k = (tab ? 1.12 : 0.86) * (hasSec && !tab ? 0.88 : 1);
+      main(lx, rx, hasSec ? top + (bot - top) * 0.33 : (top + bot) / 2, k, side - 16);
+      if (hasSec) secondary(lx, rx, top + (bot - top) * 0.82, k);
+      const cyKeys = H - (tab ? 40 : 30);
+      const half = Math.ceil(S.center.length / 2);
+      S.center.forEach((c, i) => {
+        const leftSide = S.center.length === 1 ? false : i < half;
+        centerKey(c, leftSide ? side - 44 : W - side + 44, cyKeys);
+      });
+    }
+
+    return { W, H, parts, items, screens, name: S.name, aspect: S.aspect };
+  }
+
+  return { layout, C };
+})();
+// ENGINE END
+
+class Component extends DCLogic {
+  renderVals() {
+    const id = this.props.console ?? 'GBA';
+    const device = this.props.device ?? 'phone';
+    const orient = this.props.orient ?? 'portrait';
+    const L = OE.layout(id, device, orient);
+    let parts = L.parts;
+    if (this.props.showTouch) {
+      const touch = L.items.map((it) => {
+        const e = it.extendedEdges || {};
+        const x = it.frame.x - (e.left || 0), y = it.frame.y - (e.top || 0);
+        const w = it.frame.width + (e.left || 0) + (e.right || 0), h = it.frame.height + (e.top || 0) + (e.bottom || 0);
+        return { style: `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;box-sizing:border-box;border:1.5px dashed #00E5FF;background:rgba(0,229,255,.08);`, hasLabel: false, hasIcon: false };
+      });
+      parts = parts.concat(touch);
+    }
+    const rootStyle = `position:relative;width:${L.W}px;height:${L.H}px;overflow:hidden;font-family:'Space Grotesk',sans-serif;background:#000;`;
+    return { parts, rootStyle };
+  }
+}
+</script>
+</body>
+</html>
