@@ -19,7 +19,10 @@ on phones, 2 on tablets), cuts the game's screens out of the art and writes
 `info.json` with the frames the engine laid out. A stick's knob is not in
 the art: each one is rendered on its own, the size of its travel, and the
 stick item names it as its `thumbstick` (`<device>_<orient>_knob<N>.png`), so
-the app can move it with the thumb. Intermediate images go to
+the app can move it with the thumb. Nor is the D-pad's circle, which the app
+moves with the thumb too: it is one more image per package (`dpad_knob.png`,
+the circle on its travel square), which each D-pad item names under `knob`, a
+key of the app's own that other emulators ignore. Intermediate images go to
 `build/skins/`. Needs Node, Google Chrome and ImageMagick.
 
 To change a skin, change `Skin.dc.html` (on the canvas, or here) and run the

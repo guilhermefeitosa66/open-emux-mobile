@@ -7,8 +7,9 @@
 <div id="root"></div>
 <script>
 const q = new URLSearchParams(location.search);
-const L = OE.layout(q.get('console'), q.get('device'), q.get('orient'), { export: true });
-// knob=<n> renders that stick's knob alone, on its own transparent square.
+// knob=<n> renders that stick's knob alone, on its own transparent square; dpadKnob=<side> the D-pad's circle,
+// for the package's dpad_knob.png.
+const L = q.get('dpadKnob') ? OE.dpadKnob(q.get('console'), +q.get('dpadKnob')) : OE.layout(q.get('console'), q.get('device'), q.get('orient'), { export: true });
 const knob = q.get('knob') == null ? null : L.knobs[+q.get('knob')];
 const W = knob ? knob.size : L.W, H = knob ? knob.size : L.H;
 const root = document.getElementById('root');

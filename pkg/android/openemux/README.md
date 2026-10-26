@@ -61,6 +61,19 @@ when the content closes, and the library must survive that.
    `frontend/drivers/platform_unix.c`, called from `input_overlay_states()`
    in `input/input_driver.c` on every input poll, whether or not an overlay
    is shown (a connected gamepad hides it).
+6. **D-pad dead zone.** An eight-way area (`dpad_area`, `abxy_area`) takes
+   `overlayN_descM_dead_zone`, a radius as a fraction of the area's range
+   inside which the touch holds the area but presses no direction. The
+   skin's D-pad sets 0.25; the default, 0, is upstream behaviour.
+   `task_overlay_desc_populate_eightway_config()` in `tasks/task_overlay.c`,
+   `input_overlay_get_eightway_state()` in `input/input_driver.c`.
+7. **Touch past the window's edge.** In landscape the game window stops
+   short of a display cutout, and a finger held down and slid into that
+   strip used to read as lifted on the screen pointer: the D-pad let go,
+   and the touches after it were dropped. Its screen position is now held
+   at the window's edge; the viewport position (a lightgun's offscreen
+   test) is unchanged. `android_pointer_set()` in
+   `input/drivers/android_input.c`.
 
 Upstream behaviour is kept: the base `RetroActivityCommon` returns false
 from the first two and ignores the overlay change and the toggles, so the stock RetroArch

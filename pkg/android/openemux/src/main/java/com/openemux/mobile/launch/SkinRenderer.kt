@@ -107,7 +107,7 @@ class SkinRenderer(private val context: Context) {
             bitmap.recycle()
             // Touch areas a little larger than what is drawn: thumbs are wide. A stick's zone keeps clear of the game.
             OverlayWriter.write(
-                cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture, grow = 1.12f,
+                cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture, grow = TOUCH_GROW,
                 clear = listOf(layout.picture), gap = 2f * unit,
             )
         }
@@ -364,8 +364,6 @@ class SkinRenderer(private val context: Context) {
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.dpad }
             c.drawRoundRect(RectF(box.left + 40 * u, box.top + 2 * u, box.left + 80 * u, box.top + 118 * u), 9 * u, 9 * u, paint)
             c.drawRoundRect(RectF(box.left + 2 * u, box.top + 40 * u, box.left + 118 * u, box.top + 80 * u), 9 * u, 9 * u, paint)
-            paint.color = colors.hub
-            c.drawCircle(box.centerX(), box.centerY(), 9 * u, paint)
             paint.color = colors.mark
             for (tri in listOf(
                 listOf(60f to 14f, 51f to 26f, 69f to 26f), listOf(60f to 106f, 51f to 94f, 69f to 94f),
@@ -379,16 +377,24 @@ class SkinRenderer(private val context: Context) {
                 path.close()
                 c.drawPath(path, paint)
             }
-            val cell = box.width() / 3f
-            fun cellRect(col: Int, row: Int) =
-                RectF(box.left + col * cell, box.top + row * cell, box.left + (col + 1) * cell, box.top + (row + 1) * cell)
-            val (up, down, left, right) = binds
-            descs += listOf(
-                OverlayDesc(up, cellRect(1, 0)), OverlayDesc(down, cellRect(1, 2)),
-                OverlayDesc(left, cellRect(0, 1)), OverlayDesc(right, cellRect(2, 1)),
-                OverlayDesc("$up|$left", cellRect(0, 0)), OverlayDesc("$up|$right", cellRect(2, 0)),
-                OverlayDesc("$down|$left", cellRect(0, 2)), OverlayDesc("$down|$right", cellRect(2, 2)),
-            )
+            // The circle on the centre is not painted into the skin: it is an image of its own, the size of its
+            // travel (the engine stretches it over the range), which the engine moves with the thumb and
+            // recentres on release. Its edge stops at the arm tips.
+            val travel = DPAD_TRAVEL_UNITS * u
+            val side = Math.round(2f * travel).coerceAtLeast(1)
+            val knob = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+            val k = side / 2f
+            Canvas(knob).apply {
+                val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = (colors.mark and 0x00FFFFFF) or (0xB3 shl 24)
+                    setShadowLayer(1.5f * u, 0f, 1.5f * u, 0x40000000)
+                }
+                drawCircle(k, k, 14 * u, ring)
+                ring.apply { clearShadowLayer(); style = Paint.Style.STROKE; strokeWidth = 2 * u; color = colors.mark }
+                drawCircle(k, k, 13 * u, ring)
+            }
+            val range = RectF(box.centerX() - travel, box.centerY() - travel, box.centerX() + travel, box.centerY() + travel)
+            descs += OverlayDesc("dpad_area", range, dpad = binds, reach = FloatArray(4) { DPAD_REACH }, knob = knob)
         }
 
         private fun stick(cl: SkinCluster.Stick, cx: Float, cy: Float, size: Float) {
@@ -563,5 +569,19 @@ class SkinRenderer(private val context: Context) {
         private fun fill(box: RectF, color: Int) {
             c.drawRect(box, Paint().apply { this.color = color })
         }
+    }
+
+    private companion object {
+        /** How much larger than what is drawn a control's touch area is: thumbs are wide. */
+        const val TOUCH_GROW = 1.12f
+
+        /** How far the D-pad's circle travels from the centre, in the D-pad's 120-unit grid. */
+        const val DPAD_TRAVEL_UNITS = OverlayLines.DPAD_TRAVEL * 60f
+
+        /**
+         * The D-pad's touch area over its travel: as far as the old 3x3 cells reached, each a third of the 120-unit
+         * grid grown [TOUCH_GROW] times about its own centre, so the outer ones ended at 40 + 20 * grow from the middle.
+         */
+        const val DPAD_REACH = (40f + 20f * TOUCH_GROW) / DPAD_TRAVEL_UNITS
     }
 }

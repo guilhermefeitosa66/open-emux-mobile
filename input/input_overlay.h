@@ -245,6 +245,10 @@ typedef struct overlay_eightway_config
    /* diagonal sensitivity */
    float* slope_high;
    float* slope_low;
+
+   /* Radius, as a fraction of the area's range, inside which
+    * no direction is pressed; 0 = none (upstream behaviour). */
+   float dead_zone;
 } overlay_eightway_config_t;
 
 struct overlay_desc
