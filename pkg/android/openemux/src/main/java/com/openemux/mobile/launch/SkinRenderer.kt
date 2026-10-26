@@ -45,12 +45,15 @@ data class SkinSize(val short: Int, val long: Int, val cutout: Int) {
     override fun toString() = "${short}x${long}x$cutout"
 
     companion object {
-        /** The cutout is the top inset in portrait, the deeper side one in landscape. */
+        /**
+         * The cutout is the deeper of the two short-edge insets: top or bottom in portrait (upside down puts
+         * it at the bottom), left or right in landscape. Any of the four rotations then gives the same size.
+         */
         @RequiresApi(30)
         fun of(metrics: WindowMetrics): SkinSize {
             val bounds = metrics.bounds
             val inset = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.displayCutout())
-            val cutout = if (bounds.height() >= bounds.width()) inset.top else maxOf(inset.left, inset.right)
+            val cutout = if (bounds.height() >= bounds.width()) maxOf(inset.top, inset.bottom) else maxOf(inset.left, inset.right)
             return SkinSize(minOf(bounds.width(), bounds.height()), maxOf(bounds.width(), bounds.height()), cutout)
         }
 

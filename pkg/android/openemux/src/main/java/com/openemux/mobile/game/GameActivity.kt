@@ -113,6 +113,9 @@ class GameActivity : RetroActivityFuture() {
 
     private fun checkSkinSize() {
         if (Build.VERSION.SDK_INT < 30 || isFinishing || isDestroyed || skinThread.isShutdown) return
+        // Unfocused, the engine stops polling: an OVERLAY_LOAD sent now would wait in its socket and be
+        // replayed, stale, once focus is back. onWindowFocusChanged looks again then.
+        if (!hasWindowFocus()) return
         val size = SkinSize.of(windowManager.currentWindowMetrics)
         if (!size.differs(skinWanted.get() ?: skinSize)) return
         skinWanted.set(size)
