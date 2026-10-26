@@ -278,6 +278,9 @@ class BackupWriter(private val roots: BackupRoots) {
                             if (n < 0) break
                             zip.write(buf, 0, n)
                             done += n
+                            // Per buffer, not per file: one disc image can take minutes.
+                            onProgress(folder, done, total)
+                            if (isCancelled()) throw BackupError.Cancelled()
                         }
                     }
                     zip.closeEntry()
@@ -339,8 +342,15 @@ class BackupReader(private val roots: BackupRoots) {
             val root = rootOf(name, listed) ?: throw BackupError.NotABackup("entry $name")
             val target = if (root.isDir) File(roots.staging(root), name.removePrefix(root.name + "/")) else roots.staging(root)
             target.parentFile.mkdirs()
-            onProgress(root.name.substringAfter('/'), bytes, declared.bytes)
-            target.outputStream().use { bytes += copy(zip, it, buf, declared.bytes - bytes) }
+            val folder = root.name.substringAfter('/')
+            onProgress(folder, bytes, declared.bytes)
+            val before = bytes
+            target.outputStream().use {
+                bytes += copy(zip, it, buf, declared.bytes - bytes) { n ->
+                    onProgress(folder, before + n, declared.bytes)
+                    if (isCancelled()) throw BackupError.Cancelled()
+                }
+            }
             // States are listed newest first: they keep the time they were made. -1 is "unknown".
             target.setLastModified(entry.time.coerceAtLeast(0))
         }
@@ -348,8 +358,11 @@ class BackupReader(private val roots: BackupRoots) {
         return StagedBackup(manifest, listed, prefs)
     }
 
-    /** Copies one entry, refusing to go past [limit] bytes: a zip bomb stops here. */
-    private fun copy(input: InputStream, out: OutputStream, buf: ByteArray, limit: Long): Long {
+    /**
+     * Copies one entry, refusing to go past [limit] bytes: a zip bomb stops here.
+     * [onChunk] hears the bytes copied so far after every buffer.
+     */
+    private fun copy(input: InputStream, out: OutputStream, buf: ByteArray, limit: Long, onChunk: (Long) -> Unit = {}): Long {
         var n = 0L
         while (true) {
             val read = input.read(buf)
@@ -357,6 +370,7 @@ class BackupReader(private val roots: BackupRoots) {
             n += read
             if (n > limit) throw BackupError.NotABackup("larger than declared")
             out.write(buf, 0, read)
+            onChunk(n)
         }
     }
 

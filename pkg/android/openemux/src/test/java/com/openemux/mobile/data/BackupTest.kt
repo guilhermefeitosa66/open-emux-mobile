@@ -213,6 +213,20 @@ class BackupTest {
     }
 
     @Test
+    fun writerStopsInsideALargeFile() {
+        roots.external.put("roms/PSX/Disc.bin", "x".repeat(5 * 64 * 1024))
+        val seen = mutableListOf<Long>()
+        var checks = 0
+        assertFails<BackupError.Cancelled> {
+            BackupWriter(roots).write(ByteArrayOutputStream(), true, prefs, "1", 0, 0,
+                onProgress = { f, d, _ -> if (f == "roms") seen += d }, isCancelled = { ++checks > 3 })
+        }
+        // The progress moved inside the file, and the copy stopped before its end.
+        assertTrue(seen.distinct().size >= 3)
+        assertTrue(seen.max() < 5L * 64 * 1024)
+    }
+
+    @Test
     fun writerReportsProgress() {
         seed()
         val seen = mutableListOf<String>()
@@ -388,6 +402,23 @@ class BackupTest {
         seed()
         roots.external.put("saves/GBA/Mine.srm", "mine")
         assertFails<BackupError.Cancelled> { BackupReader(roots).extract(ByteArrayInputStream(export()), isCancelled = { true }) }
+        assertTrue(stagingGone())
+    }
+
+    @Test
+    fun readerStopsInsideALargeFile() {
+        roots.external.put("roms/PSX/Disc.bin", "x".repeat(5 * 64 * 1024))
+        val zip = export()
+        val seen = mutableListOf<Long>()
+        var copied = false
+        assertFails<BackupError.Cancelled> {
+            BackupReader(roots).extract(ByteArrayInputStream(zip),
+                onProgress = { f, d, _ -> if (f == "roms") { seen += d; copied = seen.size > 2 } }, isCancelled = { copied })
+        }
+        // Cancelled a couple of buffers into the disc image, not after it.
+        assertEquals(3, seen.size)
+        assertTrue(seen[0] < seen[1] && seen[1] < seen[2])
+        assertTrue(seen[2] - seen[0] < 5L * 64 * 1024)
         assertTrue(stagingGone())
     }
 
