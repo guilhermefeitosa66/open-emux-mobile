@@ -13,6 +13,10 @@ class SkinGeometryTest {
     private val ndsSide = 512f / 192f
     private val ndsStacked = 256f / 384f
 
+    /** A D-pad of 150 on the centre row (most consoles), and the Virtual Boy's A / B on the lower row. */
+    private val padDepth = 75f
+    private val vbDepth = SkinGeometry.LOWER_ROW + 70f
+
     /** A 10" tablet (1280x800dp) at 2x, an 8" one (1133x744dp) at 2x, in design units under the cap. */
     private fun units(dp: Float) = dp / SkinGeometry.TABLET_CAP
 
@@ -45,7 +49,7 @@ class SkinGeometryTest {
         assertEquals(500f / 390f, SkinGeometry.unit(500, 1f, tablet = true), 1e-5f)
     }
 
-    private fun assertLandscapeFits(w: Float, h: Float, g: TabletFrame) {
+    private fun assertLandscapeFits(w: Float, h: Float, g: TabletFrame, depth: Float = padDepth) {
         val side = g.lx * 2f
         assertEquals(w - side / 2f, g.rx, 1e-3f)
         // The picture sits between the side columns, the strip right under it at its width.
@@ -64,6 +68,8 @@ class SkinGeometryTest {
         assertTrue(g.rows.upper < g.rows.center && g.rows.center < g.rows.lower && g.rows.lower < g.pillsTop)
         assertTrue(g.menu.bottom < g.rows.upper)
         assertTrue(g.pillsTop + 24f <= h)
+        // The pills sit under the lowest cluster, clear of it.
+        assertTrue(g.rows.center + depth * g.k + SkinGeometry.PILL_GAP <= g.pillsTop + 1e-3f)
     }
 
     @Test
@@ -71,7 +77,7 @@ class SkinGeometryTest {
         val w = units(1280f)
         val h = units(800f)
         // A small cluster still gets the narrowest column.
-        val g = SkinGeometry.landscape(w, h, gba, footprint = 120f, layoutKey = false)
+        val g = SkinGeometry.landscape(w, h, gba, footprint = 120f, depth = padDepth, layoutKey = false)
         assertLandscapeFits(w, h, g)
         assertEquals(SkinGeometry.SIDE, g.lx * 2f, 1e-3f)
         assertEquals(gba, g.picture.w / g.picture.h, 1e-4f)
@@ -86,7 +92,7 @@ class SkinGeometryTest {
     fun aWideClusterWidensTheColumnsNotTheButtons() {
         val w = units(1280f)
         val h = units(800f)
-        val g = SkinGeometry.landscape(w, h, gba, footprint = 186f, layoutKey = false)
+        val g = SkinGeometry.landscape(w, h, gba, footprint = 186f, depth = padDepth, layoutKey = false)
         assertLandscapeFits(w, h, g)
         assertEquals(210f, g.lx * 2f, 1e-3f)
         assertEquals(1f, g.k, 0f)
@@ -95,7 +101,7 @@ class SkinGeometryTest {
     @Test
     fun aNarrowWindowShrinksTheControlsToTheirColumn() {
         // Square 600dp: the columns stop at 30% of the width, the clusters scale into them.
-        val g = SkinGeometry.landscape(units(600f), units(600f), gba, footprint = 186f, layoutKey = false)
+        val g = SkinGeometry.landscape(units(600f), units(600f), gba, footprint = 186f, depth = padDepth, layoutKey = false)
         assertEquals(units(600f) * 0.3f, g.lx * 2f, 1e-3f)
         assertTrue(g.k < 1f)
         assertEquals((g.lx * 2f - 24f) / 186f, g.k, 1e-4f)
@@ -105,15 +111,46 @@ class SkinGeometryTest {
     @Test
     fun aShortWindowShrinksTheControlsToItsHeight() {
         val h = units(620f)
-        val g = SkinGeometry.landscape(units(1280f), h, gba, footprint = 150f, layoutKey = false)
+        val g = SkinGeometry.landscape(units(1280f), h, gba, footprint = 150f, depth = padDepth, layoutKey = false)
         assertEquals((h - 200f) / 260f, g.k, 1e-4f)
         assertLandscapeFits(units(1280f), h, g)
+    }
+
+    /** A box grown by the overlay's touch margin (OverlayWriter, grow = 1.12). */
+    private fun touch(b: Box) = Box(b.cx - b.w * 0.56f, b.y + b.h / 2f - b.h * 0.56f, b.w * 1.12f, b.h * 1.12f)
+
+    @Test
+    fun aDeepRightClusterPushesThePillsBelowIt() {
+        // Virtual Boy: the second D-pad over A / B on the right, Start under them (QA BUG-1: B covered Start).
+        for ((w, h) in listOf(units(1280f) to units(800f), units(1133f) to units(744f))) {
+            val g = SkinGeometry.landscape(w, h, gba, footprint = 150f, depth = vbDepth, layoutKey = false)
+            assertLandscapeFits(w, h, g, vbDepth)
+            assertEquals(1f, g.k, 0f)
+            // Slots.TWO's lower button, B, and the Start pill under it.
+            val b = Box(g.rx - 40f * g.k - 36f * g.k, g.rows.lower + 34f * g.k - 36f * g.k, 72f * g.k, 72f * g.k)
+            val start = Box(g.rx - 30f, g.pillsTop, 60f, 24f)
+            assertFalse("$b over $start", touch(b).intersects(touch(start)))
+        }
+        // A shallow cluster keeps the pills where they were.
+        val g = SkinGeometry.landscape(units(1280f), units(800f), gba, footprint = 150f, depth = padDepth, layoutKey = false)
+        assertEquals(g.rows.center + 130f, g.pillsTop, 1e-3f)
+    }
+
+    @Test
+    fun aShortWindowShrinksADeepClusterToFitAboveThePills() {
+        val h = units(620f)
+        val depth = 200f
+        val g = SkinGeometry.landscape(units(1280f), h, gba, footprint = 150f, depth = depth, layoutKey = false)
+        assertEquals((h - 52f - SkinGeometry.PILL_GAP - g.rows.center) / depth, g.k, 1e-4f)
+        assertTrue(g.k < (h - 200f) / 260f)
+        assertEquals(h - 52f, g.pillsTop, 1e-3f)
+        assertLandscapeFits(units(1280f), h, g, depth)
     }
 
     @Test
     fun ndsSideBySideKeepsItsAspectWithTheLayoutKeyAbove() {
         for ((w, h) in listOf(units(1280f) to units(800f), units(1133f) to units(744f))) {
-            val g = SkinGeometry.landscape(w, h, ndsSide, footprint = 150f, layoutKey = true)
+            val g = SkinGeometry.landscape(w, h, ndsSide, footprint = 150f, depth = padDepth, layoutKey = true)
             assertLandscapeFits(w, h, g)
             assertEquals(ndsSide, g.picture.w / g.picture.h, 1e-4f)
             assertNotNull(g.layoutKey)

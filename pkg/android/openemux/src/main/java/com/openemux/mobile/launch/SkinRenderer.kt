@@ -259,7 +259,7 @@ class SkinRenderer(private val context: Context) {
          */
         fun tabletLandscape(width: Int, height: Int): List<OverlayDesc> {
             val wd = width / unit
-            val g = SkinGeometry.landscape(wd, height / unit, aspect, footprint(), layoutKey = layoutNext != null)
+            val g = SkinGeometry.landscape(wd, height / unit, aspect, footprint(), depth(), layoutKey = layoutNext != null)
             picture = px(g.picture)
             fill(RectF(0f, 0f, width.toFloat(), height.toFloat()), colors.body)
             c.drawRect(picture, Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR) })
@@ -297,6 +297,20 @@ class SkinRenderer(private val context: Context) {
                 is SkinCluster.Face -> cl.slots.maxOf { it.dx + it.w / 2f } - cl.slots.minOf { it.dx - it.w / 2f }
             }
         } ?: SkinGeometry.SIDE
+
+        /** How far the lowest cluster reaches below the centre row at full size, in units: the pills go under it. */
+        private fun depth(): Float = skin.clusters.filter { !(keypadOpen && it.side == SkinSide.RIGHT) }.maxOfOrNull { cl ->
+            val row = when (cl.row) {
+                SkinRow.UPPER -> SkinGeometry.UPPER_ROW
+                SkinRow.CENTER -> 0f
+                SkinRow.LOWER -> SkinGeometry.LOWER_ROW
+            }
+            row + when (cl) {
+                is SkinCluster.DPad -> cl.size / 2f
+                is SkinCluster.Stick -> cl.size / 2f
+                is SkinCluster.Face -> cl.slots.maxOf { it.dy + it.h / 2f }
+            }
+        } ?: 0f
 
         /** The NDS layout key over the picture: the screens icon and the layout's name; it steps to the next layout. */
         private fun layoutKey(b: Box) {

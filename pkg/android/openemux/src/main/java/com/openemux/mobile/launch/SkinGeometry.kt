@@ -57,6 +57,13 @@ object SkinGeometry {
     /** Landscape: the band over the picture, for the shoulders, the menu key and the NDS layout key. */
     const val TOP = 66f
 
+    /** Landscape: where the upper and lower rows sit from the centre row, at full size. */
+    const val UPPER_ROW = -60f
+    const val LOWER_ROW = 70f
+
+    /** Landscape: the least room between the lowest cluster and the Select / Start pills. */
+    const val PILL_GAP = 16f
+
     /** Portrait: the least room left under the strip for the controls. */
     const val PANEL = 360f
 
@@ -69,16 +76,19 @@ object SkinGeometry {
 
     /**
      * Landscape [w] x [h]: the picture centred between two side columns wide enough for the widest cluster
-     * ([footprint] units at full size), the strip under it. [layoutKey] reserves the NDS layout key over the picture.
+     * ([footprint] units at full size), the strip under it. [depth] is how far the lowest cluster reaches below the
+     * centre row at full size: the pills go under it, and the clusters shrink when the window is too short for both.
+     * [layoutKey] reserves the NDS layout key over the picture.
      */
-    fun landscape(w: Float, h: Float, aspect: Float, footprint: Float, layoutKey: Boolean): TabletFrame {
+    fun landscape(w: Float, h: Float, aspect: Float, footprint: Float, depth: Float, layoutKey: Boolean): TabletFrame {
         val side = minOf(maxOf(SIDE, footprint + 24f), w * 0.3f)
-        val k = minOf(1f, (side - 24f) / footprint, (h - 200f) / 260f)
+        val center = h / 2f + 16f
+        val lowest = h - 52f
+        val k = minOf(1f, (side - 24f) / footprint, (h - 200f) / 260f, (lowest - PILL_GAP - center) / maxOf(depth, 1f))
         val room = h - TOP - STRIP - 16f
         val gameW = minOf(w - 2f * side, room * aspect)
         val gameH = gameW / aspect
         val picture = Box((w - gameW) / 2f, TOP + (room - gameH) / 2f, gameW, gameH)
-        val center = h / 2f + 16f
         return TabletFrame(
             picture = picture,
             strip = Box(picture.x, picture.bottom, gameW, STRIP),
@@ -88,9 +98,9 @@ object SkinGeometry {
             name = Box(w - side, 70f, side, 10f),
             lx = side / 2f,
             rx = w - side / 2f,
-            rows = Rows(center - 60f * k, center, center + 70f * k),
+            rows = Rows(center + UPPER_ROW * k, center, center + LOWER_ROW * k),
             k = k,
-            pillsTop = minOf(h - 52f, center + 130f),
+            pillsTop = minOf(lowest, maxOf(center + 130f, center + depth * k + PILL_GAP)),
             layoutKey = if (layoutKey) Box(picture.cx - 70f, picture.y - 39f, 140f, 31f) else null,
         )
     }
