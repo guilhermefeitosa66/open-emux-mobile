@@ -181,11 +181,12 @@ class ImportedSkinRenderer {
      */
     private fun glyph(art: Bitmap, left: Int, top: Int, w: Int, h: Int): Bitmap? {
         val px = IntArray(w * h)
-        for (y in 0 until h) for (x in 0 until w) {
-            val ax = left + x
-            val ay = top + y
-            if (ax in 0 until art.width && ay in 0 until art.height) px[y * w + x] = art.getPixel(ax, ay)
-        }
+        // Only the part of the box inside the art is read; the rest stays transparent.
+        val x0 = maxOf(0, left)
+        val y0 = maxOf(0, top)
+        val x1 = minOf(art.width, left + w)
+        val y1 = minOf(art.height, top + h)
+        if (x1 > x0 && y1 > y0) art.getPixels(px, (y0 - top) * w + (x0 - left), w, x0, y0, x1 - x0, y1 - y0)
         val edge = (0 until w).flatMap { listOf(px[it], px[(h - 1) * w + it]) } + (0 until h).flatMap { listOf(px[it * w], px[it * w + w - 1]) }
         fun median(shift: Int) = edge.map { (it shr shift) and 0xFF }.sorted()[edge.size / 2]
         val bg = intArrayOf(median(16), median(8), median(0))
