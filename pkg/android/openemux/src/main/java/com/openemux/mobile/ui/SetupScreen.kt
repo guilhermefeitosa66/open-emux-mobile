@@ -40,7 +40,8 @@ import java.util.Locale
 @Composable
 fun SetupScreen(state: Setup.State, onStart: () -> Unit) {
     GamepadButtons(hints = listOf("A" to stringResource(if (state is Setup.State.Failed) R.string.settings_setup_retry else R.string.settings_setup_start)))
-    Column(
+    // No hint bar here: AppNav draws it only once the setup is done.
+    MarginFocusScroll { Column(
         Modifier.fillMaxSize().background(Oe.Bg).statusBarsPadding().navigationBarsPadding()
             .verticalScroll(rememberScrollState()).padding(horizontal = 24.dp),
     ) {
@@ -108,7 +109,7 @@ fun SetupScreen(state: Setup.State, onStart: () -> Unit) {
         } else {
             Spacer(Modifier.height(100.dp))
         }
-    }
+    } }
 }
 
 /** [status]: below 0 done, 0 running, above 0 waiting. */

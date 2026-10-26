@@ -7,7 +7,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -105,7 +105,7 @@ fun SettingsScreen() {
     val missingOptional = missing.count { !it.required }
     val missingRequired = missing.filter { it.required }.map { it.console }.distinct().size
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.settings_title), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
 
         Row(
@@ -185,7 +185,7 @@ fun SettingsScreen() {
             ListRow(stringResource(R.string.settings_about), value = "OpenEmux ${BuildConfig.VERSION_NAME}", divider = true, onClick = { a.nav.navigate(Routes.ABOUT) })
         }
         Spacer(BottomSpace)
-    }
+    } }
 
     if (themeSheet) {
         ModalBottomSheet({ themeSheet = false }, containerColor = Oe.Sheet) {
@@ -202,7 +202,7 @@ fun SettingsScreen() {
         val language = AppLocale.current(context)
         ModalBottomSheet({ languageSheet = false }, containerColor = Oe.Sheet) {
             ImmersiveWindow()
-            Column(
+            MarginFocusScroll { Column(
                 Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -221,7 +221,7 @@ fun SettingsScreen() {
                         },
                     )
                 }
-            }
+            } }
         }
     }
 }
@@ -242,7 +242,7 @@ fun ConsoleSettingsScreen(id: String) {
     var ownSheet by remember { mutableStateOf(false) }
     val sample = roms.firstOrNull { it.console == console }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+    MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
             BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -274,7 +274,7 @@ fun ConsoleSettingsScreen(id: String) {
             Text(stringResource(R.string.settings_default_shader), style = Type.Section, modifier = Modifier.weight(1f))
             Text(shaderById(settings.shader).name(), style = Type.Small)
         }
-        Row(Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        FocusRow(Modifier.padding(horizontal = 20.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SHADERS.forEach { s ->
                 ShaderTile(s.id, s.name(), settings.shader == s.id) { lib.updateConsole(console) { it.copy(shader = s.id) } }
             }
@@ -319,7 +319,8 @@ fun ConsoleSettingsScreen(id: String) {
                 }
             }
         }
-    }
+        Spacer(Modifier.height(hintBarInset))
+    } }
 
     if (colorSheet) {
         ModalBottomSheet({ colorSheet = false }, containerColor = Oe.Sheet) {
@@ -368,7 +369,7 @@ fun BiosScreen() {
         }
     }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+    MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
             BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             Text("BIOS", style = Type.Display, modifier = Modifier.padding(top = 4.dp))
@@ -449,7 +450,8 @@ fun BiosScreen() {
             stringResource(R.string.settings_bios_footer),
             style = Type.Small.copy(color = Oe.Faint), modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 28.dp),
         )
-    }
+        Spacer(Modifier.height(hintBarInset))
+    } }
 }
 
 @Composable
@@ -459,14 +461,15 @@ fun AchievementsScreen() {
     val store = a.app.achievements
     val state by store.state.collectAsState()
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().imePadding()) {
+    MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().imePadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
             BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             FitText(stringResource(R.string.ra_title), Type.Display, Modifier.padding(top = 4.dp))
         }
         if (state.signedIn) AchievementsAccount(state) else AchievementsSignIn(state.lastUsername)
         Spacer(Modifier.height(28.dp))
-    }
+        Spacer(Modifier.height(hintBarInset))
+    } }
 }
 
 @Composable
@@ -650,7 +653,7 @@ fun ImportScreen() {
         }
     }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState())) {
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.settings_import), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
         Text(
             stringResource(R.string.settings_import_intro),
@@ -706,5 +709,5 @@ fun ImportScreen() {
             modifier = Modifier.padding(horizontal = 20.dp),
         )
         Spacer(BottomSpace)
-    }
+    } }
 }

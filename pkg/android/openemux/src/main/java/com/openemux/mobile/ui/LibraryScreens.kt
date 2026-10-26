@@ -9,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -37,7 +36,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -60,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Brush
@@ -71,16 +70,19 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -117,9 +119,11 @@ fun ShelfScreen() {
     val favoritesShort = stringResource(R.string.library_favorites_eyebrow)
     val favoritesName = stringResource(R.string.library_favorites)
 
-    LazyColumn(Modifier.fillMaxSize().statusBarsPadding(), state = listState) {
+    // The focused shelf keeps clear of the top and of the bars over the bottom.
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyColumn(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down), state = listState) {
         item {
-            Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            // The list clips at its top: the room above the header is the focus ring's.
+            Row(Modifier.padding(start = 20.dp, end = 20.dp, top = FocusOutset), verticalAlignment = Alignment.CenterVertically) {
                 Image(painterResource(R.drawable.oe_logo), contentDescription = null, modifier = Modifier.height(34.dp))
                 // On a narrow screen the credit wraps under the name instead of pushing the button.
                 FlowRow(
@@ -170,7 +174,7 @@ fun ShelfScreen() {
                 ShelfCard(
                     short, name, countString(R.plurals.library_games_count, list.size, list.size), list, background, ink,
                     Modifier
-                        .then(if (isDragged) Modifier.zIndex(1f).graphicsLayer { translationY = dragOffset; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
+                        .then(if (isDragged) Modifier.zIndex(2f).graphicsLayer { translationY = dragOffset; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
                         .restorableFocus(filter, focusedShelf, initial = shelves.first().second == filter)
                         .then(
                             if (console == null) Modifier else Modifier
@@ -225,7 +229,7 @@ fun ShelfScreen() {
             }
         }
         item { Spacer(BottomSpace) }
-    }
+    } }
 
     menuFor?.let { console ->
         val i = present.indexOf(console)
@@ -398,7 +402,7 @@ fun LibraryScreen(filter: String) {
             when (m) {
                 ViewMode.Carts -> CappedCell(GridSpec.Carts) {
                     Column(
-                        it.gamepadFocus(corner = 10.dp, scale = 1.06f).then(focus).combinedClickable(onClick = open, onLongClick = open),
+                        it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).combinedClickable(onClick = open, onLongClick = open),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Box {
@@ -413,7 +417,7 @@ fun LibraryScreen(filter: String) {
                     }
                 }
                 ViewMode.Covers -> CappedCell(GridSpec.Covers) {
-                    Column(it.gamepadFocus(corner = 10.dp, scale = 1.06f).then(focus).combinedClickable(onClick = open, onLongClick = open)) {
+                    Column(it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).combinedClickable(onClick = open, onLongClick = open)) {
                         Box {
                             BoxArt(rom, Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)))
                             if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
@@ -443,10 +447,10 @@ fun LibraryScreen(filter: String) {
     // As many columns as the width holds, never fewer than a phone shows.
     val spec = when (shown) { ViewMode.Carts -> GridSpec.Carts; ViewMode.Covers -> GridSpec.Covers; ViewMode.List -> GridSpec.List }
     // Staggered, so each box art keeps its own proportions in the covers mode.
-    LazyVerticalStaggeredGrid(
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
-        Modifier.fillMaxSize().statusBarsPadding(),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = 10.dp, bottom = TabBarHeight + 24.dp),
+        Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 20.dp, top = FocusOutset, bottom = TabBarHeight + hintBarInset + 24.dp),
         horizontalArrangement = Arrangement.spacedBy(spec.gap.dp),
         verticalItemSpacing = if (shown == ViewMode.List) 0.dp else 18.dp,
     ) {
@@ -504,7 +508,7 @@ fun LibraryScreen(filter: String) {
                 items(groupRoms, key = { it.key }) { rom -> tile(rom, shown) }
             }
         }
-    }
+    } }
 }
 
 /** A group's games in as many staggered columns as [spec] fits, filled in turn like the grid's lanes. */
@@ -568,8 +572,9 @@ private fun LandscapeLibrary(
     val a = LocalActions.current
     val lib = a.app.library
     val meta by lib.meta.collectAsState()
-    Column(Modifier.fillMaxSize().statusBarsPadding().displayCutoutPadding().padding(bottom = TabBarHeight)) {
-        Row(Modifier.padding(start = 20.dp, end = 20.dp, top = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+    Column(Modifier.fillMaxSize().statusBarsPadding().displayCutoutPadding().padding(bottom = TabBarHeight + hintBarInset)) {
+        // The header sits under the top edge: the room above it is the focus ring's.
+        Row(Modifier.padding(start = 20.dp, end = 20.dp, top = FocusOutset), verticalAlignment = Alignment.CenterVertically) {
             BackLink(stringResource(R.string.library_shelf_title)) { a.nav.popBackStack(Routes.SHELF, false) }
             FitText(title, style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(start = 16.dp).weight(1f))
             Text(countString(R.plurals.library_games_count, list.size, list.size), style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(horizontal = 12.dp))
@@ -594,8 +599,11 @@ private fun LandscapeLibrary(
                     style = Type.Small, modifier = Modifier.align(Alignment.Center),
                 )
             }
-            LazyRow(
-                Modifier.fillMaxSize(),
+            // The focused game stays in the middle; the first and last rest at the row's edges.
+            // The last game sits at the row's end, which is the left in a right-to-left layout.
+            val rowEnd = if (LocalLayoutDirection.current == LayoutDirection.Rtl) FocusDirection.Left else FocusDirection.Right
+            CenteredFocusScroll { LazyRow(
+                Modifier.fillMaxSize().holdFocusAtEnd(rowEnd),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = margin),
                 horizontalArrangement = Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.CenterVertically,
@@ -610,8 +618,9 @@ private fun LandscapeLibrary(
                         // widens its item past a third. A console without cartridge art shows its cover.
                         val itemMode = if (mode == ViewMode.Carts && rom.console.frame == null) ViewMode.Covers else mode
                         val w = if (itemMode == ViewMode.Carts) minOf((maxWidth - margin * 2) * 0.42f, itemH * rom.console.cartAspect) else null
+                        var lit by remember { mutableStateOf(false) }
                         Column(
-                            Modifier.width(maxOf(third, w ?: third)).gamepadFocus(corner = 10.dp, scale = 1.06f)
+                            Modifier.width(maxOf(third, w ?: third)).gamepadFocus(corner = 10.dp, scale = 1.05f) { lit = it }
                                 .restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey)
                                 .combinedClickable(onClick = open, onLongClick = open),
                             horizontalAlignment = Alignment.CenterHorizontally,
@@ -624,15 +633,20 @@ private fun LandscapeLibrary(
                                 }
                                 if (favorite) FavBadge(Modifier.padding(4.dp))
                             }
+                            // With the gamepad, the focused game's title stands out from the others.
                             Text(
-                                rom.title, style = Type.Caption.copy(color = Oe.Text, fontSize = 13.sp),
+                                rom.title,
+                                style = Type.Caption.copy(
+                                    color = if (InputMode.gamepad && !lit) Oe.Muted else Oe.Text, fontSize = 13.sp,
+                                    fontWeight = if (lit) FontWeight.SemiBold else Type.Caption.fontWeight,
+                                ),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
                                 modifier = Modifier.padding(top = 6.dp).fillMaxWidth(0.82f),
                             )
                         }
                     }
                 }
-            }
+            } }
         }
     }
 }
@@ -651,10 +665,7 @@ private fun LandscapeGroupHeader(console: Console, count: Int) {
 private fun ConsoleChips(roms: List<Rom>, current: String, modifier: Modifier = Modifier, onPick: (String) -> Unit) {
     val library = LocalActions.current.app.library
     val meta by library.meta.collectAsState()
-    Row(
-        modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
+    FocusRow(modifier, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         val chips = listOf("ALL" to stringResource(R.string.library_chip_all), "FAV" to stringResource(R.string.library_favorites)) +
             library.orderedConsoles(meta.consoleOrder).filter { c -> roms.any { it.console == c } }.map { it.id to it.short }
         chips.forEach { (id, label) ->
@@ -703,7 +714,8 @@ private fun FavBadge(modifier: Modifier = Modifier) {
 
 @Composable
 private fun ViewToggle(mode: ViewMode, onChange: (ViewMode) -> Unit) {
-    Row(Modifier.clip(RoundedCornerShape(12.dp)).background(Oe.Surface).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+    // A shaped background, not a clip: a clip would cut the focused button's ring.
+    Row(Modifier.background(Oe.Surface, RoundedCornerShape(12.dp)).padding(3.dp), horizontalArrangement = Arrangement.spacedBy(2.dp)) {
         listOf(ViewMode.Carts to Icons.Cart, ViewMode.Covers to Icons.Grid, ViewMode.List to Icons.List).forEach { (m, icon) ->
             val on = m == mode
             Box(
@@ -724,7 +736,7 @@ fun RecentScreen() {
     val recent = roms.filter { (meta.roms[it.key]?.lastPlayed ?: 0) > 0 }.sortedByDescending { meta.roms[it.key]!!.lastPlayed }
     GamepadButtons(hints = listOf("A" to stringResource(R.string.library_hint_detail), "L1 R1" to stringResource(R.string.library_hint_tabs)))
 
-    LazyColumn(Modifier.fillMaxSize().statusBarsPadding()) {
+    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyColumn(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down)) {
         item {
             Text(stringResource(R.string.library_recent_title), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp))
         }
@@ -748,7 +760,7 @@ fun RecentScreen() {
             }
         }
         item { Spacer(BottomSpace) }
-    }
+    } }
 }
 
 /** The discreet engine credit next to the app's name. */
