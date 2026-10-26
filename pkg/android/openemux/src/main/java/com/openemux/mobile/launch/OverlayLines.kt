@@ -12,14 +12,14 @@ internal object OverlayLines {
     const val DPAD_TRAVEL = 44f / 60f
 
     /**
-     * An eight-way D-pad area's keys: it is touched [left], [right], [up] and [down] times its half-size on
-     * each side of its centre, steers by the thumb's angle to that centre with a dead zone in the middle, and
+     * An eight-way D-pad area's keys: it is touched [reach] times its half-size on each side of its centre
+     * (left, top, right, bottom, as [OverlayDesc.reach]), steers by the thumb's angle to that centre with a dead zone in the middle, and
      * once held follows that finger over the whole screen, ahead of every other control. Binds other than the
      * engine's defaults are named.
      */
-    fun dpad(cfg: StringBuilder, key: String, binds: List<String>, left: Float, right: Float, up: Float, down: Float) {
-        reach(cfg, key, "x", "left", "right", left, right)
-        reach(cfg, key, "y", "up", "down", up, down)
+    fun dpad(cfg: StringBuilder, key: String, binds: List<String>, reach: FloatArray) {
+        reach(cfg, key, "x", "left", "right", reach[0], reach[2])
+        reach(cfg, key, "y", "up", "down", reach[1], reach[3])
         cfg.append("${key}_range_mod = 20.0\n")
         cfg.append("${key}_range_mod_exclusive = true\n")
         cfg.append("${key}_dead_zone = 0.25\n")

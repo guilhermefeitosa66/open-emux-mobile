@@ -155,9 +155,16 @@ class ImportedSkinRenderer {
                 is JSONObject -> {
                     val stick = item.optJSONObject("thumbstick")?.let { knob(zip, it, frame, place, paint) }
                     // knob is the app's own key (tools/skins): the D-pad's circle, when the package has its image.
+                    // An unreadable circle leaves the D-pad without one, as a stick's unreadable knob does.
                     val circle = {
-                        item.optString("knob").takeIf { it.isNotEmpty() }
-                            ?.let { name -> findEntry(zip, name) }?.let { e -> zip.getInputStream(e).use { BitmapFactory.decodeStream(it) } }
+                        item.optString("knob").takeIf { it.isNotEmpty() }?.let { name ->
+                            try {
+                                findEntry(zip, name)?.let { entry -> zip.getInputStream(entry).use { BitmapFactory.decodeStream(it) } }
+                            } catch (e: Exception) {
+                                Log.w(TAG, "knob '$name' not readable", e)
+                                null
+                            }
+                        }
                     }
                     directional(inputs, frame, touch, item.has("thumbstick"), stick, circle, descs)
                 }
@@ -287,11 +294,12 @@ class ImportedSkinRenderer {
         val ty = frame.height() / 2f * OverlayLines.DPAD_TRAVEL
         val travel = RectF(frame.centerX() - tx, frame.centerY() - ty, frame.centerX() + tx, frame.centerY() + ty)
         // The start area is the item's box, which need not be centred on the frame: each side reaches its own
-        // edge, so a lopsided box does not spill over its neighbours on the near side.
+        // edge, so a lopsided box does not spill over its neighbours on the near side. A box that stops short of
+        // the centre (negative extended edges) reaches nothing on that side rather than a negative, inverted reach.
         val reach = floatArrayOf(
             (frame.centerX() - box.left) / tx, (frame.centerY() - box.top) / ty,
             (box.right - frame.centerX()) / tx, (box.bottom - frame.centerY()) / ty,
-        )
+        ).map { it.coerceAtLeast(0f) }.toFloatArray()
         descs += OverlayDesc("dpad_area", travel, dpad = listOf(up, down, left, right), reach = reach, knob = circle())
     }
 

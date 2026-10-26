@@ -129,7 +129,7 @@ internal object OverlayWriter {
                 // A stick with no knob image (a package that has none), over its whole frame.
                 d.radial -> cfg.append("${p}_desc${i}_saturate_pct = 0.65\n")
                 d.dpad != null -> {
-                    OverlayLines.dpad(cfg, "${p}_desc$i", d.dpad, d.reach[0], d.reach[2], d.reach[1], d.reach[3])
+                    OverlayLines.dpad(cfg, "${p}_desc$i", d.dpad, d.reach)
                     if (d.knob != null) OverlayLines.knob(cfg, "${p}_desc$i", knobImage(image, i))
                 }
             }

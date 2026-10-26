@@ -107,7 +107,7 @@ class SkinRenderer(private val context: Context) {
             bitmap.recycle()
             // Touch areas a little larger than what is drawn: thumbs are wide. A stick's zone keeps clear of the game.
             OverlayWriter.write(
-                cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture, grow = 1.12f,
+                cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture, grow = TOUCH_GROW,
                 clear = listOf(layout.picture), gap = 2f * unit,
             )
         }
@@ -380,7 +380,7 @@ class SkinRenderer(private val context: Context) {
             // The circle on the centre is not painted into the skin: it is an image of its own, the size of its
             // travel (the engine stretches it over the range), which the engine moves with the thumb and
             // recentres on release. Its edge stops at the arm tips.
-            val travel = DPAD_TRAVEL * u
+            val travel = DPAD_TRAVEL_UNITS * u
             val side = Math.round(2f * travel).coerceAtLeast(1)
             val knob = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
             val k = side / 2f
@@ -572,13 +572,16 @@ class SkinRenderer(private val context: Context) {
     }
 
     private companion object {
+        /** How much larger than what is drawn a control's touch area is: thumbs are wide. */
+        const val TOUCH_GROW = 1.12f
+
         /** How far the D-pad's circle travels from the centre, in the D-pad's 120-unit grid. */
-        const val DPAD_TRAVEL = OverlayLines.DPAD_TRAVEL * 60f
+        const val DPAD_TRAVEL_UNITS = OverlayLines.DPAD_TRAVEL * 60f
 
         /**
          * The D-pad's touch area over its travel: as far as the old 3x3 cells reached, each a third of the 120-unit
-         * grid grown 1.12 times about its own centre, so the outer ones ended at 40 + 20 * 1.12 from the middle.
+         * grid grown [TOUCH_GROW] times about its own centre, so the outer ones ended at 40 + 20 * grow from the middle.
          */
-        const val DPAD_REACH = (40f + 20f * 1.12f) / DPAD_TRAVEL
+        const val DPAD_REACH = (40f + 20f * TOUCH_GROW) / DPAD_TRAVEL_UNITS
     }
 }
