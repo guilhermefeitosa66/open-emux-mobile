@@ -289,8 +289,11 @@ class SkinRenderer(private val context: Context) {
             clusters(g.lx, g.rx, rows = mapOf(SkinRow.UPPER to g.rows.upper, SkinRow.CENTER to g.rows.center, SkinRow.LOWER to g.rows.lower), k = g.k, dpadK = g.k)
         }
 
+        /** The clusters drawn: the keypad takes the right side's place while it is open. */
+        private fun shown() = skin.clusters.filter { !(keypadOpen && it.side == SkinSide.RIGHT) }
+
         /** The widest cluster at full size, in units: what a tablet's side column must hold. */
-        private fun footprint(): Float = skin.clusters.filter { !(keypadOpen && it.side == SkinSide.RIGHT) }.maxOfOrNull { cl ->
+        private fun footprint(): Float = shown().maxOfOrNull { cl ->
             when (cl) {
                 is SkinCluster.DPad -> cl.size
                 is SkinCluster.Stick -> cl.size
@@ -299,7 +302,7 @@ class SkinRenderer(private val context: Context) {
         } ?: SkinGeometry.SIDE
 
         /** How far the lowest cluster reaches below the centre row at full size, in units: the pills go under it. */
-        private fun depth(): Float = skin.clusters.filter { !(keypadOpen && it.side == SkinSide.RIGHT) }.maxOfOrNull { cl ->
+        private fun depth(): Float = shown().maxOfOrNull { cl ->
             val row = when (cl.row) {
                 SkinRow.UPPER -> SkinGeometry.UPPER_ROW
                 SkinRow.CENTER -> 0f
@@ -326,8 +329,7 @@ class SkinRenderer(private val context: Context) {
         private fun px(b: Box) = RectF(b.x * unit, b.y * unit, b.right * unit, b.bottom * unit)
 
         private fun clusters(lx: Float, rx: Float, rows: Map<SkinRow, Float>, k: Float, dpadK: Float) {
-            for (cl in skin.clusters) {
-                if (keypadOpen && cl.side == SkinSide.RIGHT) continue
+            for (cl in shown()) {
                 val cx = if (cl.side == SkinSide.LEFT) lx else rx
                 val cy = rows.getValue(cl.row)
                 when (cl) {
