@@ -87,6 +87,24 @@ RetroArch fits keeping the aspect): on top in portrait, capped like the
 design, and centred between the control sides in landscape, with the quick
 actions under the picture in both.
 
+The twelve best-known consoles (NES, SNES, N64, GameCube, Game Boy, Game Boy
+Color, Game Boy Advance, NDS, Mega Drive, Master System, PlayStation, PSP)
+use skins with drawn art instead, in the package format of the iOS
+emulators Delta and Manic EMU (`.deltaskin`/`.manicskin`: a zip with
+`info.json` and the art). They ship in `assets/skins` and
+`launch/ImportedSkinRenderer.kt` turns one into the same kind of overlay:
+the phone or tablet art (tablet from 600 dp on the smallest side) scaled to
+the screen, the game's screens cut out of it as the viewport, and each item
+a touch area, with each console's button names translated to the RetroPad
+as `data/Skin.kt` does. A skin in `files/skins/<console>/` takes the
+bundled one's place, and one that fails to load falls back to the drawn
+skin. The NDS skin draws its two screens one over the other, and DeSmuME is
+set to that layout.
+
+The art comes from a design canvas whose Skin component holds the layout
+engine and each console's colors; `tools/skins/build.py` renders it with
+headless Chrome into the packages (see `tools/skins/README.md`).
+
 ### Cartridges, labels and box art
 
 Two different assets, as on the desktop app:
@@ -152,4 +170,5 @@ The version follows the OpenEmux desktop release it pairs with:
 - Cheats (shown as coming soon).
 - Picking cores other than the ones `data/Console.kt` names; the setup
   downloads exactly those.
-- Skin editor or alternative skins; one skin per console.
+- Skin editor, or importing a skin from the app; a skin is added by copying it
+  into `files/skins/<console>/`.

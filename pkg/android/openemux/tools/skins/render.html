@@ -1,0 +1,30 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>@font-face{font-family:"Space Grotesk";src:url("SpaceGrotesk.ttf") format("truetype");font-weight:300 700}</style>
+<style>html,body{margin:0;background:transparent}</style>
+<script src="engine.js"></script>
+</head><body>
+<div id="root"></div>
+<script>
+const q = new URLSearchParams(location.search);
+const L = OE.layout(q.get('console'), q.get('device'), q.get('orient'), { export: true });
+const root = document.getElementById('root');
+root.style.cssText = `position:relative;width:${L.W}px;height:${L.H}px;overflow:hidden;font-family:'Space Grotesk',sans-serif;`;
+const NS = 'http://www.w3.org/2000/svg';
+for (const p of L.parts) {
+  const d = document.createElement('div');
+  d.style.cssText = p.style;
+  if (p.hasIcon) {
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('style', p.iconStyle);
+    const path = document.createElementNS(NS, 'path');
+    path.setAttribute('d', p.icon); path.setAttribute('fill', p.iconFill); path.setAttribute('stroke', p.iconStroke);
+    path.setAttribute('stroke-width', p.iconWidth); path.setAttribute('stroke-linecap', 'round'); path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path); d.appendChild(svg);
+  }
+  if (p.hasLabel) { const s = document.createElement('span'); s.setAttribute('style', p.labelStyle); s.textContent = p.label; d.appendChild(s); }
+  root.appendChild(d);
+}
+</script>
+</body></html>
