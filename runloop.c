@@ -7594,11 +7594,16 @@ static void runloop_pause_toggle(
       bool pause_pressed, bool old_pause_pressed,
       bool focused, bool old_focus)
 {
-   /* Whether the focus loss is what paused the content: the focus coming
-    * back lifts that pause and no other, so content paused before - by
-    * the user, or by the platform as it took the focus away - is left
-    * as it is. */
+#ifdef ANDROID
+   /* OpenEmux: whether the focus loss is what paused the content: the
+    * focus coming back lifts that pause and no other, so content paused
+    * before - by the user, or by the platform as it took the focus
+    * away - is left as it is. Android only: elsewhere a focus return
+    * lifts any pause, as upstream does. */
    static bool paused_by_focus         = false;
+#else
+   static const bool paused_by_focus   = true;
+#endif
    runloop_state_t *runloop_st         = &runloop_state;
 
    if (focused)
@@ -7612,12 +7617,16 @@ static void runloop_pause_toggle(
       }
       else if (!old_focus && paused_by_focus)
          command_event(CMD_EVENT_UNPAUSE, NULL);
+#ifdef ANDROID
       if (!old_focus)
          paused_by_focus = false;
+#endif
    }
    else if (old_focus)
    {
+#ifdef ANDROID
       paused_by_focus = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+#endif
       command_event(CMD_EVENT_PAUSE, NULL);
    }
 }
