@@ -164,6 +164,26 @@ const OE = (() => {
       { input: 'y', label: 'Y', dx: -14, dy: -55, w: 62, h: 34, shape: 'pill', rot: -18 }],
   };
 
+  // The D-pad's circle, in fractions of the D-pad's size (as the app's drawn skins: 44 and 14 of its 120 units):
+  // its centre travels half the square, its edge stops at the arm tips.
+  const DPAD_KNOB = { travel: 44 / 120, radius: 14 / 120, stroke: 2 / 120, image: 'dpad_knob.png' };
+
+  // The circle centred on its travel square, which the image covers (the overlay stretches it over that square).
+  function knobParts(S, d, size) {
+    const side = 2 * size * DPAD_KNOB.travel, w = size * DPAD_KNOB.stroke;
+    return [{ style: `display:flex;align-items:center;justify-content:center;` +
+      `background:radial-gradient(circle at 50% 50%, ${alpha(S.dpadMark, 0.7)} 0 ${r1(d / 2 - w)}px, ${S.dpadMark} ${r1(d / 2 - w)}px ${r1(d / 2)}px, transparent ${r1(d / 2 + 0.3)}px);` +
+      `filter:drop-shadow(0 ${r1(side * 0.017)}px ${r1(side * 0.017)}px rgba(0,0,0,.25));` }];
+  }
+
+  /** The circle alone, its travel square [side] units wide, for the package's knob image. */
+  function dpadKnob(id, side) {
+    const size = side / (2 * DPAD_KNOB.travel);
+    const parts = knobParts(C[id], size * DPAD_KNOB.radius * 2, size).map((k) => Object.assign({ hasLabel: false, hasIcon: false },
+      { style: `position:absolute;left:0;top:0;width:${side}px;height:${side}px;box-sizing:border-box;` + k.style }));
+    return { W: side, H: side, parts };
+  }
+
   function layout(id, device, orient, opts) {
     opts = opts || {};
     const S = C[id];
@@ -257,12 +277,16 @@ const OE = (() => {
       const face = rad + `background:${lighten(c, 0.05)};`;
       add(box(cx - t / 2, y0, t, size) + face);
       add(box(x0, cy - t / 2, size, t) + face);
-      add(box(cx - t * 0.2, cy - t * 0.2, t * 0.4, t * 0.4) + `border-radius:50%;background:${darken(c, 0.16)};`);
       const a = t * 0.36;
       [[cx, y0 + t * 0.55, 0], [cx, y0 + size - t * 0.55, 180], [x0 + t * 0.55, cy, 270], [x0 + size - t * 0.55, cy, 90]].forEach(([mx, my, rot]) => {
         add(box(mx - a / 2, my - a / 2, a, a) + `transform:rotate(${rot}deg);`, icon(ICON.arrow, 'none', a, S.dpadMark, 0));
       });
+      // No hub on the centre: the circle the app moves with the thumb sits there, an image of its own
+      // (dpadKnob above). The canvas draws it at rest, the package only names it.
+      const travel = size * DPAD_KNOB.travel;
+      if (!opts.export) knobParts(S, size * DPAD_KNOB.radius * 2, size).forEach((k) => add(box(cx - travel, cy - travel, 2 * travel, 2 * travel) + k.style));
       item({ up: 'up', down: 'down', left: 'left', right: 'right' }, x0, y0, size, size, { top: 12, bottom: 12, left: 12, right: 12 });
+      items[items.length - 1].knob = DPAD_KNOB.image;
     }
 
     // The knob is not painted into the art: it is an image of its own (the item's thumbstick), the size of
@@ -373,7 +397,7 @@ const OE = (() => {
     return { W, H, parts, items, screens, knobs, name: S.name, aspect: S.aspect };
   }
 
-  return { layout, C };
+  return { layout, dpadKnob, DPAD_KNOB, C };
 })();
 // ENGINE END
 

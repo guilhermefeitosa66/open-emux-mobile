@@ -716,6 +716,17 @@ static void task_overlay_desc_populate_eightway_config(
       free(str);
    }
 
+   /* Centre dead zone, a fraction of the range; calloc's
+    * zero leaves it off.
+    */
+   {
+      float dead_zone;
+      strlcpy_lit(conf_key + _len, "_dead_zone", sizeof(conf_key) - _len);
+      if (     config_get_float(loader->conf, conf_key, &dead_zone)
+            && dead_zone > 0.0f)
+         eightway->dead_zone = dead_zone;
+   }
+
    /* Prepopulate diagonals.
     */
    bits_or_bits(eightway->up_right.data, eightway->up.data,

@@ -146,21 +146,26 @@ class ImportedSkinRenderer {
             val f = item.getJSONObject("frame")
             val e = item.optJSONObject("extendedEdges") ?: defaultEdges
             fun edge(k: String) = e?.optDouble(k, 0.0) ?: 0.0
+            val frame = place.rect(f.getDouble("x"), f.getDouble("y"), f.getDouble("width"), f.getDouble("height"))
             val touch = place.rect(
                 f.getDouble("x") - edge("left"), f.getDouble("y") - edge("top"),
                 f.getDouble("width") + edge("left") + edge("right"), f.getDouble("height") + edge("top") + edge("bottom"),
             )
             when (val inputs = item.get("inputs")) {
                 is JSONObject -> {
-                    val frame = place.rect(f.getDouble("x"), f.getDouble("y"), f.getDouble("width"), f.getDouble("height"))
-                    val knob = item.optJSONObject("thumbstick")?.let { knob(zip, it, frame, place, paint) }
-                    directional(inputs, touch, item.has("thumbstick"), knob, descs)
+                    val stick = item.optJSONObject("thumbstick")?.let { knob(zip, it, frame, place, paint) }
+                    // knob is the app's own key (tools/skins): the D-pad's circle, when the package has its image.
+                    val circle = {
+                        item.optString("knob").takeIf { it.isNotEmpty() }
+                            ?.let { name -> findEntry(zip, name) }?.let { e -> zip.getInputStream(e).use { BitmapFactory.decodeStream(it) } }
+                    }
+                    directional(inputs, frame, touch, item.has("thumbstick"), stick, circle, descs)
                 }
                 is JSONArray -> {
                     val binds = (0 until inputs.length()).mapNotNull { bind(inputs.getString(it)) }
                     if (binds.isNotEmpty()) descs += OverlayDesc(binds.joinToString("|"), touch)
                     OverlayWriter.LIT_BY[binds.singleOrNull()]?.let { state ->
-                        descs += litPill(bitmap, state, place.rect(f.getDouble("x"), f.getDouble("y"), f.getDouble("width"), f.getDouble("height")), place.s)
+                        descs += litPill(bitmap, state, frame, place.s)
                     }
                 }
             }
@@ -243,9 +248,17 @@ class ImportedSkinRenderer {
         return Bitmap.createBitmap(alphas, w, h, Bitmap.Config.ARGB_8888)
     }
 
-    /** A D-pad as a 3x3 grid, diagonals included, or a stick as an analog stick. */
-    private fun directional(inputs: JSONObject, box: RectF, thumbstick: Boolean, knob: OverlayDesc?, descs: MutableList<OverlayDesc>) {
-        // With a knob image the stick is laid out as the drawn skins' are; without one, as before, over its frame.
+    /**
+     * A D-pad as one eight-way area, or a stick as an analog stick. The D-pad's rect is its circle's travel
+     * about the centre of the [drawn] frame (the share of the half-size the drawn skins give it); the item's
+     * whole [box] is where a touch starts, and that finger then steers it from anywhere. [circle] reads the
+     * D-pad's circle, only once the item turns out to be a D-pad. A stick with a [knob] image is laid out as the
+     * drawn skins' are; without one, as before, over its frame.
+     */
+    private fun directional(
+        inputs: JSONObject, drawn: RectF, box: RectF, thumbstick: Boolean, knob: OverlayDesc?, circle: () -> Bitmap?,
+        descs: MutableList<OverlayDesc>,
+    ) {
         fun stick(name: String) =
             knob?.let { OverlayDesc(name, it.rect, radial = true, well = it.well, knob = it.knob, saturate = it.saturate) }
                 ?: OverlayDesc(name, box, radial = true)
@@ -266,14 +279,20 @@ class ImportedSkinRenderer {
             descs += stick(RADIAL)
             return
         }
-        val cw = box.width() / 3f
-        val ch = box.height() / 3f
-        fun cell(col: Int, row: Int) = RectF(box.left + col * cw, box.top + row * ch, box.left + (col + 1) * cw, box.top + (row + 1) * ch)
-        descs += listOf(
-            OverlayDesc(up, cell(1, 0)), OverlayDesc(down, cell(1, 2)), OverlayDesc(left, cell(0, 1)), OverlayDesc(right, cell(2, 1)),
-            OverlayDesc("$up|$left", cell(0, 0)), OverlayDesc("$up|$right", cell(2, 0)),
-            OverlayDesc("$down|$left", cell(0, 2)), OverlayDesc("$down|$right", cell(2, 2)),
+        // A frame with no area (a malformed skin) would give the D-pad no travel: the touch box stands in.
+        val frame = drawn.takeIf { it.width() > 0f && it.height() > 0f } ?: box
+        // Neither has any: there is nothing to touch, and the reach below would divide by zero.
+        if (frame.width() <= 0f || frame.height() <= 0f) return
+        val tx = frame.width() / 2f * OverlayLines.DPAD_TRAVEL
+        val ty = frame.height() / 2f * OverlayLines.DPAD_TRAVEL
+        val travel = RectF(frame.centerX() - tx, frame.centerY() - ty, frame.centerX() + tx, frame.centerY() + ty)
+        // The start area is the item's box, which need not be centred on the frame: each side reaches its own
+        // edge, so a lopsided box does not spill over its neighbours on the near side.
+        val reach = floatArrayOf(
+            (frame.centerX() - box.left) / tx, (frame.centerY() - box.top) / ty,
+            (box.right - frame.centerX()) / tx, (box.bottom - frame.centerY()) / ty,
         )
+        descs += OverlayDesc("dpad_area", travel, dpad = listOf(up, down, left, right), reach = reach, knob = circle())
     }
 
     /**
@@ -304,8 +323,13 @@ class ImportedSkinRenderer {
         return listOf("resizable", "large", "medium", "small").firstNotNullOf { byKey[it] }
     }
 
+    private fun findEntry(zip: ZipFile, name: String) =
+        zip.entries().asSequence().firstOrNull { !it.name.startsWith("__MACOSX") && (it.name == name || it.name.endsWith("/$name")) }
+
+    private fun entry(zip: ZipFile, name: String) = findEntry(zip, name) ?: error("no $name in the skin")
+
     private fun rasterize(zip: ZipFile, name: String, target: RectF): Bitmap {
-        val entry = zip.entries().asSequence().first { !it.name.startsWith("__MACOSX") && (it.name == name || it.name.endsWith("/$name")) }
+        val entry = entry(zip, name)
         val tw = target.width().toInt().coerceAtLeast(1)
         val th = target.height().toInt().coerceAtLeast(1)
         if (!name.endsWith(".pdf", ignoreCase = true)) {

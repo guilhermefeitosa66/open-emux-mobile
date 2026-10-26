@@ -5575,6 +5575,11 @@ static INLINE void input_overlay_get_eightway_state(
    x_dist /= desc->range_x;
    y_dist /= desc->range_y;
 
+   /* Inside the dead zone the area is held but presses nothing. */
+   if (x_dist * x_dist + y_dist * y_dist
+         < eightway->dead_zone * eightway->dead_zone)
+      return;
+
    abs_x = fabsf(x_dist);
    abs_y = fabsf(y_dist);
 

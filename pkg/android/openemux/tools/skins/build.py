@@ -34,6 +34,8 @@ TYPES = {
 }
 # The format's families: iphone/edgeToEdge for phones, ipad/standard for tablets; px per unit.
 REPS = [("phone", "iphone", "edgeToEdge", 3), ("tablet", "ipad", "standard", 2)]
+# The D-pad's circle: one image per console, stretched by the app over each D-pad's travel square.
+KNOB_UNITS, KNOB_SCALE = 100, 4
 
 
 def sync_engine():
@@ -53,10 +55,8 @@ def engine_layout(console, device, orient):
     return json.loads(out)
 
 
-def screenshot(console, device, orient, w, h, scale, out, profile, knob=None):
-    url = f"file://{HERE / 'render.html'}?console={console}&device={device}&orient={orient}"
-    if knob is not None:
-        url += f"&knob={knob}"
+def screenshot(console, device, orient, w, h, scale, out, profile, query=""):
+    url = f"file://{HERE / 'render.html'}?console={console}&device={device}&orient={orient}{query}"
     subprocess.run([
         CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--user-data-dir={profile}",
         f"--force-device-scale-factor={scale}", f"--window-size={w},{h}", "--default-background-color=00000000",
@@ -78,6 +78,7 @@ def build(console, profile):
     reps = {}
     files = []
     name = None
+    knob = None
     for device, family, variant, scale in REPS:
         for orient in ("portrait", "landscape"):
             L = engine_layout(console, device, orient)
@@ -90,7 +91,7 @@ def build(console, profile):
             for i, k in enumerate(L["knobs"]):
                 file = f"{device}_{orient}_{k['name']}"
                 px = round(k["size"] * scale)
-                screenshot(console, device, orient, px // scale + 1, px // scale + 1, scale, folder / file, profile, knob=i)
+                screenshot(console, device, orient, px // scale + 1, px // scale + 1, scale, folder / file, profile, f"&knob={i}")
                 subprocess.run(["convert", str(folder / file), "-crop", f"{px}x{px}+0+0", "+repage", str(folder / file)], check=True)
                 knobs[k["name"]] = file
             files.extend(knobs.values())
@@ -101,6 +102,10 @@ def build(console, profile):
                     entry["extendedEdges"] = it["extendedEdges"]
                 if it.get("thumbstick"):
                     entry["thumbstick"] = dict(it["thumbstick"], name=knobs[it["thumbstick"]["name"]])
+                if it.get("knob"):
+                    # Not in Delta's format: the app's own key for the D-pad's moving circle.
+                    entry["knob"] = it["knob"]
+                    knob = it["knob"]
                 items.append(entry)
             reps.setdefault(family, {}).setdefault(variant, {})[orient] = {
                 "assets": {"large": image},
@@ -118,6 +123,9 @@ def build(console, profile):
         "representations": reps,
     }
     (folder / "info.json").write_text(json.dumps(info, indent=2, ensure_ascii=False))
+    if knob:
+        screenshot(console, "phone", "portrait", KNOB_UNITS, KNOB_UNITS, KNOB_SCALE, folder / knob, profile,
+                   f"&dpadKnob={KNOB_UNITS}")
     ext = ".manicskin" if TYPES[console].startswith("public.aoshuang") else ".deltaskin"
     pkg = ASSETS / f"{console}{ext}"
     with zipfile.ZipFile(pkg, "w", zipfile.ZIP_DEFLATED) as z:
@@ -127,6 +135,8 @@ def build(console, profile):
                 z.write(folder / f"{device}_{orient}.png", f"{device}_{orient}.png")
         for file in files:
             z.write(folder / file, file)
+        if knob:
+            z.write(folder / knob, knob)
     print(f"{pkg.relative_to(APP)}  {pkg.stat().st_size // 1024} KB")
 
 

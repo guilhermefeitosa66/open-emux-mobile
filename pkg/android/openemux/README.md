@@ -61,6 +61,12 @@ when the content closes, and the library must survive that.
    `frontend/drivers/platform_unix.c`, called from `input_overlay_states()`
    in `input/input_driver.c` on every input poll, whether or not an overlay
    is shown (a connected gamepad hides it).
+6. **D-pad dead zone.** An eight-way area (`dpad_area`, `abxy_area`) takes
+   `overlayN_descM_dead_zone`, a radius as a fraction of the area's range
+   inside which the touch holds the area but presses no direction. The
+   skin's D-pad sets 0.25; the default, 0, is upstream behaviour.
+   `task_overlay_desc_populate_eightway_config()` in `tasks/task_overlay.c`,
+   `input_overlay_get_eightway_state()` in `input/input_driver.c`.
 
 Upstream behaviour is kept: the base `RetroActivityCommon` returns false
 from the first two and ignores the overlay change and the toggles, so the stock RetroArch
