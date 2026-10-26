@@ -132,7 +132,6 @@ fun ShelfScreen() {
         y = { menuFor = Console.byId(focusedShelf.value) },
     )
 
-
     val favoritesShort = stringResource(R.string.library_favorites_eyebrow)
     val favoritesName = stringResource(R.string.library_favorites)
 
@@ -150,7 +149,7 @@ fun ShelfScreen() {
     val tabletop = LocalTabletop.current
     if (tabletop) TabletopDeck {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)) {
-            if (spec.tablet && playing.isNotEmpty() && roms.isNotEmpty()) {
+            if (spec.tablet && playing.isNotEmpty()) {
                 ContinueRow(playing, spec.continueCount, spec, meta, focusedShelf, Modifier.padding(bottom = 16.dp))
             }
             SecondaryButton(stringResource(R.string.library_shelf_empty_action), { a.nav.navigateTab(Routes.IMPORT) }, Modifier.fillMaxWidth(), icon = Icons.Download)
@@ -491,7 +490,6 @@ private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>) {
     }
 }
 
-/** A section's title with its link on the right. */
 /** The tablet shelf's "Continue playing": a heading and [slots] cards side by side. */
 @Composable
 private fun ContinueRow(playing: List<Rom>, slots: Int, spec: ShelfSpec, meta: Meta, focusedShelf: MutableState<String?>, modifier: Modifier) {
@@ -512,6 +510,7 @@ private fun ContinueRow(playing: List<Rom>, slots: Int, spec: ShelfSpec, meta: M
     }
 }
 
+/** A section's title with its link on the right. */
 @Composable
 private fun SectionHeading(title: String, link: String, onLink: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
