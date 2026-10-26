@@ -26,12 +26,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -58,13 +62,18 @@ private fun openUrl(): (String) -> Unit {
     return { url -> runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } }
 }
 
+/** About; [embedded] in the settings pane, with the licenses under it and [onOpenLicense] for their texts. */
 @Composable
-fun AboutScreen() {
-    GamepadButtons(hints = listOf("A" to stringResource(R.string.about_hint_open), "B" to stringResource(R.string.settings_hint_back)))
+fun AboutScreen(embedded: Boolean = false, onOpenLicense: ((String) -> Unit)? = null) {
+    if (!embedded) {
+        GamepadButtons(hints = listOf("A" to stringResource(R.string.about_hint_open), "B" to stringResource(R.string.settings_hint_back)))
+        ReturnToSplit(LocalWindowLayout.current.splitSettings, Routes.SETTINGS, SettingsItem.About.key)
+    }
     val a = LocalActions.current
     val open = openUrl()
+    val license = onOpenLicense ?: { id: String -> a.nav.navigate(Routes.license(id)) }
     MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth()) {
-        Column(Modifier.padding(horizontal = 20.dp)) {
+        if (!embedded) Column(Modifier.padding(horizontal = 20.dp)) {
             BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
         }
         Column(Modifier.fillMaxWidth().padding(top = 12.dp, start = 20.dp, end = 20.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -93,10 +102,25 @@ fun AboutScreen() {
         Card(Modifier.padding(horizontal = 20.dp)) {
             ListRow(
                 stringResource(R.string.about_license_title), subtitle = stringResource(R.string.about_license_body), subtitleLines = 6,
-                onClick = { a.nav.navigate(Routes.license("gpl")) },
+                onClick = { license("gpl") },
             )
             FORK_SOURCE?.let { url -> ListRow(stringResource(R.string.about_source), subtitle = url, divider = true, onClick = { open(url) }) }
-            ListRow(stringResource(R.string.about_licenses), divider = true, onClick = { a.nav.navigate(Routes.LICENSES) })
+            if (!embedded) ListRow(stringResource(R.string.about_licenses), divider = true, onClick = { a.nav.navigate(Routes.LICENSES) })
+        }
+        if (embedded) {
+            // In the pane the licenses are right here, two columns of cards.
+            SectionHeader(stringResource(R.string.about_licenses), stringResource(R.string.settings_licenses_hint))
+            val notices = appNotices() + coreNotices()
+            Column(Modifier.padding(horizontal = 20.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                notices.chunked(2).forEach { pair ->
+                    Row(Modifier.height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        pair.forEach { n ->
+                            LicenseCard(n, Modifier.weight(1f).fillMaxHeight()) { if (n.text != null) license(n.text) else n.source?.let(open) }
+                        }
+                        if (pair.size == 1) Spacer(Modifier.weight(1f))
+                    }
+                }
+            }
         }
         Text(
             stringResource(R.string.about_authors), style = Type.Caption.copy(color = Oe.Faint), textAlign = TextAlign.Center,
@@ -133,34 +157,8 @@ fun LicensesScreen() {
     GamepadButtons(hints = listOf("A" to stringResource(R.string.about_hint_open), "B" to stringResource(R.string.settings_hint_back)))
     val a = LocalActions.current
     val open = openUrl()
-    val infoDir = a.app.library.paths.info
-    // The cores come from Console.kt and their licenses from the .info files the setup installed.
-    val cores by produceState(emptyList<Notice>()) {
-        value = withContext(Dispatchers.IO) {
-            Console.entries.flatMap { it.cores }.distinctBy { it.id }.map { core ->
-                val license = runCatching {
-                    File(infoDir, "${core.id}_libretro.info").readLines()
-                        .firstOrNull { it.startsWith("license") }?.substringAfter('=')?.trim()?.trim('"')
-                }.getOrNull()
-                Notice(core.name, license ?: "—", "https://docs.libretro.com/development/licenses/")
-            }.sortedBy { it.name.lowercase() }
-        }
-    }
-    val app = listOf(
-        Notice("OpenEmux Mobile", "GPL-3.0 (APK) · MIT (Kotlin code)", FORK_SOURCE, "gpl"),
-        Notice("RetroArch", "GPL-3.0", "https://github.com/libretro/RetroArch", "gpl"),
-        Notice("libretro API (libretro-common)", "MIT", "https://github.com/libretro/libretro-common"),
-        Notice("libretro glsl-shaders", "GPL and others, per shader", "https://github.com/libretro/glsl-shaders"),
-        Notice("Kotlin, AndroidX, Jetpack Compose", "Apache-2.0", "https://www.apache.org/licenses/LICENSE-2.0"),
-        Notice("kotlinx.coroutines", "Apache-2.0", "https://github.com/Kotlin/kotlinx.coroutines"),
-        Notice("Coil", "Apache-2.0", "https://github.com/coil-kt/coil"),
-        Notice("OpenEmu (console icons)", "BSD-3-Clause · © 2009-2023 OpenEmu Team", "https://github.com/OpenEmu/OpenEmu", "openemu"),
-        Notice("retroarch-assets (save/load state icons)", "CC-BY-4.0 · © libretro", "https://github.com/libretro/retroarch-assets"),
-        Notice("Inter", "SIL OFL 1.1", "https://github.com/rsms/inter"),
-        Notice("Space Grotesk", "SIL OFL 1.1", "https://github.com/floriankarsten/space-grotesk"),
-        Notice("openemux-artwork (box art)", "Community box art, mirrored from libretro-thumbnails", "https://github.com/guilhermefeitosa66/openemux-artwork"),
-        Notice("ScreenScraper (cartridge labels)", "Data and media © ScreenScraper.fr and contributors", "https://www.screenscraper.fr/"),
-    )
+    val cores = coreNotices()
+    val app = appNotices()
     MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth()) {
         Column(Modifier.padding(horizontal = 20.dp)) {
             BackLink(stringResource(R.string.settings_about)) { a.nav.popBackStack() }
@@ -180,6 +178,54 @@ fun LicensesScreen() {
     } }
 }
 
+/** The cores, from Console.kt, with their licenses from the .info files the setup installed. */
+@Composable
+private fun coreNotices(): List<Notice> {
+    val infoDir = LocalActions.current.app.library.paths.info
+    val cores by produceState(emptyList<Notice>()) {
+        value = withContext(Dispatchers.IO) {
+            Console.entries.flatMap { it.cores }.distinctBy { it.id }.map { core ->
+                val license = runCatching {
+                    File(infoDir, "${core.id}_libretro.info").readLines()
+                        .firstOrNull { it.startsWith("license") }?.substringAfter('=')?.trim()?.trim('"')
+                }.getOrNull()
+                Notice(core.name, license ?: "—", "https://docs.libretro.com/development/licenses/")
+            }.sortedBy { it.name.lowercase() }
+        }
+    }
+    return cores
+}
+
+/** The app's own components and what they ship under. */
+private fun appNotices() = listOf(
+        Notice("OpenEmux Mobile", "GPL-3.0 (APK) · MIT (Kotlin code)", FORK_SOURCE, "gpl"),
+        Notice("RetroArch", "GPL-3.0", "https://github.com/libretro/RetroArch", "gpl"),
+        Notice("libretro API (libretro-common)", "MIT", "https://github.com/libretro/libretro-common"),
+        Notice("libretro glsl-shaders", "GPL and others, per shader", "https://github.com/libretro/glsl-shaders"),
+        Notice("Kotlin, AndroidX, Jetpack Compose", "Apache-2.0", "https://www.apache.org/licenses/LICENSE-2.0"),
+        Notice("kotlinx.coroutines", "Apache-2.0", "https://github.com/Kotlin/kotlinx.coroutines"),
+        Notice("Coil", "Apache-2.0", "https://github.com/coil-kt/coil"),
+        Notice("OpenEmu (console icons)", "BSD-3-Clause · © 2009-2023 OpenEmu Team", "https://github.com/OpenEmu/OpenEmu", "openemu"),
+        Notice("retroarch-assets (save/load state icons)", "CC-BY-4.0 · © libretro", "https://github.com/libretro/retroarch-assets"),
+        Notice("Inter", "SIL OFL 1.1", "https://github.com/rsms/inter"),
+        Notice("Space Grotesk", "SIL OFL 1.1", "https://github.com/floriankarsten/space-grotesk"),
+        Notice("openemux-artwork (box art)", "Community box art, mirrored from libretro-thumbnails", "https://github.com/guilhermefeitosa66/openemux-artwork"),
+        Notice("ScreenScraper (cartridge labels)", "Data and media © ScreenScraper.fr and contributors", "https://www.screenscraper.fr/"),
+)
+
+/** A license as a card of the pane's grid. */
+@Composable
+private fun LicenseCard(notice: Notice, modifier: Modifier, onClick: () -> Unit) {
+    Column(
+        modifier.heightIn(min = 56.dp).gamepadFocus(corner = 14.dp).clip(RoundedCornerShape(14.dp)).background(Oe.Surface)
+            .clickable(role = Role.Button, onClick = onClick).padding(horizontal = 14.dp, vertical = 9.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Text(notice.name, style = Type.BodyMedium.copy(fontSize = 14.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(notice.license, style = Type.Caption, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+    }
+}
+
 @Composable
 private fun NoticeRow(notice: Notice, divider: Boolean, onClick: () -> Unit) {
     ListRow(notice.name, subtitle = notice.license, divider = divider, subtitleLines = 2, onClick = onClick)
@@ -187,8 +233,8 @@ private fun NoticeRow(notice: Notice, divider: Boolean, onClick: () -> Unit) {
 
 /** A full license text bundled in assets/licenses. */
 @Composable
-fun LicenseTextScreen(id: String) {
-    GamepadButtons(hints = listOf("B" to stringResource(R.string.settings_hint_back)))
+fun LicenseTextScreen(id: String, embedded: Boolean = false, onBack: (() -> Unit)? = null) {
+    if (!embedded) GamepadButtons(hints = listOf("B" to stringResource(R.string.settings_hint_back)))
     val a = LocalActions.current
     val context = LocalContext.current
     val file = when (id) {
@@ -200,7 +246,7 @@ fun LicenseTextScreen(id: String) {
         value = withContext(Dispatchers.IO) { context.assets.open(file).bufferedReader().use { it.readText() } }
     }
     Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().readingWidth().padding(horizontal = 20.dp)) {
-        BackLink(stringResource(R.string.about_licenses)) { a.nav.popBackStack() }
+        BackLink(stringResource(if (embedded) R.string.settings_about_licenses else R.string.about_licenses)) { onBack?.invoke() ?: a.nav.popBackStack() }
         Text(
             text, style = Type.Small.copy(fontFamily = FontFamily.Monospace, fontSize = 11.sp, lineHeight = 15.sp, color = Oe.Text),
             modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),

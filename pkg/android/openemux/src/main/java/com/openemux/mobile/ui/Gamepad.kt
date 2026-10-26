@@ -79,6 +79,8 @@ class GamepadActions(
     val select: (() -> Unit)? = null,
     val start: (() -> Unit)? = null,
     val hints: List<Pair<String, String>> = emptyList(),
+    /** False while the screen part these buttons belong to does not hold focus: the ones below answer. */
+    val enabled: () -> Boolean = { true },
 )
 
 /** The screens' actions, the one on top answering; the activity routes the buttons here. */
@@ -89,12 +91,16 @@ object GamepadBus {
     var hints by mutableStateOf<List<Pair<String, String>>>(emptyList())
         private set
 
-    fun push(actions: GamepadActions) { stack += actions; hints = stack.last().hints }
-    fun pop(actions: GamepadActions) { stack.remove(actions); hints = stack.lastOrNull()?.hints.orEmpty() }
+    fun push(actions: GamepadActions) { stack += actions; refresh() }
+    fun pop(actions: GamepadActions) { stack.remove(actions); refresh() }
+
+    /** Shows the hints of the top entry that answers now; called again when one turns on or off. */
+    fun refresh() { hints = stack.lastOrNull { it.enabled() }?.hints.orEmpty() }
 
     /** Runs the top screen's handler for [pick], falling back to the ones below it. */
     fun dispatch(pick: (GamepadActions) -> (() -> Unit)?): Boolean {
         for (actions in stack.asReversed()) {
+            if (!actions.enabled()) continue
             pick(actions)?.let { it(); return true }
         }
         return false
@@ -111,15 +117,18 @@ fun GamepadButtons(
     y: (() -> Unit)? = null,
     select: (() -> Unit)? = null,
     start: (() -> Unit)? = null,
+    enabled: Boolean = true,
 ) {
     val latest = rememberUpdatedState(listOf(l1, r1, x, y, select, start))
+    val on = rememberUpdatedState(enabled)
+    LaunchedEffect(enabled) { GamepadBus.refresh() }
     DisposableEffect(Unit) {
         // Which buttons a screen uses is fixed; what they do follows recomposition.
         fun slot(i: Int, used: Boolean): (() -> Unit)? = if (used) ({ latest.value[i]?.invoke() }) else null
         val actions = GamepadActions(
             l1 = slot(0, l1 != null), r1 = slot(1, r1 != null), x = slot(2, x != null),
             y = slot(3, y != null), select = slot(4, select != null), start = slot(5, start != null),
-            hints = hints,
+            hints = hints, enabled = { on.value },
         )
         GamepadBus.push(actions)
         onDispose { GamepadBus.pop(actions) }

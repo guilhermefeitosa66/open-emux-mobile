@@ -41,6 +41,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavBackStackEntry
+import androidx.compose.ui.semantics.selected
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
@@ -89,12 +97,75 @@ private val THEMES = listOf(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen() {
+fun SettingsScreen(entry: NavBackStackEntry? = null) {
     var themeSheet by remember { mutableStateOf(false) }
     var languageSheet by remember { mutableStateOf(false) }
     GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_open), "B" to stringResource(R.string.settings_hint_back), "L1 R1" to stringResource(R.string.settings_hint_tabs)))
     val a = LocalActions.current
+    val layout = LocalWindowLayout.current
+    val split = layout.splitSettings
+    var pickedKey by rememberSaveable { mutableStateOf<String?>(null) }
+    val picked = SettingsItem.of(pickedKey)
+    // On a phone each item is a screen of its own, or a sheet.
+    fun openAlone(item: SettingsItem) {
+        when (item) {
+            SettingsItem.Theme -> themeSheet = true
+            SettingsItem.Language -> languageSheet = true
+            else -> item.route?.let { a.nav.navigate(it) }
+        }
+    }
+    // A screen of its own that a resize turned back into a pane hands its item over.
+    LaunchedEffect(entry) { entry?.savedStateHandle?.remove<String>(PICKED)?.let { pickedKey = it } }
+    OnSplitChange(split) { change ->
+        if (change == SplitChange.Parted) picked?.let {
+            pickedKey = null
+            // A license text sits on About on a phone too, so Back steps there first as it does in the pane.
+            if (it is SettingsItem.License) openAlone(SettingsItem.About)
+            openAlone(it)
+        }
+    }
+
+    if (split) {
+        ListDetailScaffold(
+            listWidth = layout.settingsListDp.dp, detailWidth = null,
+            // A license text steps back to About first, as its back link does.
+            selected = picked != null, onClear = { pickedKey = if (picked is SettingsItem.License) SettingsItem.About.key else null },
+            list = { SettingsList(picked) { pickedKey = it.key } },
+            detail = { SettingsPane(picked) { pickedKey = it.key } },
+        )
+    } else {
+        SettingsList(null, ::openAlone)
+    }
+
+    if (themeSheet) {
+        ModalBottomSheet({ themeSheet = false }, containerColor = Oe.Sheet) {
+            ImmersiveWindow()
+            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.settings_theme), style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(bottom = 6.dp))
+                ThemeOptions()
+            }
+        }
+    }
+    if (languageSheet) {
+        ModalBottomSheet({ languageSheet = false }, containerColor = Oe.Sheet) {
+            ImmersiveWindow()
+            MarginFocusScroll { Column(
+                Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Text(stringResource(R.string.settings_language), style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(bottom = 6.dp))
+                LanguageOptions { languageSheet = false }
+            } }
+        }
+    }
+}
+
+/** The settings themselves; [picked] is the item shown beside the list, null on a phone. */
+@Composable
+private fun SettingsList(picked: SettingsItem?, onPick: (SettingsItem) -> Unit) {
+    val a = LocalActions.current
     val lib = a.app.library
+    val split = LocalWindowLayout.current.splitSettings
     // Recomposes the console rows when a default changes.
     val meta by lib.meta.collectAsState()
     val roms by lib.roms.collectAsState()
@@ -108,9 +179,12 @@ fun SettingsScreen() {
     MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.settings_title), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp))
 
+        val biosPicked = picked == SettingsItem.Bios
         Row(
-            Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp).fillMaxWidth().gamepadFocus(corner = 20.dp).clip(RoundedCornerShape(20.dp)).background(Oe.Surface)
-                .border(1.dp, Oe.Border, RoundedCornerShape(20.dp)).clickable(role = Role.Button) { a.nav.navigate(Routes.BIOS) }.padding(14.dp),
+            Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp).fillMaxWidth().gamepadFocus(corner = 20.dp).clip(RoundedCornerShape(20.dp))
+                .background(if (biosPicked) Oe.AccentTint else Oe.Surface)
+                .border(1.dp, Oe.Border, RoundedCornerShape(20.dp)).semantics { selected = biosPicked }
+                .clickable(role = Role.Button) { onPick(SettingsItem.Bios) }.padding(14.dp),
             verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
         ) {
             val ok = missingOptional == 0
@@ -136,10 +210,13 @@ fun SettingsScreen() {
 
         SectionHeader(stringResource(R.string.settings_section_appearance))
         Card(Modifier.padding(horizontal = 20.dp)) {
-            ListRow(stringResource(R.string.settings_theme), value = stringResource(THEMES.first { it.first == ThemePref.value }.second), onClick = { themeSheet = true })
+            ListRow(
+                stringResource(R.string.settings_theme), value = stringResource(THEMES.first { it.first == ThemePref.value }.second),
+                selected = picked == SettingsItem.Theme, onClick = { onPick(SettingsItem.Theme) },
+            )
             val language = AppLocale.current(context)
             ListRow(
-                stringResource(R.string.settings_language), divider = true, onClick = { languageSheet = true },
+                stringResource(R.string.settings_language), divider = true, selected = picked == SettingsItem.Language, onClick = { onPick(SettingsItem.Language) },
                 value = AppLocale.LANGUAGES.firstOrNull { it.first == language }?.let { "${it.third} ${it.second}" } ?: stringResource(R.string.settings_theme_system),
             )
         }
@@ -160,7 +237,7 @@ fun SettingsScreen() {
                         Icon(Icons.Trophy, Oe.AccentText, 22.dp)
                     }
                 },
-                onClick = { a.nav.navigate(Routes.ACHIEVEMENTS) },
+                selected = picked == SettingsItem.Achievements, onClick = { onPick(SettingsItem.Achievements) },
             )
         }
 
@@ -173,7 +250,7 @@ fun SettingsScreen() {
                     subtitle = "${c.core(s.core).name} · ${shaderById(s.shader).name()}",
                     divider = i > 0, minHeight = 60.dp,
                     leading = { ConsoleIcon(c) },
-                    onClick = { a.nav.navigate(Routes.console(c.id)) },
+                    selected = picked == SettingsItem.Console(c.id), onClick = { onPick(SettingsItem.Console(c.id)) },
                 )
             }
         }
@@ -184,59 +261,153 @@ fun SettingsScreen() {
             ListRow(stringResource(R.string.settings_controls), value = stringResource(R.string.settings_controls_value), divider = true)
             ListRow(
                 stringResource(R.string.settings_backup), subtitle = stringResource(R.string.settings_backup_desc), divider = true, minHeight = 60.dp,
-                onClick = { a.nav.navigate(Routes.BACKUP) },
+                selected = picked == SettingsItem.Backup, onClick = { onPick(SettingsItem.Backup) },
             )
             val updates = a.app.updates
             val checkUpdates by updates.enabled.collectAsState()
             SwitchRow(stringResource(R.string.settings_update_check), stringResource(R.string.settings_update_check_desc), checkUpdates, { updates.setEnabled(it) }, divider = true)
-            ListRow(stringResource(R.string.settings_about), value = "OpenEmux ${BuildConfig.VERSION_NAME}", divider = true, onClick = { a.nav.navigate(Routes.ABOUT) })
+            ListRow(
+                stringResource(if (split) R.string.settings_about_licenses else R.string.settings_about), value = "OpenEmux ${BuildConfig.VERSION_NAME}", divider = true,
+                selected = picked == SettingsItem.About || picked is SettingsItem.License, onClick = { onPick(SettingsItem.About) },
+            )
         }
         Spacer(BottomSpace)
     } }
+}
 
-    if (themeSheet) {
-        ModalBottomSheet({ themeSheet = false }, containerColor = Oe.Sheet) {
-            ImmersiveWindow()
-            Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(stringResource(R.string.settings_theme), style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(bottom = 6.dp))
-                THEMES.forEach { (id, name, blurb) ->
-                    RadioCard(ThemePref.value == id, stringResource(name), stringResource(blurb), onClick = { ThemePref.set(context, id) }, background = Oe.Raised)
+/** The picked item beside the settings list, or a hint while nothing is picked. */
+@Composable
+private fun SettingsPane(picked: SettingsItem?, onPick: (SettingsItem) -> Unit) {
+    if (picked == null) {
+        PanePlaceholder(Icons.Sliders, stringResource(R.string.settings_pick_hint), Modifier.padding(bottom = TabBarHeight))
+        return
+    }
+    // Each item starts at its top, with a scroll of its own.
+    key(picked.key) {
+        // Down past the item's last row stays there instead of falling onto the tab bar, as in the list.
+        Box(Modifier.fillMaxSize().padding(start = 28.dp, end = 28.dp, top = 16.dp, bottom = TabBarHeight).holdFocusAtEnd(FocusDirection.Down)) {
+            Box(Modifier.widthIn(max = 680.dp)) {
+                when (picked) {
+                    is SettingsItem.Console -> ConsoleSettingsScreen(picked.id, embedded = true, onOpenBios = { onPick(SettingsItem.Bios) })
+                    SettingsItem.Bios -> BiosScreen(embedded = true)
+                    SettingsItem.Theme -> ThemePane()
+                    SettingsItem.Language -> LanguagePane()
+                    SettingsItem.Achievements -> AchievementsScreen(embedded = true)
+                    SettingsItem.Backup -> BackupScreen(embedded = true)
+                    SettingsItem.About -> AboutScreen(embedded = true, onOpenLicense = { onPick(SettingsItem.License(it)) })
+                    is SettingsItem.License -> LicenseTextScreen(picked.id, embedded = true, onBack = { onPick(SettingsItem.About) })
                 }
             }
         }
     }
-    if (languageSheet) {
-        val language = AppLocale.current(context)
-        ModalBottomSheet({ languageSheet = false }, containerColor = Oe.Sheet) {
-            ImmersiveWindow()
-            MarginFocusScroll { Column(
-                Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                Text(stringResource(R.string.settings_language), style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(bottom = 6.dp))
-                (listOf(Triple("", stringResource(R.string.settings_theme_system), "")) + AppLocale.LANGUAGES).forEach { (tag, name, flag) ->
-                    RadioCard(
-                        language == tag, name, if (tag.isEmpty()) stringResource(R.string.settings_language_system_desc) else "",
-                        onClick = { languageSheet = false; if (tag != language) AppLocale.set(context as Activity, tag) },
-                        background = Oe.Raised,
-                        leading = {
-                            // The system choice has no flag: a globe of the same size keeps the column aligned.
-                            Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
-                                if (flag.isEmpty()) Icon(Icons.Globe, Oe.Muted, 22.dp, stroke = 1.6f)
-                                else Text(flag, fontSize = 22.sp)
-                            }
-                        },
-                    )
-                }
-            } }
-        }
+}
+
+/** A pane's title and the line that explains it. */
+@Composable
+private fun PaneTitle(title: String, lead: String) {
+    Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp, bottom = 18.dp)) {
+        Text(title, style = Type.Display.copy(fontSize = 30.sp, lineHeight = 34.sp))
+        Text(lead, style = Type.Small.copy(fontSize = 14.sp, lineHeight = 20.sp), modifier = Modifier.padding(top = 8.dp))
     }
+}
+
+/** The theme choices as the sheet lists them. */
+@Composable
+private fun ThemeOptions() {
+    val context = LocalContext.current
+    THEMES.forEach { (id, name, blurb) ->
+        RadioCard(ThemePref.value == id, stringResource(name), stringResource(blurb), onClick = { ThemePref.set(context, id) }, background = Oe.Raised)
+    }
+}
+
+/** The language choices as the sheet lists them; [onPicked] runs before a new language restarts the screen. */
+@Composable
+private fun LanguageOptions(background: androidx.compose.ui.graphics.Color = Oe.Raised, onPicked: () -> Unit) {
+    val context = LocalContext.current
+    val language = AppLocale.current(context)
+    (listOf(Triple("", stringResource(R.string.settings_theme_system), "")) + AppLocale.LANGUAGES).forEach { (tag, name, flag) ->
+        RadioCard(
+            language == tag, name, if (tag.isEmpty()) stringResource(R.string.settings_language_system_desc) else "",
+            onClick = { onPicked(); if (tag != language) AppLocale.set(context as Activity, tag) },
+            background = background,
+            leading = {
+                // The system choice has no flag: a globe of the same size keeps the column aligned.
+                Box(Modifier.size(28.dp), contentAlignment = Alignment.Center) {
+                    if (flag.isEmpty()) Icon(Icons.Globe, Oe.Muted, 22.dp, stroke = 1.6f)
+                    else Text(flag, fontSize = 22.sp)
+                }
+            },
+        )
+    }
+}
+
+/** Theme in the settings pane: three cards side by side, applied at once. */
+@Composable
+private fun ThemePane() {
+    val context = LocalContext.current
+    MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        PaneTitle(stringResource(R.string.settings_theme), stringResource(R.string.settings_theme_lead))
+        Row(Modifier.padding(horizontal = 20.dp).height(IntrinsicSize.Max), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            THEMES.forEach { (id, name, blurb) ->
+                ThemeCard(id, stringResource(name), stringResource(blurb), ThemePref.value == id, Modifier.weight(1f).fillMaxHeight()) { ThemePref.set(context, id) }
+            }
+        }
+        Spacer(Modifier.height(hintBarInset))
+    } }
+}
+
+/** One theme: a small picture of it, the radio dot, its name and what it does. */
+@Composable
+private fun ThemeCard(id: String, name: String, blurb: String, selected: Boolean, modifier: Modifier, onClick: () -> Unit) {
+    Column(
+        modifier.gamepadFocus(corner = 16.dp).clip(RoundedCornerShape(16.dp))
+            .background(if (selected) Oe.AccentTint else Oe.Surface)
+            .border(1.5.dp, if (selected) Oe.AccentBright else Oe.Border, RoundedCornerShape(16.dp))
+            .clickable(role = Role.RadioButton, onClick = onClick).semantics { this.selected = selected }
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        val dark = androidx.compose.ui.graphics.Color(0xFF121216)
+        val light = androidx.compose.ui.graphics.Color(0xFFF4F3F8)
+        Row(Modifier.fillMaxWidth().height(72.dp).clip(RoundedCornerShape(10.dp)).border(1.dp, Oe.Border, RoundedCornerShape(10.dp))) {
+            val halves = when (id) { ThemePref.LIGHT -> listOf(light); ThemePref.DARK -> listOf(dark); else -> listOf(light, dark) }
+            halves.forEach { back ->
+                Box(Modifier.weight(1f).fillMaxHeight().background(back).padding(10.dp)) {
+                    Box(Modifier.size(width = 34.dp, height = 22.dp).clip(RoundedCornerShape(5.dp)).background(Oe.Accent))
+                }
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Box(
+                Modifier.size(20.dp).clip(CircleShape).border(2.dp, if (selected) Oe.AccentBright else Oe.Chevron, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { if (selected) Box(Modifier.size(9.dp).clip(CircleShape).background(Oe.AccentBright)) }
+            Text(name, style = Type.Section)
+        }
+        Text(blurb, style = Type.Small)
+    }
+}
+
+/** Language in the settings pane: the sheet's list in a card. */
+@Composable
+private fun LanguagePane() {
+    MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        PaneTitle(stringResource(R.string.settings_language), stringResource(R.string.settings_language_lead))
+        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            LanguageOptions(background = Oe.Surface) {}
+        }
+        Spacer(Modifier.height(hintBarInset))
+    } }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ConsoleSettingsScreen(id: String) {
-    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
+fun ConsoleSettingsScreen(id: String, embedded: Boolean = false, onOpenBios: (() -> Unit)? = null) {
+    // In the settings pane the screen around it owns the buttons and Back.
+    if (!embedded) {
+        GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
+        ReturnToSplit(LocalWindowLayout.current.splitSettings, Routes.SETTINGS, SettingsItem.Console(id).key)
+    }
     val a = LocalActions.current
     val lib = a.app.library
     val console = Console.byId(id) ?: return
@@ -251,11 +422,12 @@ fun ConsoleSettingsScreen(id: String) {
 
     MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
-            BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
+            if (!embedded) BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(stringResource(R.string.settings_console_defaults), style = Type.Eyebrow)
                     Text(console.displayName, style = Type.Display.copy(fontSize = 28.sp, lineHeight = 30.sp), modifier = Modifier.padding(top = 4.dp))
+                    if (embedded) Text(stringResource(R.string.settings_console_defaults_lead), style = Type.Small.copy(fontSize = 14.sp, lineHeight = 20.sp), modifier = Modifier.padding(top = 8.dp))
                 }
                 Box(Modifier.width(92.dp).rotate(6f)) {
                     Cartridge(
@@ -293,7 +465,7 @@ fun ConsoleSettingsScreen(id: String) {
                 val present = a.app.importer.biosPresent(bios)
                 ListRow(
                     "BIOS", subtitle = "${bios.fileName()} · ${stringResource(if (bios.required) R.string.settings_bios_required else R.string.settings_bios_optional)}",
-                    onClick = { a.nav.navigate(Routes.BIOS) },
+                    onClick = { onOpenBios?.invoke() ?: a.nav.navigate(Routes.BIOS) },
                     trailing = {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                             Icon(if (present) Icons.Check else Icons.Alert, if (present) Oe.Ok else Oe.Muted, 16.dp, stroke = 2.4f)
@@ -358,8 +530,11 @@ fun ConsoleSettingsScreen(id: String) {
 }
 
 @Composable
-fun BiosScreen() {
-    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_import), "B" to stringResource(R.string.settings_hint_back)))
+fun BiosScreen(embedded: Boolean = false) {
+    if (!embedded) {
+        GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_import), "B" to stringResource(R.string.settings_hint_back)))
+        ReturnToSplit(LocalWindowLayout.current.splitSettings, Routes.SETTINGS, SettingsItem.Bios.key)
+    }
     val a = LocalActions.current
     val scope = rememberCoroutineScope()
     var result by remember { mutableStateOf<ImportResult?>(null) }
@@ -378,7 +553,7 @@ fun BiosScreen() {
 
     MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
-            BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
+            if (!embedded) BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             Text("BIOS", style = Type.Display, modifier = Modifier.padding(top = 4.dp))
             Text(
                 stringResource(R.string.settings_bios_intro),
@@ -462,15 +637,18 @@ fun BiosScreen() {
 }
 
 @Composable
-fun AchievementsScreen() {
-    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
+fun AchievementsScreen(embedded: Boolean = false) {
+    if (!embedded) {
+        GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
+        ReturnToSplit(LocalWindowLayout.current.splitSettings, Routes.SETTINGS, SettingsItem.Achievements.key)
+    }
     val a = LocalActions.current
     val store = a.app.achievements
     val state by store.state.collectAsState()
 
     MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding().imePadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
-            BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
+            if (!embedded) BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             FitText(stringResource(R.string.ra_title), Type.Display, Modifier.padding(top = 4.dp))
         }
         if (state.signedIn) AchievementsAccount(state) else AchievementsSignIn(state.lastUsername)

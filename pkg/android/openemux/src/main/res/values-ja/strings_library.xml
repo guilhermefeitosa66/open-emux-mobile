@@ -90,4 +90,11 @@
     <string name="update_installed">現在のバージョン: %1$s</string>
     <string name="update_download">ダウンロード</string>
     <string name="update_not_now">後で</string>
+    <string name="library_pick_hint">ゲームを選ぶとここに表示されます</string>
+    <string name="library_open_full">全画面で開く</string>
+    <string name="library_col_game">ゲーム</string>
+    <string name="library_col_time">プレイ時間</string>
+    <string name="library_col_last">最終プレイ</string>
+    <string name="library_hint_list">一覧</string>
+    <string name="library_row_description">%1$s、%2$s、最終プレイ %3$s</string>
 </resources>

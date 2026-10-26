@@ -187,4 +187,10 @@
     <string name="backup_err_write">无法写入备份。%1$s</string>
     <string name="backup_err_read">无法读取备份。%1$s 没有做任何更改。</string>
     <string name="backup_file_name">OpenEmux 备份 %1$s</string>
+    <string name="settings_pick_hint">请在左侧选择一项设置</string>
+    <string name="settings_console_defaults_lead">适用于此主机上所有没有单独设置的游戏。</string>
+    <string name="settings_theme_lead">立即生效，无需重启。卡带、货架、游戏画面和手柄皮肤的外观保持不变。</string>
+    <string name="settings_language_lead">适用于应用内的文字。游戏名称以文件为准。</string>
+    <string name="settings_about_licenses">关于与许可</string>
+    <string name="settings_licenses_hint">点按阅读全文</string>
 </resources>

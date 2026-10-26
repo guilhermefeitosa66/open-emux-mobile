@@ -73,6 +73,21 @@ data class WindowLayout(
     /** Smallest width 600dp or more, whichever way it is held: the tablet game skin and the pause side panel. */
     val tablet get() = minOf(widthDp, heightDp) >= 600f
 
+    /** Settings as its list beside the picked item, instead of a screen per item. */
+    val splitSettings get() = width != SizeClass.Compact && !short
+
+    /** The library beside the picked game's detail: 440dp of pane next to a grid that still holds cartridges. */
+    val libraryPane get() = width == SizeClass.Expanded && !short
+
+    /** The game's detail as two columns, the cartridge on the left. */
+    val twoColumnDetail get() = width != SizeClass.Compact && !short
+
+    /** The library's list view as a table with time played and last played; a phone on its side keeps its rows. */
+    val tableList get() = width != SizeClass.Compact && !short
+
+    /** The settings list's width beside its detail. */
+    val settingsListDp get() = if (width == SizeClass.Expanded) 400f else 320f
+
     companion object {
         fun of(widthDp: Float, heightDp: Float, posture: Posture = Posture.Flat, fold: Fold? = null, density: Float = 1f) =
             WindowLayout(widthDp, heightDp, SizeClass.widthOf(widthDp), SizeClass.heightOf(heightDp), posture, fold, density)

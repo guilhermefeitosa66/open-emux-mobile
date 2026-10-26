@@ -60,21 +60,28 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.navigation.NavBackStackEntry
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.key
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.runtime.produceState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -606,11 +613,28 @@ private enum class SortMode(@StringRes val label: Int) { Az(R.string.library_sor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LibraryScreen(filter: String) {
+fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
     val a = LocalActions.current
     val lib = a.app.library
     val roms by lib.roms.collectAsState()
     val meta by lib.meta.collectAsState()
+    val layout = LocalWindowLayout.current
+    // On a wide tablet the picked game's detail sits beside the library; a tap picks, a second one opens it.
+    // In tabletop the halves take the page instead.
+    val pane = layout.libraryPane && !LocalTabletop.current
+    var picked by rememberSaveable { mutableStateOf<String?>(null) }
+    // A pick handed over (by a screen of its own, or left here on the way to one) is kept only beside its pane:
+    // back on a phone the game was already shown on its own, so it must not be opened a second time.
+    // Declared before OnSplitChange, so it runs first when this screen comes back.
+    LaunchedEffect(entry) { entry?.savedStateHandle?.remove<String>(PICKED)?.let { picked = if (pane) it else null } }
+    OnSplitChange(pane) { change ->
+        if (change == SplitChange.Parted) picked?.let { picked = null; a.nav.navigate(Routes.rom(it)) }
+    }
+    // Opens a game on its own screen; from the pane, the pick waits in the saved state for the way back.
+    fun openFull(key: String) {
+        if (pane) picked?.let { entry?.savedStateHandle?.set(PICKED, it) }
+        a.nav.navigate(Routes.rom(key))
+    }
     val searchRequested = filter == "SEARCH"
     var mode by rememberSaveable { mutableStateOf(ViewMode.Carts) }
     var sort by rememberSaveable { mutableStateOf(SortMode.Az) }
@@ -649,7 +673,7 @@ fun LibraryScreen(filter: String) {
         l1 = { chip(-1) },
         r1 = { chip(1) },
         x = { focusedRom.value?.let { key -> lib.updateRom(key) { it.copy(favorite = !it.favorite) } } },
-        y = { focusedRom.value?.let { a.nav.navigate(Routes.rom(it)) } },
+        y = { focusedRom.value?.let { openFull(it) } },
         select = { searching = !searching; if (!searching) query = "" },
     )
 
@@ -690,11 +714,23 @@ fun LibraryScreen(filter: String) {
         }
     }
 
+    // The list view as a table of time played and last played, read once per change off the main thread.
+    val table = layout.tableList
+    val revision by lib.revision.collectAsState()
+    // Only while the table shows: the grid modes never read these files.
+    val tableShown = table && mode == ViewMode.List
+    val playtimes by produceState(emptyMap<String, Long>(), tableShown, roms, revision) {
+        if (tableShown) value = withContext(Dispatchers.IO) { roms.associate { it.key to lib.playtimeSeconds(it) } }
+    }
     // One game in the grid, in view mode m.
     val tile: @Composable (Rom, ViewMode) -> Unit = { rom, m ->
             val romMeta = meta.roms[rom.key]
-            val open = { a.nav.navigate(Routes.rom(rom.key)) }
-            val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey)
+            val isPicked = pane && picked == rom.key
+            val open = {
+                if (!pane || isPicked) openFull(rom.key)
+                else picked = rom.key
+            }
+            val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey).pickedRing(isPicked, outset = m != ViewMode.List)
             when (m) {
                 ViewMode.Carts -> CappedCell(GridSpec.Carts) {
                     Column(
@@ -721,7 +757,8 @@ fun LibraryScreen(filter: String) {
                         Text(rom.title, style = Type.Caption.copy(color = Oe.Text), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
                     }
                 }
-                ViewMode.List -> Row(
+                ViewMode.List -> if (table) TableRow(rom, playtimes[rom.key] ?: 0L, romMeta?.lastPlayed ?: 0L, romMeta?.favorite == true, focus, open)
+                else Row(
                     Modifier.fillMaxWidth().gamepadFocus(corner = 12.dp, inset = true).then(focus).clickable(onClick = open).padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -743,7 +780,7 @@ fun LibraryScreen(filter: String) {
     // As many columns as the width holds, never fewer than a phone shows.
     val spec = when (shown) { ViewMode.Carts -> GridSpec.Carts; ViewMode.Covers -> GridSpec.Covers; ViewMode.List -> GridSpec.List }
     // Staggered, so each box art keeps its own proportions in the covers mode.
-    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
+    val grid: @Composable () -> Unit = { MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
         Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down),
         // A tablet's wider margins line the grid up with the shelf.
@@ -789,6 +826,7 @@ fun LibraryScreen(filter: String) {
                 }
             }
         }
+        if (table && shown == ViewMode.List && list.isNotEmpty()) item(key = "table-header", span = StaggeredGridItemSpan.FullLine) { TableHeader() }
         groups.forEach { (group, groupRoms) ->
             if (group != null) item(key = "group-${group.id}", span = StaggeredGridItemSpan.FullLine) { GroupHeader(group, groupRoms.size) }
             if (perGroup && group != null) {
@@ -800,7 +838,82 @@ fun LibraryScreen(filter: String) {
                 items(groupRoms, key = { it.key }) { rom -> tile(rom, shown) }
             }
         }
-    } }
+    } } }
+
+    if (!pane) {
+        grid()
+        return
+    }
+    val pickedRom = picked?.takeIf { key -> roms.any { it.key == key } }
+    ListDetailScaffold(
+        listWidth = null, detailWidth = 440.dp,
+        selected = picked != null, onClear = { picked = null },
+        list = grid,
+        detail = { focusInDetail ->
+            if (pickedRom == null) PanePlaceholder(Icons.Cart, stringResource(R.string.library_pick_hint), Modifier.padding(bottom = TabBarHeight))
+            else key(pickedRom) {
+                RomDetail(
+                    pickedRom, DetailStyle.Pane, active = focusInDetail,
+                    onClose = { picked = null }, onOpenFull = { openFull(pickedRom) },
+                )
+            }
+        },
+        detailBackground = Oe.Surface,
+    )
+}
+
+/** The picked game in the library beside its pane: a tinted card with an accent ring, [outset] around the item or inside a row. */
+private fun Modifier.pickedRing(picked: Boolean, outset: Boolean): Modifier =
+    if (!picked) this else this.semantics { selected = true }.drawWithContent {
+        val off = if (outset) 6.dp.toPx() else 0f
+        val radius = CornerRadius(16.dp.toPx())
+        val topLeft = Offset(-off, -off)
+        val area = Size(size.width + off * 2, size.height + off * 2)
+        drawRoundRect(Oe.AccentTint, topLeft, area, radius)
+        drawContent()
+        val ring = 2.dp.toPx()
+        drawRoundRect(Oe.AccentBright, Offset(-off + ring / 2, -off + ring / 2), Size(area.width - ring, area.height - ring), radius, style = Stroke(ring))
+    }
+
+/** The table's column names over the list view on a tablet; the rows say them to a screen reader. */
+@Composable
+private fun TableHeader() {
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp).clearAndSetSemantics {}, verticalAlignment = Alignment.CenterVertically) {
+        val caps = Type.Tag.copy(color = Oe.Muted, fontSize = 12.sp, letterSpacing = 1.sp)
+        Text(stringResource(R.string.library_col_game).uppercase(), style = caps, modifier = Modifier.weight(1f).padding(start = 4.dp))
+        Text(stringResource(R.string.library_col_time).uppercase(), style = caps, modifier = Modifier.width(96.dp))
+        Text(stringResource(R.string.library_col_last).uppercase(), style = caps, modifier = Modifier.width(80.dp))
+        Spacer(Modifier.width(24.dp))
+    }
+}
+
+/** A game as a table row: its art, title and file, time played, when it was last played and its star. */
+@Composable
+private fun TableRow(rom: Rom, playtime: Long, lastPlayed: Long, favorite: Boolean, focus: Modifier, onClick: () -> Unit) {
+    val lib = LocalActions.current.app.library
+    val time = formatPlaytime(playtime)
+    val last = if (lastPlayed > 0) formatAgo(lastPlayed) else ""
+    // Never played: the time already says so, and "last played never played" says it twice.
+    val description = if (last.isEmpty()) "${rom.title}, $time" else stringResource(R.string.library_row_description, rom.title, time, last)
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 64.dp).gamepadFocus(corner = 12.dp, inset = true).then(focus)
+            .semantics { contentDescription = description }.clickable(onClick = onClick).padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(Modifier.weight(1f).clearAndSetSemantics {}, verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(76.dp), contentAlignment = Alignment.Center) {
+                if (rom.console.frame != null) Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(76.dp), pending = labelPending(rom), cover = LocalActions.current.app.covers.urlFor(rom))
+                else BoxArt(rom, Modifier.clip(RoundedCornerShape(6.dp)), maxHeight = 56.dp)
+            }
+            Column(Modifier.weight(1f).padding(start = 14.dp, end = 10.dp)) {
+                Text(rom.title, style = Type.BodyMedium.copy(fontSize = 15.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(rom.file.name, style = Type.Small.copy(fontSize = 12.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Text(time, style = Type.Small, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(96.dp))
+            Text(last, style = Type.Small, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(80.dp))
+            Box(Modifier.width(24.dp), contentAlignment = Alignment.Center) { if (favorite) Icon(Icons.Star, Oe.Star, 16.dp, filled = true) }
+        }
+    }
 }
 
 /** A group's games in as many staggered columns as [spec] fits, filled in turn like the grid's lanes. */

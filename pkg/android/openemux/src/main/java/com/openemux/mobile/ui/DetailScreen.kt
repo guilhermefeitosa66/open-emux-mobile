@@ -47,6 +47,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.BoxWithConstraints
+import android.text.format.Formatter
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
@@ -77,8 +85,24 @@ private enum class Sheet { None, Core, Shader, States }
 /** One of the game's settings: what the list row or the tabletop tile shows, and what a tap opens. */
 private class Setting(val label: String, val value: String, val isDefault: Boolean, val onClick: (() -> Unit)?)
 
+/** How a game's detail is laid out: a phone's column, the library's side pane, or two columns on a tablet. */
+enum class DetailStyle { Phone, Pane, TwoColumns }
+
 @Composable
 fun DetailScreen(key: String) {
+    val layout = LocalWindowLayout.current
+    // Opened on its own beside a library that a resize gives its pane back: the game goes back there.
+    ReturnToSplit(layout.libraryPane && !LocalTabletop.current, Routes.LIBRARY, key)
+    RomDetail(key, if (layout.twoColumnDetail) DetailStyle.TwoColumns else DetailStyle.Phone)
+}
+
+/**
+ * A game's detail in [style]. [active] tells whether its buttons answer the
+ * gamepad (the pane only while it holds focus); [onClose] runs after the game
+ * is removed, and [onOpenFull] opens the pane's game on its own screen.
+ */
+@Composable
+fun RomDetail(key: String, style: DetailStyle, active: Boolean = true, onClose: (() -> Unit)? = null, onOpenFull: (() -> Unit)? = null) {
     val a = LocalActions.current
     val lib = a.app.library
     val roms by lib.roms.collectAsState()
@@ -103,49 +127,60 @@ fun DetailScreen(key: String) {
     var sheet by rememberSaveable { mutableStateOf(Sheet.None) }
     var menu by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
-    // L1/R1 walk this console's games in the library's order.
+    val close = onClose ?: { a.nav.popBackStack(); Unit }
+    // L1/R1 walk this console's games in the library's order; in the pane they stay the library's.
     val siblings = roms.filter { it.console == rom.console }
     fun sibling(step: Int) {
         val next = siblings.getOrNull(siblings.indexOfFirst { it.key == key } + step) ?: return
         a.nav.navigate(Routes.rom(next.key)) { popUpTo(Routes.ROM) { inclusive = true } }
     }
+    val walk = style != DetailStyle.Pane
     GamepadButtons(
         hints = listOf(
             "A" to stringResource(if (auto != null) R.string.detail_continue else R.string.detail_play),
             "X" to stringResource(R.string.detail_favorite),
             "Y" to stringResource(R.string.detail_menu),
-            "B" to stringResource(R.string.detail_back),
+            "B" to stringResource(if (walk) R.string.detail_back else R.string.library_hint_list),
         ),
-        l1 = { sibling(-1) },
-        r1 = { sibling(1) },
+        l1 = if (walk) ({ sibling(-1) }) else null,
+        r1 = if (walk) ({ sibling(1) }) else null,
         x = { lib.updateRom(key) { it.copy(favorite = !it.favorite) } },
         y = { menu = true },
+        enabled = active,
     )
     val playFocus = rememberSaveable { mutableStateOf<String?>(null) }
+    // In the pane the split brings focus back to its side; restoring "play" when the gamepad wakes would pull it off the list.
+    val playFocusModifier = if (style == DetailStyle.Pane) Modifier else Modifier.restorableFocus("play", playFocus, initial = true)
     val tabletop = LocalTabletop.current
     val compact = LocalWindowLayout.current.width == SizeClass.Compact
 
-    // The screen's blocks, laid out as a column on a flat screen and split across the fold in tabletop.
+    // The screen's blocks, laid out per style on a flat screen and split across the fold in tabletop.
+    val favoriteButton: @Composable () -> Unit = {
+        RoundIconButton(
+            Icons.Star, stringResource(if (romMeta?.favorite == true) R.string.detail_favorite_remove else R.string.detail_favorite_add),
+            { lib.updateRom(key) { it.copy(favorite = !it.favorite) } },
+            tint = if (romMeta?.favorite == true) Oe.Star else Oe.Muted, background = Oe.Control.copy(alpha = 0.8f),
+            filled = romMeta?.favorite == true,
+        )
+    }
+    val menuButton: @Composable () -> Unit = {
+        Box {
+            RoundIconButton(Icons.Dots, stringResource(R.string.detail_more_options), { menu = true }, background = Oe.Control.copy(alpha = 0.8f), filled = true)
+            androidx.compose.material3.DropdownMenu(menu, { menu = false }, containerColor = Oe.Surface2) {
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(stringResource(R.string.detail_remove_from_library), style = Type.Body.copy(color = Oe.Danger)) },
+                    onClick = { menu = false; confirmDelete = true },
+                )
+            }
+        }
+    }
     val header: @Composable () -> Unit = {
         Row(Modifier.padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             RoundIconButton(Icons.Back, stringResource(R.string.detail_back), { a.nav.popBackStack() }, background = Oe.Control.copy(alpha = 0.8f))
             Spacer(Modifier.weight(1f))
-            RoundIconButton(
-                Icons.Star, stringResource(if (romMeta?.favorite == true) R.string.detail_favorite_remove else R.string.detail_favorite_add),
-                { lib.updateRom(key) { it.copy(favorite = !it.favorite) } },
-                tint = if (romMeta?.favorite == true) Oe.Star else Oe.Muted, background = Oe.Control.copy(alpha = 0.8f),
-                filled = romMeta?.favorite == true,
-            )
+            favoriteButton()
             Spacer(Modifier.width(8.dp))
-            Box {
-                RoundIconButton(Icons.Dots, stringResource(R.string.detail_more_options), { menu = true }, background = Oe.Control.copy(alpha = 0.8f), filled = true)
-                androidx.compose.material3.DropdownMenu(menu, { menu = false }, containerColor = Oe.Surface2) {
-                    androidx.compose.material3.DropdownMenuItem(
-                        text = { Text(stringResource(R.string.detail_remove_from_library), style = Type.Body.copy(color = Oe.Danger)) },
-                        onClick = { menu = false; confirmDelete = true },
-                    )
-                }
-            }
+            menuButton()
         }
     }
     val cartridge: @Composable (Modifier) -> Unit = { modifier ->
@@ -154,18 +189,17 @@ fun DetailScreen(key: String) {
             Box(Modifier.padding(top = 6.dp).fillMaxWidth(0.83f).height(10.dp).blur(6.dp).clip(CircleShape).background(Color(0x8C000000)))
         }
     }
-    val actions: @Composable (Dp) -> Unit = { restart ->
-        val height = if (tabletop) 54.dp else 52.dp
+    val playButtons: @Composable (Dp, Dp) -> Unit = { height, restart ->
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             if (auto != null) {
-                PrimaryButton(stringResource(R.string.detail_continue), { a.play(rom, true, null) }, Modifier.weight(1f).restorableFocus("play", playFocus, initial = true), icon = Icons.Play, height = height)
+                PrimaryButton(stringResource(R.string.detail_continue), { a.play(rom, true, null) }, Modifier.weight(1f).then(playFocusModifier), icon = Icons.Play, height = height)
                 SecondaryButton(stringResource(R.string.detail_restart), { a.play(rom, false, null) }, Modifier.width(restart), height = height)
             } else {
-                PrimaryButton(stringResource(R.string.detail_play), { a.play(rom, false, null) }, Modifier.weight(1f).restorableFocus("play", playFocus, initial = true), icon = Icons.Play, height = height)
+                PrimaryButton(stringResource(R.string.detail_play), { a.play(rom, false, null) }, Modifier.weight(1f).then(playFocusModifier), icon = Icons.Play, height = height)
             }
         }
     }
-    val statesBlock: @Composable (Int) -> Unit = { columns ->
+    val statesSection: @Composable (Int, Dp) -> Unit = { count, thumb ->
         Column {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.detail_save_states), style = Type.Section, modifier = Modifier.weight(1f))
@@ -180,23 +214,26 @@ fun DetailScreen(key: String) {
                 Text(stringResource(R.string.detail_no_states), style = Type.Small, modifier = Modifier.padding(top = 8.dp))
             } else {
                 Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    states.take(columns).forEach { st ->
-                        StateThumb(st, Modifier.weight(1f), thumb = if (tabletop) 76.dp else 58.dp) { playState(st) }
+                    states.take(count).forEach { st ->
+                        StateThumb(st, Modifier.weight(1f), thumb) { playState(st) }
                     }
-                    repeat(columns - states.size.coerceAtMost(columns)) { Spacer(Modifier.weight(1f)) }
+                    repeat(count - states.size.coerceAtMost(count)) { Spacer(Modifier.weight(1f)) }
                 }
             }
         }
     }
+    val colorHeader: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.detail_cart_color), style = Type.Section, modifier = Modifier.weight(1f))
+            Text(
+                stringResource(CART_COLORS.first { it.id == color }.label) + if (romMeta?.color == null) stringResource(R.string.detail_default_suffix) else "",
+                style = Type.Small,
+            )
+        }
+    }
     val colorBlock: @Composable () -> Unit = {
         Column {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(stringResource(R.string.detail_cart_color), style = Type.Section, modifier = Modifier.weight(1f))
-                Text(
-                    stringResource(CART_COLORS.first { it.id == color }.label) + if (romMeta?.color == null) stringResource(R.string.detail_default_suffix) else "",
-                    style = Type.Small,
-                )
-            }
+            colorHeader()
             ColorSwatches(color, Modifier.padding(top = 10.dp)) { id -> lib.updateRom(key) { it.copy(color = id) } }
         }
     }
@@ -207,13 +244,21 @@ fun DetailScreen(key: String) {
         Setting(stringResource(R.string.detail_controller_skin), "OpenEmux ${rom.console.short}", false, null),
         Setting(stringResource(R.string.detail_cheats), stringResource(R.string.detail_coming_soon), false, null),
     )
+    val settingsCard: @Composable (Modifier) -> Unit = { modifier ->
+        Card(modifier) {
+            settings.forEachIndexed { i, it ->
+                ListRow(it.label, value = it.value, divider = i > 0, onClick = it.onClick,
+                    trailing = if (it.isDefault) ({ Tag(stringResource(R.string.detail_default_tag), Oe.Surface2, Oe.Muted) }) else null)
+            }
+        }
+    }
 
-    if (tabletop) {
+    if (tabletop && style != DetailStyle.Pane) {
         TabletopDeck {
             MarginFocusScroll { Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 28.dp, end = 28.dp, top = 20.dp, bottom = 20.dp)) {
-                actions(if (compact) 120.dp else 160.dp)
+                playButtons(54.dp, if (compact) 120.dp else 160.dp)
                 Spacer(Modifier.height(18.dp))
-                statesBlock(if (compact) 3 else 4)
+                statesSection(if (compact) 3 else 4, 76.dp)
                 Spacer(Modifier.height(18.dp))
                 SettingTiles(settings, columns = if (compact) 2 else 4)
                 if (rom.console.frame != null) {
@@ -245,44 +290,114 @@ fun DetailScreen(key: String) {
                 }
             }
         }
-    } else Box(Modifier.fillMaxSize()) {
-        // The violet glow behind the cartridge.
-        Box(
-            Modifier.fillMaxWidth().height(340.dp).offset(y = 40.dp).drawBehind {
-                drawCircle(
-                    Brush.radialGradient(listOf(Color(0x617C3AED), Color(0x007C3AED)), center = Offset(size.width / 2, size.height / 2), radius = size.width * 0.6f),
-                    radius = size.width * 0.6f,
-                )
-            }
-        )
-        MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
-            header()
+    } else when (style) {
+        DetailStyle.Phone -> Box(Modifier.fillMaxSize()) {
+            // The violet glow behind the cartridge.
+            Glow(Modifier.fillMaxWidth().height(340.dp).offset(y = 40.dp))
+            MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+                header()
 
-            cartridge(Modifier.fillMaxWidth().padding(top = 6.dp).wrapContentWidth().width(264.dp))
+                cartridge(Modifier.fillMaxWidth().padding(top = 6.dp).wrapContentWidth().width(264.dp))
 
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(rom.title, style = Type.Title, textAlign = TextAlign.Center)
-                Text(
-                    "${rom.console.displayName} · ${core.name} · ${formatPlaytime(playtime)}",
-                    style = Type.Small, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp),
-                )
-            }
-
-            Box(Modifier.padding(horizontal = 20.dp)) { actions(120.dp) }
-
-            Box(Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp)) { statesBlock(3) }
-
-            if (rom.console.frame != null) Box(Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp)) { colorBlock() }
-
-            Card(Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp)) {
-                settings.forEachIndexed { i, it ->
-                    ListRow(it.label, value = it.value, divider = i > 0, onClick = it.onClick,
-                        trailing = if (it.isDefault) ({ Tag(stringResource(R.string.detail_default_tag), Oe.Surface2, Oe.Muted) }) else null)
+                Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(rom.title, style = Type.Title, textAlign = TextAlign.Center)
+                    Text(
+                        "${rom.console.displayName} · ${core.name} · ${formatPlaytime(playtime)}",
+                        style = Type.Small, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp),
+                    )
                 }
+
+                Box(Modifier.padding(horizontal = 20.dp)) { playButtons(52.dp, 120.dp) }
+                Box(Modifier.padding(start = 20.dp, end = 20.dp, top = 16.dp)) { statesSection(3, 58.dp) }
+
+                if (rom.console.frame != null) Box(Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp)) { colorBlock() }
+
+                settingsCard(Modifier.padding(start = 20.dp, end = 20.dp, top = 14.dp))
+                Spacer(Modifier.height(28.dp))
+                Spacer(Modifier.height(hintBarInset))
+            } }
+        }
+
+        DetailStyle.Pane -> Box(Modifier.fillMaxSize()) {
+            Glow(Modifier.fillMaxWidth().height(320.dp).offset(y = 20.dp))
+            // The tab bar covers the pane's bottom as it does the library's, and Down stops at the last item.
+            MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
+                Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
+                    if (onOpenFull != null) RoundIconButton(Icons.Expand, stringResource(R.string.library_open_full), onOpenFull, background = Oe.Control.copy(alpha = 0.8f))
+                    favoriteButton()
+                    menuButton()
+                }
+                Column(Modifier.fillMaxWidth().padding(top = 4.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Cartridge(rom.console, labelFor(rom), rom.title, color, Modifier.width(236.dp), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
+                    Text(rom.title, style = Type.Title.copy(fontSize = 23.sp), textAlign = TextAlign.Center, modifier = Modifier.padding(top = 18.dp))
+                    Text(
+                        "${rom.console.displayName} · ${core.name} · ${formatPlaytime(playtime)}",
+                        style = Type.Small, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 6.dp),
+                    )
+                }
+                Box(Modifier.padding(top = 16.dp)) { playButtons(52.dp, 120.dp) }
+                Box(Modifier.padding(top = 18.dp)) { statesSection(3, 62.dp) }
+                settingsCard(Modifier.padding(top = 16.dp))
+                Spacer(Modifier.height(TabBarHeight + 24.dp))
+                Spacer(Modifier.height(hintBarInset))
+            } }
+        }
+
+        DetailStyle.TwoColumns -> BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding()) {
+            // The cartridge's column gives way first, down to 240dp, so the right one keeps up to 320dp;
+            // below 840dp the gutters narrow too, or a 600dp window leaves the right column 216dp.
+            val gap = if (maxWidth < 840.dp) 24.dp else 48.dp
+            val room = maxWidth - gap * 3
+            val left = minOf(460.dp, room - 320.dp).coerceAtLeast(240.dp)
+            val right = minOf(560.dp, room - left)
+            Row(Modifier.fillMaxSize().padding(horizontal = gap), horizontalArrangement = Arrangement.spacedBy(gap, Alignment.CenterHorizontally)) {
+                MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.width(left).fillMaxHeight().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+                    Box(Modifier.padding(top = 22.dp)) { BackLink(rom.console.displayName) { a.nav.popBackStack() } }
+                    Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.TopCenter) {
+                        Glow(Modifier.fillMaxWidth().height(360.dp))
+                        Column(Modifier.padding(top = 40.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Cartridge(rom.console, labelFor(rom), rom.title, color, Modifier.widthIn(max = 400.dp).fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
+                            Box(Modifier.padding(top = 10.dp).fillMaxWidth(0.8f).height(12.dp).blur(8.dp).clip(CircleShape).background(Color(0x8C000000)))
+                        }
+                    }
+                    if (rom.console.frame != null) {
+                        Column(Modifier.padding(top = 28.dp, bottom = 24.dp).fillMaxWidth().clip(RoundedCornerShape(18.dp)).background(Oe.Surface).padding(18.dp)) {
+                            colorHeader()
+                            ColorSwatches(color, Modifier.padding(top = 12.dp)) { id -> lib.updateRom(key) { it.copy(color = id) } }
+                        }
+                    }
+                    Spacer(Modifier.height(hintBarInset))
+                } }
+                MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.width(right).fillMaxHeight().verticalScroll(rememberScrollState()).navigationBarsPadding().padding(top = 44.dp, bottom = 28.dp)) {
+                    Row(verticalAlignment = Alignment.Top) {
+                        Column(Modifier.weight(1f)) {
+                            Text("${rom.console.short} · ${core.name}".uppercase(), style = Type.Eyebrow)
+                            Text(rom.title, style = Type.Display.copy(fontSize = 34.sp, lineHeight = 38.sp), modifier = Modifier.padding(top = 4.dp))
+                            val last = romMeta?.lastPlayed ?: 0L
+                            Text(
+                                if (last > 0) stringResource(R.string.detail_played_last, formatPlaytime(playtime), formatAgo(last)) else formatPlaytime(playtime),
+                                style = Type.Small, modifier = Modifier.padding(top = 8.dp),
+                            )
+                        }
+                        Row(Modifier.padding(start = 12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            favoriteButton()
+                            menuButton()
+                        }
+                    }
+                    // Restart never takes more than 40% of a narrow column from Continue.
+                    Box(Modifier.padding(top = 22.dp)) { playButtons(56.dp, minOf(160.dp, right * 0.4f)) }
+                    Box(Modifier.padding(top = 26.dp)) { statesSection(detailStatesCount(right.value), 78.dp) }
+                    Text(stringResource(R.string.detail_settings_for_game), style = Type.Section, modifier = Modifier.padding(top = 26.dp, bottom = 10.dp))
+                    settingsCard(Modifier)
+                    val size = remember(rom) { rom.file.length() }
+                    Text(
+                        listOfNotNull(rom.file.name, Formatter.formatShortFileSize(context, size), rom.file.parentFile?.name).joinToString(" · "),
+                        style = Type.Small, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 14.dp),
+                    )
+                    Spacer(Modifier.height(hintBarInset))
+                } }
             }
-            Spacer(Modifier.height(28.dp))
-            Spacer(Modifier.height(hintBarInset))
-        } }
+        }
     }
 
     when (sheet) {
@@ -299,11 +414,24 @@ fun DetailScreen(key: String) {
             title = { ImmersiveWindow(); Text(stringResource(R.string.detail_remove_title, rom.title), style = Type.Title.copy(fontSize = 20.sp)) },
             text = { Text(stringResource(R.string.detail_remove_message), style = Type.Small) },
             confirmButton = {
-                TextButton({ confirmDelete = false; lib.delete(rom); a.nav.popBackStack() }) { Text(stringResource(R.string.detail_remove), style = Type.Section.copy(color = Oe.Danger)) }
+                TextButton({ confirmDelete = false; lib.delete(rom); close() }) { Text(stringResource(R.string.detail_remove), style = Type.Section.copy(color = Oe.Danger)) }
             },
             dismissButton = { TextButton({ confirmDelete = false }) { Text(stringResource(R.string.detail_cancel), style = Type.Section) } },
         )
     }
+}
+
+/** The violet glow behind the cartridge. */
+@Composable
+private fun Glow(modifier: Modifier) {
+    Box(
+        modifier.drawBehind {
+            drawCircle(
+                Brush.radialGradient(listOf(Color(0x617C3AED), Color(0x007C3AED)), center = Offset(size.width / 2, size.height / 2), radius = size.width * 0.6f),
+                radius = size.width * 0.6f,
+            )
+        }
+    )
 }
 
 @Composable
@@ -454,8 +582,9 @@ private fun StatesSheet(states: List<SaveState>, onPick: (SaveState) -> Unit, on
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(R.string.detail_save_states), style = Type.Title.copy(fontSize = 22.sp))
             Text(stringResource(R.string.detail_states_sheet_hint), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 14.dp - FocusOutset))
+            // As many cells as the sheet's width holds, as tall as the states need up to most of the window.
             MarginFocusScroll { LazyVerticalGrid(
-                GridCells.Fixed(2), Modifier.height(420.dp),
+                GridCells.Adaptive(160.dp), Modifier.heightIn(max = (LocalWindowLayout.current.heightDp * 0.7f).dp),
                 contentPadding = PaddingValues(vertical = FocusOutset),
                 horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {

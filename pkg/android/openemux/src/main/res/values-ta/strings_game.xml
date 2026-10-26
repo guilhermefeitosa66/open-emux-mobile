@@ -86,4 +86,6 @@
     <!-- RetroAchievements hardcore -->
     <string name="game_hardcore_tag">ஹார்ட்கோர்</string>
     <string name="game_hardcore_note">ஹார்ட்கோர் பயன்முறை இயக்கத்தில் உள்ளது: இந்த விளையாட்டில் நிலையை ஏற்றுவதும் வேகமாக்கலும் முடக்கப்பட்டுள்ளன. அமைப்புகள் › RetroAchievements-இல் அதை முடக்கலாம்.</string>
+    <string name="detail_settings_for_game">இந்த விளையாட்டின் அமைப்புகள்</string>
+    <string name="detail_played_last">%1$s · கடைசியாக %2$s</string>
 </resources>

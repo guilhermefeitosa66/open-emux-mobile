@@ -87,4 +87,6 @@
     <!-- RetroAchievements hardcore -->
     <string name="game_hardcore_tag">HARDCORE</string>
     <string name="game_hardcore_note">Le mode hardcore est activé : charger un état et l’avance rapide sont désactivés pour ce jeu. Désactivez-le dans Paramètres › RetroAchievements.</string>
+    <string name="detail_settings_for_game">Réglages de ce jeu</string>
+    <string name="detail_played_last">%1$s · dernière partie %2$s</string>
 </resources>

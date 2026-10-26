@@ -94,4 +94,11 @@
     <string name="update_installed">Tienes la %1$s</string>
     <string name="update_download">Descargar</string>
     <string name="update_not_now">Ahora no</string>
+    <string name="library_pick_hint">Selecciona un juego para verlo aquí</string>
+    <string name="library_open_full">Abrir a pantalla completa</string>
+    <string name="library_col_game">Juego</string>
+    <string name="library_col_time">Tiempo</string>
+    <string name="library_col_last">Última vez</string>
+    <string name="library_hint_list">Lista</string>
+    <string name="library_row_description">%1$s, %2$s, última vez %3$s</string>
 </resources>
