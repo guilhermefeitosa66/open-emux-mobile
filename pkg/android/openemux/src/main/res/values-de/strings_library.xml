@@ -81,6 +81,13 @@
     <string name="library_shelf_reset_order">Standardreihenfolge</string>
     <string name="library_shelf_order_tip">Halte ein Regal gedrückt und ziehe es, um die Reihenfolge zu ändern. Sie gilt in der ganzen App.</string>
     <string name="detail_hardcore_no_load">Spielstände laden ist im Hardcore-Modus deaktiviert</string>
+    <string name="library_continue_playing">Weiterspielen</string>
+    <string name="library_see_recent">Zuletzt gespielt</string>
+    <string name="library_consoles_heading">Konsolen</string>
+    <string name="library_reorder_hint">Lange drücken zum Sortieren</string>
+    <string name="library_import_more">Weitere Spiele importieren</string>
+    <string name="library_recently_added">Zuletzt hinzugefügt</string>
+    <string name="library_see_all">Alle anzeigen</string>
     <string name="update_available_title">Version %1$s verfügbar</string>
     <string name="update_installed">Du hast %1$s</string>
     <string name="update_download">Herunterladen</string>

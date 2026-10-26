@@ -81,6 +81,13 @@
     <string name="library_shelf_reset_order">இயல்பு வரிசையை மீட்டமை</string>
     <string name="library_shelf_order_tip">வரிசையை மாற்ற, ஒரு அலமாரியை அழுத்திப் பிடித்து இழுக்கவும். இது ஆப் முழுவதும் பொருந்தும்.</string>
     <string name="detail_hardcore_no_load">ஹார்ட்கோர் பயன்முறையில் நிலைகளை ஏற்ற முடியாது</string>
+    <string name="library_continue_playing">தொடர்ந்து விளையாடு</string>
+    <string name="library_see_recent">சமீபத்தியவை பார்</string>
+    <string name="library_consoles_heading">கன்சோல்கள்</string>
+    <string name="library_reorder_hint">மறுவரிசைப்படுத்த நீண்ட நேரம் அழுத்தவும்</string>
+    <string name="library_import_more">மேலும் கேம்களை இறக்குமதி செய்</string>
+    <string name="library_recently_added">சமீபத்தில் சேர்த்தவை</string>
+    <string name="library_see_all">அனைத்தும் பார்</string>
     <string name="update_available_title">பதிப்பு %1$s கிடைக்கிறது</string>
     <string name="update_installed">உங்களிடம் %1$s உள்ளது</string>
     <string name="update_download">பதிவிறக்கு</string>

@@ -65,6 +65,9 @@ object InputMode {
 
     /** How many highlighted items hold focus now (0 or 1 in practice). */
     var focused = 0
+
+    /** The restorable item that last held focus and is still on screen: where Right from the tab rail goes back to. */
+    var last: FocusRequester? = null
 }
 
 /** The buttons a screen gives a meaning to, beyond moving focus, A and B. */
@@ -315,7 +318,13 @@ fun Modifier.restorableFocus(key: String, saved: MutableState<String?>, initial:
             if (InputMode.focused == 0) runCatching { requester.requestFocus() }
         }
     }
-    this.focusRequester(requester).onFocusChanged { if (it.isFocused || it.hasFocus) saved.value = key }
+    DisposableEffect(requester) { onDispose { if (InputMode.last === requester) InputMode.last = null } }
+    this.focusRequester(requester).onFocusChanged {
+        if (it.isFocused || it.hasFocus) {
+            saved.value = key
+            InputMode.last = requester
+        }
+    }
 }
 
 /** The gamepad hint bar: badge + label pairs, only in gamepad mode. */

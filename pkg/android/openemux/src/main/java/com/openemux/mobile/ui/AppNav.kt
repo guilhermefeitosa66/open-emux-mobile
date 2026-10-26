@@ -4,9 +4,11 @@ import android.app.Activity
 import android.net.Uri
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.unit.Dp
@@ -24,6 +26,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -44,9 +47,18 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -132,12 +144,7 @@ fun OpenEmuxRoot() {
                 fun tab(step: Int) {
                     val i = (MAIN_TABS.indexOf(if (route == Routes.LIBRARY) Routes.SHELF else route).coerceAtLeast(0) + step)
                         .coerceIn(0, MAIN_TABS.lastIndex)
-                    if (MAIN_TABS[i] == Routes.SHELF) nav.popBackStack(Routes.SHELF, inclusive = false)
-                    else nav.navigate(MAIN_TABS[i]) {
-                        popUpTo(Routes.SHELF) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
+                    nav.navigateTab(MAIN_TABS[i])
                 }
                 GamepadButtons(
                     l1 = { if (route in MAIN_TABS || route == Routes.LIBRARY) tab(-1) },
@@ -145,14 +152,21 @@ fun OpenEmuxRoot() {
                     start = { if (route != Routes.SETTINGS) nav.navigate(Routes.SETTINGS) { launchSingleTop = true } },
                 )
                 val showTabs = route in setOf(Routes.SHELF, Routes.LIBRARY, Routes.RECENT, Routes.IMPORT, Routes.SETTINGS)
-            // A short window (a phone on its side, a split-screen half): the 86dp bar would eat the height, so the tabs go to a rail.
-            val rail = showTabs && LocalWindowLayout.current.short
+                // A short window (a phone on its side, a split-screen half): the 86dp bar would eat the height, so the tabs go
+                // to a rail; a tablet has the width for one, with the logo on top. The NavHost stays outside any branch on
+                // this, so resizing between them keeps the screen.
+                val navKind = if (showTabs) LocalWindowLayout.current.nav else NavKind.BottomBar
+                val rail = navKind != NavKind.BottomBar
+                val railWidth = RailWidth
                 Box(Modifier.fillMaxSize().background(Oe.Bg)) {
                 CompositionLocalProvider(LocalRail provides rail) {
                     NavHost(
                         nav,
                         startDestination = Routes.SHELF,
-                        modifier = Modifier.fillMaxSize().padding(start = if (rail) RailWidth else 0.dp),
+                        // Right from the rail comes back to the item the screen had focused.
+                        modifier = Modifier.fillMaxSize().padding(start = if (rail) railWidth else 0.dp)
+                            .focusProperties { onEnter = { if (requestedFocusDirection == FocusDirection.Right) InputMode.last?.requestFocus() } }
+                            .focusGroup(),
                         enterTransition = { fadeIn() },
                         exitTransition = { fadeOut() },
                     ) {
@@ -171,9 +185,9 @@ fun OpenEmuxRoot() {
                         composable(Routes.LICENSE) { LicenseTextScreen(it.arguments?.getString("id").orEmpty()) }
                     }
                     if (rail) {
-                        TabRail(route, Modifier.align(Alignment.CenterStart))
-                        ArtworkDoneToast(Modifier.align(Alignment.BottomCenter).padding(bottom = 12.dp))
-                        HintBar(GamepadBus.hints, Modifier.align(Alignment.BottomCenter).padding(start = RailWidth))
+                        TabRail(route, navKind == NavKind.TabletRail, railWidth, Modifier.align(Alignment.CenterStart))
+                        ArtworkDoneToast(Modifier.align(Alignment.BottomCenter).padding(start = railWidth, bottom = 12.dp))
+                        HintBar(GamepadBus.hints, Modifier.align(Alignment.BottomCenter).padding(start = railWidth))
                     } else if (showTabs) {
                         TabBar(route, Modifier.align(Alignment.BottomCenter))
                         ArtworkDoneToast(Modifier.align(Alignment.BottomCenter).padding(bottom = TabBarHeight + 12.dp))
@@ -202,23 +216,50 @@ private fun TabBar(route: String?, modifier: Modifier) {
     }
 }
 
-/** The tabs down the left edge, for a phone on its side. */
+/** The tabs down the left edge: centred for a phone on its side; on a tablet, under the logo, with the active pill. */
 @Composable
-private fun TabRail(route: String?, modifier: Modifier) {
-    Row(modifier.fillMaxHeight().background(Oe.Bg.copy(alpha = 0.94f))) {
-        Column(
-            Modifier.width(RailWidth).fillMaxHeight().padding(vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Tabs(route)
+private fun TabRail(route: String?, tablet: Boolean, width: Dp, modifier: Modifier) {
+    val label = stringResource(R.string.nav_rail_label)
+    val activeTab = remember { FocusRequester() }
+    Row(
+        modifier.fillMaxHeight().background(Oe.Bg.copy(alpha = 0.94f)).semantics { contentDescription = label }
+            // Only Left from the content moves into the rail, onto the current tab; the first press of a gamepad
+            // lands on the screen's own item.
+            .focusProperties {
+                onEnter = { if (requestedFocusDirection != FocusDirection.Left || !activeTab.requestFocus()) cancelFocusChange() }
+            }
+            .focusGroup(),
+    ) {
+        if (tablet) {
+            val expanded = width > 80.dp
+            Column(
+                Modifier.width(width - 1.dp).fillMaxHeight().padding(top = if (expanded) 32.dp else 28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Image(painterResource(R.drawable.oe_logo), contentDescription = "OpenEmux", modifier = Modifier.height(if (expanded) 36.dp else 34.dp))
+                Column(
+                    Modifier.padding(top = 40.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Tabs(route, pill = true, activeTab)
+                }
+            }
+        } else {
+            Column(
+                Modifier.width(width).fillMaxHeight().padding(vertical = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Tabs(route, activeTab = activeTab)
+            }
         }
         VerticalDivider(color = Oe.Surface2, thickness = 1.dp)
     }
 }
 
 @Composable
-private fun Tabs(route: String?) {
+private fun Tabs(route: String?, pill: Boolean = false, activeTab: FocusRequester? = null) {
     val nav = LocalActions.current.nav
     val tabs = listOf(
         Triple(R.string.settings_tab_library, Icons.Cart, Routes.SHELF),
@@ -233,28 +274,43 @@ private fun Tabs(route: String?) {
         }
         Column(
             Modifier
-                .widthIn(min = 64.dp)
+                .then(if (pill) Modifier.width(76.dp).heightIn(min = 56.dp) else Modifier.widthIn(min = 64.dp))
+                .then(if (active && activeTab != null) Modifier.focusRequester(activeTab) else Modifier)
                 .gamepadFocus(corner = 12.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .clickable(role = Role.Tab) {
-                    if (target == Routes.SHELF) {
-                        // The library tab always lands on the shelf, wherever the library was left.
-                        nav.popBackStack(Routes.SHELF, inclusive = false)
-                    } else if (target != route) {
-                        nav.navigate(target) {
-                            popUpTo(Routes.SHELF) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                }
+                .clickable(role = Role.Tab) { if (target == Routes.SHELF || target != route) nav.navigateTab(target) }
+                .semantics { selected = active }
                 .padding(vertical = 4.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             val color = if (active) Oe.AccentText else Oe.Muted
-            Icon(icon, color, 24.dp)
-            Text(stringResource(label), style = Type.Caption.copy(color = color, fontSize = 11.sp), modifier = Modifier.padding(top = 4.dp))
+            if (pill) {
+                // The tablet rail: the active tab sits in a filled pill, its label in the text colour.
+                Box(
+                    Modifier.size(width = 56.dp, height = 32.dp).clip(RoundedCornerShape(16.dp)).background(if (active) Oe.AccentSoft else Color.Transparent),
+                    contentAlignment = Alignment.Center,
+                ) { Icon(icon, color, 22.dp) }
+                Text(
+                    stringResource(label),
+                    style = Type.Caption.copy(color = if (active) Oe.Text else Oe.Muted, fontSize = 12.sp, fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium),
+                    maxLines = 1,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            } else {
+                Icon(icon, color, 24.dp)
+                Text(stringResource(label), style = Type.Caption.copy(color = color, fontSize = 11.sp), modifier = Modifier.padding(top = 4.dp))
+            }
         }
+    }
+}
+
+/** Opens a main tab as its button does: the library tab always lands on the shelf, wherever the library was left. */
+fun NavHostController.navigateTab(target: String) {
+    if (target == Routes.SHELF) popBackStack(Routes.SHELF, inclusive = false)
+    else navigate(target) {
+        popUpTo(Routes.SHELF) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }
 
@@ -286,14 +342,16 @@ fun ConsoleBadge(text: String) {
     }
 }
 
-/** True on the main tabs of a phone on its side: the tabs are a rail on the left, not a bar under everything. */
+/** True on the main tabs when they are a rail on the left (a phone on its side, a tablet), not a bar under everything. */
 val LocalRail = compositionLocalOf { false }
 
 /** The room the bottom tab bar takes, none when the tabs are the side rail. */
 val TabBarHeight: Dp
     @Composable get() = if (LocalRail.current) 0.dp else 86.dp
 
-val RailWidth = 80.dp
+/** The rail's width for this window: 80dp, 88dp on a wide tablet. */
+val RailWidth: Dp
+    @Composable get() = railWidthDp(LocalWindowLayout.current).let { if (it > 0f) it.dp else 80.dp }
 
 private val MAIN_TABS = listOf(Routes.SHELF, Routes.RECENT, Routes.IMPORT, Routes.SETTINGS)
 val BottomSpace: Modifier

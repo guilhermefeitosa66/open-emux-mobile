@@ -83,3 +83,54 @@ fun cellSizes(available: Int, spacing: Int, count: Int): IntArray {
     val extra = room % count
     return IntArray(count) { slot + if (it < extra) 1 else 0 }
 }
+
+/** Where the main tabs go: under everything, in the phone's side rail, or in the tablet's rail with the logo. */
+enum class NavKind { BottomBar, PhoneRail, TabletRail }
+
+/** Short wins over wide: a phone on its side is 640-930dp wide and still keeps its own rail. */
+val WindowLayout.nav: NavKind
+    get() = when {
+        short -> NavKind.PhoneRail
+        width != SizeClass.Compact -> NavKind.TabletRail
+        else -> NavKind.BottomBar
+    }
+
+/** The width the tabs take on the left, none when they are a bottom bar. */
+fun railWidthDp(layout: WindowLayout): Float = when (layout.nav) {
+    NavKind.BottomBar -> 0f
+    NavKind.PhoneRail -> 80f
+    NavKind.TabletRail -> if (layout.width == SizeClass.Expanded) 88f else 80f
+}
+
+/** Space on each side of a page's content: the phone's 20dp, more on a tablet so the cards line up with the shelf. */
+fun contentSideDp(layout: WindowLayout): Float = when {
+    layout.nav != NavKind.TabletRail -> 20f
+    layout.width == SizeClass.Expanded -> 40f
+    else -> 32f
+}
+
+/**
+ * The shelf's arrangement. [tablet] false keeps the phone's shelf as it is; a
+ * tablet adds a row of [continueCount] games to continue, [maxColumns] columns of
+ * [cardHeight] cards [gap] apart, and the recently added row when [recentlyAdded].
+ */
+data class ShelfSpec(
+    val tablet: Boolean,
+    val maxColumns: Int,
+    val continueCount: Int,
+    val cardHeight: Float,
+    val gap: Float,
+    val sidePadding: Float,
+    val topPadding: Float,
+    val recentlyAdded: Boolean,
+)
+
+fun shelfSpecOf(layout: WindowLayout): ShelfSpec = when {
+    layout.nav != NavKind.TabletRail -> ShelfSpec(false, 2, 0, 108f, SHELF_GAP_DP, SHELF_SIDE_DP, 0f, false)
+    layout.width == SizeClass.Expanded -> ShelfSpec(true, 3, 3, 168f, 16f, 40f, 32f, false)
+    // A tall portrait tablet has room under the grid for what came in last.
+    else -> ShelfSpec(true, 2, 2, 160f, 14f, 32f, 40f, layout.height == SizeClass.Expanded)
+}
+
+/** The setup side by side (explanation, then progress) on a wide tablet; stacked everywhere else. */
+fun setupColumns(layout: WindowLayout): Int = if (!layout.short && layout.width == SizeClass.Expanded) 2 else 1

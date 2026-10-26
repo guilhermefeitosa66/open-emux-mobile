@@ -83,6 +83,13 @@
     <string name="library_shelf_reset_order">Restaurar orden predeterminado</string>
     <string name="library_shelf_order_tip">Mantén pulsado un estante y arrástralo para cambiar el orden. Se aplica a toda la app.</string>
     <string name="detail_hardcore_no_load">Cargar estados está desactivado en el modo hardcore</string>
+    <string name="library_continue_playing">Seguir jugando</string>
+    <string name="library_see_recent">Ver recientes</string>
+    <string name="library_consoles_heading">Consolas</string>
+    <string name="library_reorder_hint">Mantén pulsado para reordenar</string>
+    <string name="library_import_more">Importar más juegos</string>
+    <string name="library_recently_added">Añadidos recientemente</string>
+    <string name="library_see_all">Ver todos</string>
     <string name="update_available_title">Versión %1$s disponible</string>
     <string name="update_installed">Tienes la %1$s</string>
     <string name="update_download">Descargar</string>
