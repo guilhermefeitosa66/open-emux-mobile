@@ -103,6 +103,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.openemux.mobile.data.Console
+import com.openemux.mobile.data.Meta
 import com.openemux.mobile.data.Rom
 import com.retroarch.R
 
@@ -131,12 +132,6 @@ fun ShelfScreen() {
         y = { menuFor = Console.byId(focusedShelf.value) },
     )
 
-    // In tabletop the shelves stay on the top half and the way to add more is on the bottom one.
-    if (LocalTabletop.current) TabletopDeck {
-        Column(Modifier.fillMaxSize().padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)) {
-            SecondaryButton(stringResource(R.string.library_shelf_empty_action), { openTab(a.nav, Routes.IMPORT, Routes.SHELF) }, Modifier.fillMaxWidth(), icon = Icons.Download)
-        }
-    }
 
     val favoritesShort = stringResource(R.string.library_favorites_eyebrow)
     val favoritesName = stringResource(R.string.library_favorites)
@@ -150,6 +145,17 @@ fun ShelfScreen() {
 
     // The games to continue, sorted once per library or play-time change rather than on every pass over the grid.
     val playing = remember(roms, meta, spec.continueCount) { continueList(roms, { meta.roms[it.key]?.lastPlayed ?: 0L }, spec.continueCount) }
+
+    // In tabletop the shelves stay on the top half; the games to continue and the way to add more are on the bottom one.
+    val tabletop = LocalTabletop.current
+    if (tabletop) TabletopDeck {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)) {
+            if (spec.tablet && playing.isNotEmpty() && roms.isNotEmpty()) {
+                ContinueRow(playing, spec.continueCount, spec, meta, focusedShelf, Modifier.padding(bottom = 16.dp))
+            }
+            SecondaryButton(stringResource(R.string.library_shelf_empty_action), { a.nav.navigateTab(Routes.IMPORT) }, Modifier.fillMaxWidth(), icon = Icons.Download)
+        }
+    }
 
     // As many cards side by side as the shelf's own width holds: one on a phone in portrait, two in landscape, three on a wide tablet.
     // The focused shelf keeps clear of the top and of the bars over the bottom.
@@ -202,23 +208,9 @@ fun ShelfScreen() {
                 }
             } else {
                 if (spec.tablet) {
-                    if (playing.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
-                        Column(Modifier.padding(top = 28.dp)) {
-                            SectionHeading(stringResource(R.string.library_continue_playing), stringResource(R.string.library_see_recent)) { a.nav.navigateTab(Routes.RECENT) }
-                            // No more continue cards than the grid below has columns, so the two line up.
-                            val slots = minOf(spec.continueCount, columns)
-                            val shown = playing.take(slots)
-                            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
-                                shown.forEach { rom ->
-                                    ContinueCard(
-                                        rom, meta.roms[rom.key]?.lastPlayed ?: 0L, if (spec.maxColumns > 2) 104.dp else 100.dp,
-                                        Modifier.weight(1f), Modifier.restorableFocus("continue-${rom.key}", focusedShelf),
-                                    )
-                                }
-                                // Fewer games than slots: the cards keep their width.
-                                repeat(slots - shown.size) { Spacer(Modifier.weight(1f)) }
-                            }
-                        }
+                    // No more continue cards than the grid below has columns, so the two line up.
+                    if (playing.isNotEmpty() && !tabletop) item(span = { GridItemSpan(maxLineSpan) }) {
+                        ContinueRow(playing, minOf(spec.continueCount, columns), spec, meta, focusedShelf, Modifier.padding(top = 28.dp))
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Row(Modifier.padding(top = 28.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -500,6 +492,26 @@ private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>) {
 }
 
 /** A section's title with its link on the right. */
+/** The tablet shelf's "Continue playing": a heading and [slots] cards side by side. */
+@Composable
+private fun ContinueRow(playing: List<Rom>, slots: Int, spec: ShelfSpec, meta: Meta, focusedShelf: MutableState<String?>, modifier: Modifier) {
+    val a = LocalActions.current
+    Column(modifier) {
+        SectionHeading(stringResource(R.string.library_continue_playing), stringResource(R.string.library_see_recent)) { a.nav.navigateTab(Routes.RECENT) }
+        val shown = playing.take(slots)
+        Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
+            shown.forEach { rom ->
+                ContinueCard(
+                    rom, meta.roms[rom.key]?.lastPlayed ?: 0L, if (spec.maxColumns > 2) 104.dp else 100.dp,
+                    Modifier.weight(1f), Modifier.restorableFocus("continue-${rom.key}", focusedShelf),
+                )
+            }
+            // Fewer games than slots: the cards keep their width.
+            repeat(slots - shown.size) { Spacer(Modifier.weight(1f)) }
+        }
+    }
+}
+
 @Composable
 private fun SectionHeading(title: String, link: String, onLink: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
