@@ -73,7 +73,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
@@ -238,7 +237,8 @@ fun ShelfScreen() {
                                         onEnd = { moved ->
                                             val order = live
                                             // A drag that ends where it began leaves the stored order (and "Reset order") untouched.
-                                            if (moved && order != null && order != present) {
+                                            // The shelves on screen may have changed mid-drag (a scan, a removal): then the drag order no longer maps onto them.
+                                            if (moved && order != null && order != present && order.toSet() == present.toSet()) {
                                                 // Only the shelves on screen moved; the others keep their slots in the full order.
                                                 val it = order.iterator()
                                                 lib.setConsoleOrder(lib.orderedConsoles().map { c -> if (c in present) it.next() else c })
@@ -321,13 +321,6 @@ private fun Modifier.reorderGestures(onStart: () -> Unit, onDrag: (Offset) -> Un
             end(travel > viewConfiguration.touchSlop)
         }
     }
-}
-
-/** Lets a full-width row of the shelf grid reach past the grid's side padding, as it did in a list. */
-private fun Modifier.bleed(side: Dp): Modifier = layout { measurable, constraints ->
-    val extra = (side * 2).roundToPx()
-    val placeable = measurable.measure(constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra))
-    layout(constraints.maxWidth, placeable.height) { placeable.place(-side.roundToPx(), 0) }
 }
 
 /** A console's shelf ([console] null: Favorites): icon, tag, name and count, then its three latest cartridges. */
