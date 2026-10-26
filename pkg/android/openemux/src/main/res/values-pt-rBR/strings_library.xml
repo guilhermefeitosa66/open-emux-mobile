@@ -81,4 +81,8 @@
     <string name="library_shelf_reset_order">Restaurar ordem padrão</string>
     <string name="library_shelf_order_tip">Segure e arraste uma estante para mudar a ordem. Ela vale no app todo.</string>
     <string name="detail_hardcore_no_load">Carregar estados fica desativado no modo hardcore</string>
+    <string name="update_available_title">Versão %1$s disponível</string>
+    <string name="update_installed">Você tem a %1$s</string>
+    <string name="update_download">Baixar</string>
+    <string name="update_not_now">Agora não</string>
 </resources>

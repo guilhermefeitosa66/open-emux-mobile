@@ -16,4 +16,5 @@
     <string name="about_licenses_note">本应用自带或下载的所有内容及其许可证。许可证文本保留英文原文。</string>
     <string name="about_section_app">应用与库</string>
     <string name="about_section_cores">模拟器（内核）</string>
+    <string name="about_up_to_date">已是最新版本</string>
 </resources>

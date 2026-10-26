@@ -81,4 +81,8 @@
     <string name="library_shelf_reset_order">Restore default order</string>
     <string name="library_shelf_order_tip">Hold and drag a shelf to change the order. It applies to the whole app.</string>
     <string name="detail_hardcore_no_load">Loading states is off in hardcore mode</string>
+    <string name="update_available_title">Version %1$s available</string>
+    <string name="update_installed">You have %1$s</string>
+    <string name="update_download">Download</string>
+    <string name="update_not_now">Not now</string>
 </resources>

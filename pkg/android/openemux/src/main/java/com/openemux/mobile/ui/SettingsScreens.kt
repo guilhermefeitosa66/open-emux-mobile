@@ -182,6 +182,9 @@ fun SettingsScreen() {
         Card(Modifier.padding(horizontal = 20.dp)) {
             ListRow(stringResource(R.string.settings_rom_folder), subtitle = "Android/data/${context.packageName}/files/roms", value = "${roms.size}")
             ListRow(stringResource(R.string.settings_controls), value = stringResource(R.string.settings_controls_value), divider = true)
+            val updates = a.app.updates
+            val checkUpdates by updates.enabled.collectAsState()
+            SwitchRow(stringResource(R.string.settings_update_check), stringResource(R.string.settings_update_check_desc), checkUpdates, { updates.setEnabled(it) }, divider = true)
             ListRow(stringResource(R.string.settings_about), value = "OpenEmux ${BuildConfig.VERSION_NAME}", divider = true, onClick = { a.nav.navigate(Routes.ABOUT) })
         }
         Spacer(BottomSpace)

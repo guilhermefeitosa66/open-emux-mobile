@@ -79,4 +79,8 @@
     <string name="library_shelf_reset_order">恢复默认顺序</string>
     <string name="library_shelf_order_tip">长按并拖动陈列架即可调整顺序，整个应用都会使用此顺序。</string>
     <string name="detail_hardcore_no_load">硬核模式下无法读取存档</string>
+    <string name="update_available_title">版本 %1$s 可用</string>
+    <string name="update_installed">当前版本 %1$s</string>
+    <string name="update_download">下载</string>
+    <string name="update_not_now">以后再说</string>
 </resources>

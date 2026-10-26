@@ -81,4 +81,8 @@
     <string name="library_shelf_reset_order">Standardreihenfolge</string>
     <string name="library_shelf_order_tip">Halte ein Regal gedrückt und ziehe es, um die Reihenfolge zu ändern. Sie gilt in der ganzen App.</string>
     <string name="detail_hardcore_no_load">Spielstände laden ist im Hardcore-Modus deaktiviert</string>
+    <string name="update_available_title">Version %1$s verfügbar</string>
+    <string name="update_installed">Du hast %1$s</string>
+    <string name="update_download">Herunterladen</string>
+    <string name="update_not_now">Nicht jetzt</string>
 </resources>
