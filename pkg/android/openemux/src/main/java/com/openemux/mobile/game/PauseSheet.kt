@@ -159,6 +159,11 @@ fun PauseSheet(
     onQuit: () -> Unit,
     /** NDS: switches to the next screen layout and names it; null for other consoles. */
     onScreens: (() -> String)? = null,
+    /**
+     * Fast forward on (true) or off, as the tile now shows. Sent by the activity after the sheet closes: the engine
+     * refuses to turn it on while paused.
+     */
+    onFastForward: (Boolean) -> Unit = {},
 ) {
     OpenEmuxTheme {
         var page by remember { mutableStateOf(Page.Main) }
@@ -265,7 +270,8 @@ fun PauseSheet(
                             onLoad = { page = Page.States },
                             onFastForward = {
                                 fastForward = !fastForward
-                                command("FAST_FORWARD", context.getString(if (fastForward) R.string.game_toast_fast_forward_on else R.string.game_toast_fast_forward_off))
+                                onFastForward(fastForward)
+                                toast = context.getString(if (fastForward) R.string.game_toast_fast_forward_on else R.string.game_toast_fast_forward_off)
                             },
                             onScreenshot = { command("SCREENSHOT", context.getString(R.string.game_toast_screenshot)) },
                             onScreens = onScreens?.let { next -> { toast = next() } },

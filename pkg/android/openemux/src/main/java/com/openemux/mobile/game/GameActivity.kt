@@ -40,6 +40,8 @@ class GameActivity : RetroActivityFuture() {
 
     /** Written on the engine thread (onToggleStates): whether fast forward is on, for the pause sheet. */
     @Volatile private var fastForwardOn = false
+    /** What the pause sheet's fast-forward tile asked for, applied once the engine runs again; null = untouched. */
+    @Volatile private var fastForwardWanted: Boolean? = null
     private var stickKey = 0
 
     // The NDS overlay last shown: its orientation, and the layout each orientation was left on (engine thread only).
@@ -210,6 +212,21 @@ class GameActivity : RetroActivityFuture() {
         if (!isFinishing) resumedAt = System.currentTimeMillis()
     }
 
+    /**
+     * The engine turns fast forward off on any toggle it gets while paused (runloop.c, "Don't allow fastmotion
+     * while paused"), so the sheet's choice is sent only after the resume has taken: wait until the engine is
+     * running again, then toggle if its state still differs. Engine thread work: call from a background thread.
+     */
+    private fun applyFastForward(wanted: Boolean) {
+        repeat(20) {
+            if (!RaCommand.isPaused()) {
+                if (fastForwardOn != wanted) RaCommand.send("FAST_FORWARD")
+                return
+            }
+            Thread.sleep(50)
+        }
+    }
+
     private fun showPauseSheet() {
         if (dialog?.isShowing == true || isFinishing) return
         val session = PauseSession.fromIntent(intent, sessionStart, fastForwardOn)
@@ -236,12 +253,21 @@ class GameActivity : RetroActivityFuture() {
                             Thread { RaCommand.send("QUIT") }.start()
                         },
                         onScreens = if (ndsScreens) ({ getString(nextNdsLayout().label) }) else null,
+                        onFastForward = { fastForwardWanted = it },
                     )
                 }
             }
         }
         d.setContentView(view, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
-        d.setOnDismissListener { sheetOpen = false; Thread { RaCommand.resume() }.start() }
+        d.setOnDismissListener {
+            sheetOpen = false
+            val wanted = fastForwardWanted
+            fastForwardWanted = null
+            Thread {
+                RaCommand.resume()
+                if (wanted != null) applyFastForward(wanted)
+            }.start()
+        }
         d.window?.let { window ->
             window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             // Keep the engine's window focused: unfocused, it stops polling
