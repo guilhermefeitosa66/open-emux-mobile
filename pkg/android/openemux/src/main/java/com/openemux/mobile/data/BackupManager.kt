@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** Where the Back up and restore screen is; it lives here so a rotation does not lose a running export. */
 sealed interface BackupState {
@@ -52,6 +53,14 @@ class BackupManager(private val context: Context, private val library: Library) 
 
     @Volatile private var cancelled = false
 
+    /** One export or restore at a time: two would share the staging and the cancel flag. */
+    private val busy = AtomicBoolean(false)
+
+    private fun exclusive(block: suspend () -> Unit) {
+        if (!busy.compareAndSet(false, true)) return
+        scope.launch { try { block() } finally { busy.set(false) } }
+    }
+
     fun cancel() {
         cancelled = true
     }
@@ -68,7 +77,7 @@ class BackupManager(private val context: Context, private val library: Library) 
     /** The settings as they are stored, plus the language, which API 33 and newer keep in the system. */
     private fun prefsJson() = BackupFormat.prefsToJson(prefs.all + (LOCALE to AppLocale.current(context)))
 
-    fun export(uri: Uri, includeRoms: Boolean) = scope.launch {
+    fun export(uri: Uri, includeRoms: Boolean) = exclusive {
         cancelled = false
         _state.value = BackupState.Running(true, "", 0, 0)
         try {
@@ -99,13 +108,13 @@ class BackupManager(private val context: Context, private val library: Library) 
         }
     }
 
-    fun restore(confirm: BackupState.Confirm) = scope.launch {
+    fun restore(confirm: BackupState.Confirm) = exclusive restore@{
         cancelled = false
         val needed = confirm.manifest.total.bytes
         val free = minOf(StatFs(roots.external.path).availableBytes, StatFs(roots.internal.path).availableBytes)
         if (needed + SPACE_MARGIN > free) {
             _state.value = BackupState.Failed(false, BackupError.NoSpace(needed, free))
-            return@launch
+            return@restore
         }
         _state.value = BackupState.Running(false, "", 0, needed)
         val staged = try {
@@ -119,14 +128,14 @@ class BackupManager(private val context: Context, private val library: Library) 
             }
         } catch (e: Exception) {
             _state.value = if (e is BackupError.Cancelled) BackupState.Idle else BackupState.Failed(false, e.asBackupError())
-            return@launch
+            return@restore
         }
         try {
             roots.swapIn(staged.roots)
         } catch (e: BackupError) {
             roots.stagingDirs.forEach { it.deleteRecursively() }
             _state.value = BackupState.Failed(false, e)
-            return@launch
+            return@restore
         }
         staged.prefs?.let { restorePrefs(it) }
         // The cores are not in the archive: the first-run setup fetches whatever is missing.

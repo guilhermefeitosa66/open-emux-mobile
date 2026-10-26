@@ -507,6 +507,40 @@ class BackupTest {
     }
 
     @Test
+    fun recoverRemovesARootTheSwapBroughtInBeforeTheCommit() {
+        seed()
+        val zip = export()
+        val fresh = device("new")
+        val staged = BackupReader(fresh).extract(ByteArrayInputStream(zip))
+        var renames = 0
+        // The process dies (no rollback) once the first root is in place.
+        fresh.rename = { from, to -> if (++renames == 2) throw IllegalStateException("killed") else from.renameTo(to) }
+        try { fresh.swapIn(staged.roots); fail("expected the kill") } catch (e: IllegalStateException) {}
+        assertTrue(File(fresh.external, "roms/GBA/Game.gba").exists())
+        fresh.recover()
+        assertFalse(File(fresh.external, "roms").exists())
+        assertTrue(fresh.stagingDirs.none { it.exists() })
+    }
+
+    @Test
+    fun aFileThatChangesDuringTheExportFailsIt() {
+        seed()
+        var first = true
+        assertFails<BackupError.Io> {
+            BackupWriter(roots).write(ByteArrayOutputStream(), true, prefs, "1.18.0", 1L, 1, onProgress = { _, _, _ ->
+                if (first) { first = false; File(roots.external, "saves/GBA/Game.srm").appendText("-grown") }
+            })
+        }
+    }
+
+    @Test
+    fun aListedSingleFileThatNeverCameIsNotABackup() {
+        val zip = archive(manifest(listOf("internal/meta.json", "external/saves"), 1, 4), "external/saves/GBA/a.srm" to "save")
+        assertFails<BackupError.NotABackup> { BackupReader(roots).extract(ByteArrayInputStream(zip)) }
+        assertTrue(stagingGone())
+    }
+
+    @Test
     fun recoverOnAHealthyPhoneDoesNothing() {
         seed()
         roots.recover()

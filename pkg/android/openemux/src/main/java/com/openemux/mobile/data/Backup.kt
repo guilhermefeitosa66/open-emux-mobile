@@ -62,6 +62,9 @@ class BackupRoots(val external: File, val internal: File) {
 
     private val committed get() = File(internal, "$STAGING/committed")
 
+    /** Roots the device did not have, written before each is moved in: no .old says to remove them. */
+    private val added get() = File(internal, "$STAGING/added")
+
     /** The device copy a swap set aside: kept until every root is in place. */
     fun old(root: BackupRoot) = File(root.file.path + ".old")
 
@@ -88,7 +91,12 @@ class BackupRoots(val external: File, val internal: File) {
             for (root in roots) {
                 val old = old(root)
                 old.deleteRecursively()
-                if (root.file.exists() && !rename(root.file, old)) throw IOException("could not set aside ${root.name}")
+                if (root.file.exists()) {
+                    if (!rename(root.file, old)) throw IOException("could not set aside ${root.name}")
+                } else {
+                    added.parentFile.mkdirs()
+                    added.appendText(root.name + "\n")
+                }
                 moved += root
                 root.file.parentFile.mkdirs()
                 if (!rename(staging(root), root.file)) throw IOException("could not restore ${root.name}")
@@ -117,6 +125,10 @@ class BackupRoots(val external: File, val internal: File) {
             if (!old.exists()) continue
             if (done) old.deleteRecursively()
             else { root.file.deleteRecursively(); old.renameTo(root.file) }
+        }
+        // A root the swap brought in where the device had none goes again, unless the swap finished.
+        if (!done && added.isFile) {
+            added.readLines().mapNotNull { byName(it) }.forEach { it.file.deleteRecursively() }
         }
         finish()
     }
@@ -245,10 +257,11 @@ class BackupWriter(private val roots: BackupRoots) {
         isCancelled: () -> Boolean = { false },
     ): BackupManifest {
         val exported = roots.exported(includeRoms)
-        val files = exported.associateWith { roots.files(it) }
+        // Lengths are taken once: the manifest declares them and the reader holds the archive to them.
+        val files = exported.associateWith { root -> roots.files(root).map { (name, f) -> Triple(name, f, f.length()) } }
         val prefsBytes = prefs.toString().toByteArray()
         val groups = BackupGroup.entries.associateWith { g ->
-            files.filterKeys { it.group == g }.values.flatten().fold(BackupSize()) { s, (_, f) -> s + BackupSize(1, f.length()) }
+            files.filterKeys { it.group == g }.values.flatten().fold(BackupSize()) { s, (_, _, len) -> s + BackupSize(1, len) }
         }.filterKeys { g -> g != BackupGroup.ROMS || includeRoms }.toMutableMap()
         groups[BackupGroup.SETTINGS] = groups.getValue(BackupGroup.SETTINGS) + BackupSize(1, prefsBytes.size.toLong())
         val saves = files.filterKeys { it.name == "external/saves" || it.name == "external/states" }.values.flatten()
@@ -269,13 +282,17 @@ class BackupWriter(private val roots: BackupRoots) {
             for ((root, list) in files) {
                 val folder = root.name.substringAfter('/')
                 onProgress(folder, done, total)
-                for ((name, file) in list) {
+                for ((name, file, length) in list) {
                     if (isCancelled()) throw BackupError.Cancelled()
                     zip.putNextEntry(ZipEntry(name).apply { time = file.lastModified() })
+                    var copied = 0L
                     file.inputStream().use { input ->
                         while (true) {
                             val n = input.read(buf)
                             if (n < 0) break
+                            copied += n
+                            // A file rewritten mid-export would leave an archive the import refuses.
+                            if (copied > length) throw BackupError.Io("$name changed during the export")
                             zip.write(buf, 0, n)
                             done += n
                             // Per buffer, not per file: one disc image can take minutes.
@@ -283,6 +300,7 @@ class BackupWriter(private val roots: BackupRoots) {
                             if (isCancelled()) throw BackupError.Cancelled()
                         }
                     }
+                    if (copied != length) throw BackupError.Io("$name changed during the export")
                     zip.closeEntry()
                     onProgress(folder, done, total)
                 }
@@ -355,6 +373,8 @@ class BackupReader(private val roots: BackupRoots) {
             target.setLastModified(entry.time.coerceAtLeast(0))
         }
         if (seen.size != declared.files || bytes != declared.bytes) throw BackupError.NotABackup("incomplete")
+        // A listed single file that never came would fail the swap halfway instead.
+        listed.firstOrNull { !it.isDir && it.name !in seen }?.let { throw BackupError.NotABackup("missing ${it.name}") }
         return StagedBackup(manifest, listed, prefs)
     }
 
