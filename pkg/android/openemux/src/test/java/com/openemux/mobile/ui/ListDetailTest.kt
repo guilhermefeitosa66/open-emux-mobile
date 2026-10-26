@@ -43,6 +43,12 @@ class ListDetailTest {
     }
 
     @Test
+    fun aNarrowSplitGivesTheDetailHalfOfWhatTheRailLeaves() {
+        // 600dp less the 80dp rail: a 320dp list would leave the detail about 200dp.
+        assertEquals(260f, WindowLayout.of(600f, 900f).settingsListDp)
+    }
+
+    @Test
     fun landscapeTabletsShowTheGameBesideTheLibrary() {
         for (w in listOf(tenInchLandscape, sevenInchLandscape)) {
             assertTrue(w.splitSettings)

@@ -320,7 +320,7 @@ fun RomDetail(key: String, style: DetailStyle, active: Boolean = true, onClose: 
 
         DetailStyle.Pane -> Box(Modifier.fillMaxSize()) {
             Glow(Modifier.fillMaxWidth().height(320.dp).offset(y = 20.dp))
-            // The tab bar covers the pane's bottom as it does the library's, and Down stops at the last item.
+            // Room for the tab bar if one ever sits under the pane (beside the rail it is 0dp), and Down stops at the last item.
             MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).verticalScroll(rememberScrollState()).padding(horizontal = 24.dp)) {
                 Row(Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End)) {
                     if (onOpenFull != null) RoundIconButton(Icons.Expand, stringResource(R.string.library_open_full), onOpenFull, background = Oe.Control.copy(alpha = 0.8f))
