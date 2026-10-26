@@ -218,7 +218,7 @@ fun PauseSheet(
             if (panel) {
                 PausedArea(
                     if (session.hardcore) emptyList() else states.take(4),
-                    Modifier.align(Alignment.CenterStart).fillMaxHeight().width(window.widthDp.dp - panelWidth),
+                    Modifier.fillMaxSize().padding(end = panelWidth),
                     ::load,
                 )
             }

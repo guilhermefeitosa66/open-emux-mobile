@@ -55,7 +55,7 @@ class SkinRenderer(private val context: Context) {
     fun render(
         console: Console, width: Int, height: Int, outDir: File, cutout: Int = 0,
         ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false, coreId: String? = null,
-        density: Float = 1f,
+        density: Float,
     ): File {
         outDir.mkdirs()
         val skin = console.skin.forCore(coreId)
