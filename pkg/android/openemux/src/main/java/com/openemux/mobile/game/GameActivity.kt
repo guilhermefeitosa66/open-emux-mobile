@@ -160,6 +160,20 @@ class GameActivity : RetroActivityFuture() {
         return true
     }
 
+    /** Asked by the engine at start-up: closing the device saves the state. */
+    override fun autoSaveOnPause(): Boolean = true
+
+    /**
+     * Called on the engine thread when the game is back after a pause that
+     * saved it: the content is paused, so the sheet opens over it. Never a
+     * toggle, unlike [onExternalMenuRequested]: a sheet left open stays open.
+     */
+    override fun onResumedIntoPause() {
+        runOnUiThread {
+            if (ReturnPause.shouldOpenSheet(dialog?.isShowing == true, isFinishing)) showPauseSheet()
+        }
+    }
+
     /**
      * Called on the engine thread with gamepad input while the content is
      * paused. The sheet's window cannot take focus (the engine must keep
