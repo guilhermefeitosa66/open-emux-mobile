@@ -37,6 +37,9 @@ import kotlin.math.roundToInt
  */
 class ImportedSkinRenderer {
 
+    /** What a drawOverlay laid out: the touch areas, the game's box, and what a stick's zone keeps clear of. */
+    private class Drawn(val descs: List<OverlayDesc>, val viewport: RectF, val clear: List<RectF>, val gap: Float)
+
     /** Where the representation lands on screen: mapping units times [s], from ([ox], [oy]). */
     private class Placement(val s: Float, val ox: Float, val oy: Float) {
         fun rect(x: Double, y: Double, w: Double, h: Double) =
@@ -69,9 +72,11 @@ class ImportedSkinRenderer {
                 val w = if (portrait) portraitW else portraitH
                 val h = if (portrait) portraitH else portraitW
                 val image = "$orient.png"
-                val (descs, viewport) = drawOverlay(zip, rep, portrait, w, h, outDir, image)
+                val drawn = drawOverlay(zip, rep, portrait, w, h, outDir, image)
                 // The skin's own extended edges already widen the touch areas.
-                OverlayWriter.write(cfg, i, orient, other, image, descs, w, h, viewport, grow = 1f)
+                OverlayWriter.write(
+                    cfg, i, orient, other, image, drawn.descs, w, h, drawn.viewport, grow = 1f, clear = drawn.clear, gap = drawn.gap,
+                )
             }
             return File(outDir, "skin.cfg").apply { writeText(cfg.toString()) }
         }
@@ -88,7 +93,7 @@ class ImportedSkinRenderer {
 
     private fun drawOverlay(
         zip: ZipFile, rep: JSONObject, portrait: Boolean, w: Int, h: Int, outDir: File, image: String,
-    ): Pair<List<OverlayDesc>, RectF> {
+    ): Drawn {
         val size = rep.getJSONObject("mappingSize")
         val mw = size.getDouble("width").toFloat()
         val mh = size.getDouble("height").toFloat()
@@ -146,7 +151,11 @@ class ImportedSkinRenderer {
                 f.getDouble("width") + edge("left") + edge("right"), f.getDouble("height") + edge("top") + edge("bottom"),
             )
             when (val inputs = item.get("inputs")) {
-                is JSONObject -> directional(inputs, touch, item.has("thumbstick"), descs)
+                is JSONObject -> {
+                    val frame = place.rect(f.getDouble("x"), f.getDouble("y"), f.getDouble("width"), f.getDouble("height"))
+                    val knob = item.optJSONObject("thumbstick")?.let { knob(zip, it, frame, place, paint) }
+                    directional(inputs, touch, item.has("thumbstick"), knob, descs)
+                }
                 is JSONArray -> {
                     val binds = (0 until inputs.length()).mapNotNull { bind(inputs.getString(it)) }
                     if (binds.isNotEmpty()) descs += OverlayDesc(binds.joinToString("|"), touch)
@@ -157,7 +166,39 @@ class ImportedSkinRenderer {
             }
         }
         OverlayWriter.saveImages(outDir, image, bitmap, descs)
-        return descs to viewport
+        // A whole-device skin keeps the game's picture clear of the sticks' zones; one over the game cannot.
+        return Drawn(descs, viewport, listOfNotNull(viewport.takeIf { screen != null }), 2f * place.s)
+    }
+
+    /**
+     * A stick's knob ([thumbstick], the item's knob image at its own size in mapping units) as an image the size
+     * of the knob's travel, centred on the stick's [frame], or null when the image cannot be read.
+     */
+    private fun knob(zip: ZipFile, thumbstick: JSONObject, frame: RectF, place: Placement, paint: Paint): OverlayDesc? {
+        val name = thumbstick.optString("name").ifEmpty { return null }
+        val r = minOf(frame.width(), frame.height()) / 2f
+        // A knob with no size given is half the well's.
+        val kw = thumbstick.optDouble("width", 0.0).toFloat().let { if (it > 0f) it * place.s else r }
+        val kh = thumbstick.optDouble("height", 0.0).toFloat().let { if (it > 0f) it * place.s else r }
+        // The engine stretches the image over the stick's range: the range is the travel, unless the knob is
+        // larger, and then the value still peaks at the travel. The app's own skins export the knob at the travel's size.
+        val travel = r * OverlayWriter.KNOB_TRAVEL
+        val half = maxOf(kw, kh) / 2f
+        val range = if (half > travel * 1.02f) half else travel
+        val side = Math.round(2f * range).coerceAtLeast(1)
+        val target = RectF((side - kw) / 2f, (side - kh) / 2f, (side + kw) / 2f, (side + kh) / 2f)
+        val image = try {
+            rasterize(zip, name, target)
+        } catch (e: Exception) {
+            Log.w(TAG, "thumbstick '$name' not readable", e)
+            return null
+        }
+        val bitmap = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+        Canvas(bitmap).drawBitmap(image, null, target, paint)
+        image.recycle()
+        val cx = frame.centerX()
+        val cy = frame.centerY()
+        return OverlayDesc("", RectF(cx - range, cy - range, cx + range, cy + range), radial = true, well = frame, knob = bitmap, saturate = travel / range)
     }
 
     /**
@@ -203,14 +244,18 @@ class ImportedSkinRenderer {
     }
 
     /** A D-pad as a 3x3 grid, diagonals included, or a stick as an analog stick. */
-    private fun directional(inputs: JSONObject, box: RectF, thumbstick: Boolean, descs: MutableList<OverlayDesc>) {
+    private fun directional(inputs: JSONObject, box: RectF, thumbstick: Boolean, knob: OverlayDesc?, descs: MutableList<OverlayDesc>) {
+        // With a knob image the stick is laid out as the drawn skins' are; without one, as before, over its frame.
+        fun stick(name: String) =
+            knob?.let { OverlayDesc(name, it.rect, radial = true, well = it.well, knob = it.knob, saturate = it.saturate) }
+                ?: OverlayDesc(name, box, radial = true)
         val names = listOf("up", "down", "left", "right").map { inputs.optString(it) }
         if (names.any { it.startsWith("rightAnalogStick") || it.startsWith("cStick") }) {
-            descs += OverlayDesc(RADIAL_RIGHT, box, radial = true)
+            descs += stick(RADIAL_RIGHT)
             return
         }
         if (names.any { it.startsWith("analogStick") }) {
-            descs += OverlayDesc(RADIAL, box, radial = true)
+            descs += stick(RADIAL)
             return
         }
         val up = bind(inputs.optString("up"))
@@ -218,7 +263,7 @@ class ImportedSkinRenderer {
         val left = bind(inputs.optString("left"))
         val right = bind(inputs.optString("right"))
         if (thumbstick || up == null || down == null || left == null || right == null) {
-            descs += OverlayDesc(RADIAL, box, radial = true)
+            descs += stick(RADIAL)
             return
         }
         val cw = box.width() / 3f

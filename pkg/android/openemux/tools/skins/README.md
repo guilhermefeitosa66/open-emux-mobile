@@ -16,7 +16,10 @@ For each console it lays out four representations (phone and tablet,
 portrait and landscape: `iphone/edgeToEdge` and `ipad/standard` in the
 format), renders each with headless Chrome from `render.html` (3 px per unit
 on phones, 2 on tablets), cuts the game's screens out of the art and writes
-`info.json` with the frames the engine laid out. Intermediate images go to
+`info.json` with the frames the engine laid out. A stick's knob is not in
+the art: each one is rendered on its own, the size of its travel, and the
+stick item names it as its `thumbstick` (`<device>_<orient>_knob<N>.png`), so
+the app can move it with the thumb. Intermediate images go to
 `build/skins/`. Needs Node, Google Chrome and ImageMagick.
 
 To change a skin, change `Skin.dc.html` (on the canvas, or here) and run the

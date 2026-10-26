@@ -117,7 +117,8 @@ same lit `nul` desc as the drawn strip: the accent pill over the item's
 frame, with the skin's own glyph lifted off the art (what differs from the
 colour around it) and drawn on it in white, so a user's skin lights up too.
 `launch/OverlayWriter.kt` writes the overlays and their images for both
-renderers.
+renderers, each stick's movable knob (`<overlay>-knob<N>.png`) and its
+widened touch zone included.
 
 The art comes from a design canvas whose Skin component holds the layout
 engine and each console's colors; `tools/skins/build.py` renders it with

@@ -46,15 +46,17 @@ def engine_layout(console, device, orient):
     script = (
         "global.window={};require(process.argv[1]);"
         "const L=window.OE.layout(process.argv[2],process.argv[3],process.argv[4],{export:true});"
-        "console.log(JSON.stringify({W:L.W,H:L.H,items:L.items,screens:L.screens,name:L.name}))"
+        "console.log(JSON.stringify({W:L.W,H:L.H,items:L.items,screens:L.screens,knobs:L.knobs.map(k=>({name:k.name,size:k.size})),name:L.name}))"
     )
     out = subprocess.run(["node", "-e", script, str(HERE / "engine.js"), console, device, orient],
                          capture_output=True, text=True, check=True).stdout
     return json.loads(out)
 
 
-def screenshot(console, device, orient, w, h, scale, out, profile):
+def screenshot(console, device, orient, w, h, scale, out, profile, knob=None):
     url = f"file://{HERE / 'render.html'}?console={console}&device={device}&orient={orient}"
+    if knob is not None:
+        url += f"&knob={knob}"
     subprocess.run([
         CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars", f"--user-data-dir={profile}",
         f"--force-device-scale-factor={scale}", f"--window-size={w},{h}", "--default-background-color=00000000",
@@ -74,6 +76,7 @@ def build(console, profile):
     folder = WORK / console
     folder.mkdir(parents=True, exist_ok=True)
     reps = {}
+    files = []
     name = None
     for device, family, variant, scale in REPS:
         for orient in ("portrait", "landscape"):
@@ -82,11 +85,22 @@ def build(console, profile):
             image = f"{device}_{orient}.png"
             screenshot(console, device, orient, L["W"], L["H"], scale, folder / image, profile)
             cut_screens(folder / image, L["screens"], scale)
+            # Each stick's knob, an image of its own the app moves with the thumb.
+            knobs = {}
+            for i, k in enumerate(L["knobs"]):
+                file = f"{device}_{orient}_{k['name']}"
+                px = round(k["size"] * scale)
+                screenshot(console, device, orient, px // scale + 1, px // scale + 1, scale, folder / file, profile, knob=i)
+                subprocess.run(["convert", str(folder / file), "-crop", f"{px}x{px}+0+0", "+repage", str(folder / file)], check=True)
+                knobs[k["name"]] = file
+            files.extend(knobs.values())
             items = []
             for it in L["items"]:
                 entry = {"inputs": it["inputs"], "frame": it["frame"]}
                 if it.get("extendedEdges"):
                     entry["extendedEdges"] = it["extendedEdges"]
+                if it.get("thumbstick"):
+                    entry["thumbstick"] = dict(it["thumbstick"], name=knobs[it["thumbstick"]["name"]])
                 items.append(entry)
             reps.setdefault(family, {}).setdefault(variant, {})[orient] = {
                 "assets": {"large": image},
@@ -111,6 +125,8 @@ def build(console, profile):
         for device, *_ in REPS:
             for orient in ("portrait", "landscape"):
                 z.write(folder / f"{device}_{orient}.png", f"{device}_{orient}.png")
+        for file in files:
+            z.write(folder / file, file)
     print(f"{pkg.relative_to(APP)}  {pkg.stat().st_size // 1024} KB")
 
 

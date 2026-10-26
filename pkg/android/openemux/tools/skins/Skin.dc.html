@@ -137,7 +137,7 @@ const OE = (() => {
       face: { kind: 'diamond', color: '#1C1C1F', symColor: '#A9ABB1', map: {
         top: { input: 'x', symbol: 'tri' }, left: { input: 'y', symbol: 'square' }, right: { input: 'a', symbol: 'circle' }, bottom: { input: 'b', symbol: 'cross' } } },
       shoulders: [[{ input: 'l', label: 'L' }], [{ input: 'r', label: 'R' }]],
-      secondary: [{ pos: 'left', kind: 'stick', knob: '#5A5B60', size: 76 }], center: SELECT_START,
+      secondary: [{ pos: 'left', kind: 'stick', knob: '#5A5B60' }], center: SELECT_START,
     },
   };
 
@@ -170,12 +170,12 @@ const OE = (() => {
     const tab = device === 'tablet', port = orient === 'portrait';
     const W = tab ? (port ? 800 : 1280) : (port ? 360 : 746);
     const H = tab ? (port ? 1280 : 800) : (port ? 746 : 360);
-    const parts = [], items = [], screens = [];
+    const parts = [], items = [], screens = [], knobs = [];
     const add = (style, extra) => { parts.push(Object.assign({ style, hasLabel: false, hasIcon: false, label: '', labelStyle: '', icon: '', iconStyle: '', iconFill: 'none', iconStroke: 'none', iconWidth: 0 }, extra || {})); };
     const box = (x, y, w, h) => `position:absolute;left:${x}px;top:${y}px;width:${w}px;height:${h}px;box-sizing:border-box;`;
     const center = 'display:flex;align-items:center;justify-content:center;';
     const lbl = (label, ink, size, spacing) => ({ hasLabel: true, label, labelStyle: `font:700 ${r1(size)}px/1 'Space Grotesk',sans-serif;letter-spacing:${spacing || '.04em'};color:${ink};white-space:nowrap` });
-    const item = (inputs, x, y, w, h, ext) => items.push({ inputs, frame: { x: r1(x), y: r1(y), width: r1(w), height: r1(h) }, extendedEdges: ext });
+    const item = (inputs, x, y, w, h, ext, thumbstick) => items.push({ inputs, frame: { x: r1(x), y: r1(y), width: r1(w), height: r1(h) }, extendedEdges: ext, thumbstick });
     const icon = (d, stroke, size, fill, width) => ({ hasIcon: true, icon: d, iconStroke: stroke, iconFill: fill || 'none', iconWidth: width == null ? 1.8 : width, iconStyle: `width:${size}px;height:${size}px;display:block` });
 
     // Body: matte plastic, lit from above; translucent and glossy shells get their own sheen.
@@ -265,13 +265,21 @@ const OE = (() => {
       item({ up: 'up', down: 'down', left: 'left', right: 'right' }, x0, y0, size, size, { top: 12, bottom: 12, left: 12, right: 12 });
     }
 
+    // The knob is not painted into the art: it is an image of its own (the item's thumbstick), the size of
+    // its travel, which the app moves with the thumb. The well is what stays in the art.
+    const TRAVEL = 0.65;
     function stick(cx, cy, size, st, right) {
       const x = cx - size / 2, y = cy - size / 2;
       add(box(x, y, size, size) + `border-radius:50%;background:radial-gradient(circle at 50% 40%, ${darken(S.body, 0.34)}, ${darken(S.body, 0.2)} 72%);box-shadow:inset 0 3px 7px rgba(0,0,0,.45), 0 1px 0 ${alpha('#ffffff', 0.18)};`);
-      const ks = size * 0.6, kc = st.knob;
-      add(box(cx - ks / 2, cy - ks / 2, ks, ks) + center + `border-radius:50%;background:radial-gradient(circle at 40% 35%, ${lighten(kc, 0.25)}, ${kc} 60%, ${darken(kc, 0.2)});box-shadow:0 4px 8px rgba(0,0,0,.4), inset 0 0 0 ${ks * 0.08}px ${alpha(darken(kc, 0.25), 0.35)};`,
-        st.label ? lbl(st.label, st.ink || '#333333', ks * 0.34) : {});
-      item(right ? RIGHT_STICK : LEFT_STICK, x, y, size, size);
+      // Half the well wide, its shadow inside the margin the travel leaves around it.
+      const r = size / 2, ks = r, kc = st.knob, side = r1(2 * r * TRAVEL);
+      const knob = (ox, oy) => box(ox + (side - ks) / 2, oy + (side - ks) / 2, ks, ks) + center + `border-radius:50%;background:radial-gradient(circle at 40% 35%, ${lighten(kc, 0.25)}, ${kc} 60%, ${darken(kc, 0.2)});box-shadow:0 ${r1(r * 0.05)}px ${r1(r * 0.09)}px rgba(0,0,0,.4), inset 0 0 0 ${ks * 0.08}px ${alpha(darken(kc, 0.25), 0.35)};`;
+      const label = st.label ? lbl(st.label, st.ink || '#333333', ks * 0.34) : {};
+      const name = `knob${knobs.length}.png`;
+      knobs.push({ name, size: side, parts: [Object.assign({ style: knob(0, 0), hasIcon: false, hasLabel: false, label: '', labelStyle: '' }, label)] });
+      // The canvas shows the knob at rest; the exported art leaves it out.
+      if (!opts.export) add(knob(cx - side / 2, cy - side / 2), label);
+      item(right ? RIGHT_STICK : LEFT_STICK, x, y, size, size, undefined, { name, width: side, height: side });
     }
 
     function button(b, cx, cy, k) {
@@ -362,7 +370,7 @@ const OE = (() => {
       });
     }
 
-    return { W, H, parts, items, screens, name: S.name, aspect: S.aspect };
+    return { W, H, parts, items, screens, knobs, name: S.name, aspect: S.aspect };
   }
 
   return { layout, C };
