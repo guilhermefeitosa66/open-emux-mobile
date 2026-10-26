@@ -263,11 +263,19 @@ fun MarginFocusScroll(leading: Dp = FocusMargin, trailing: Dp = FocusMargin, con
  * [direction]. The margin leaves room between the last item and what lies
  * beyond it (the tab bar, the header), and the focus search would otherwise
  * jump there; the last item holds focus instead, as when it touched the edge.
+ * In tabletop the bottom half lies past the end going down, so down lets go.
  */
-fun Modifier.holdFocusAtEnd(direction: FocusDirection): Modifier =
-    focusProperties {
-        onExit = { if (InputMode.gamepad && requestedFocusDirection == direction) cancelFocusChange() }
+@Composable
+fun Modifier.holdFocusAtEnd(direction: FocusDirection): Modifier {
+    val tabletop = LocalTabletop.current
+    return focusProperties {
+        onExit = { if (holdsFocusAtEnd(direction, requestedFocusDirection, InputMode.gamepad, tabletop)) cancelFocusChange() }
     }.focusGroup()
+}
+
+/** Whether a list held in [held] keeps focus pushed in [requested]: in tabletop, down reaches the deck and the tabs. */
+fun holdsFocusAtEnd(held: FocusDirection, requested: FocusDirection, gamepad: Boolean, tabletop: Boolean) =
+    gamepad && requested == held && !(tabletop && held == FocusDirection.Down)
 
 /**
  * A row that scrolls sideways under the gamepad without cutting the first
