@@ -141,7 +141,9 @@ internal object OverlayWriter {
             cfg.append("${p}_desc${i}_overlay = \"${knobImage(image, i)}\"\n")
             cfg.append("${p}_desc${i}_movable = true\n")
         }
-        val reach = stickReach(d.rect, taken, gap)
+        // Never smaller than the well drawn around it, which was the whole zone before it could reach past it.
+        val floor = d.well?.let { maxOf(1f, minOf(it.width(), it.height()) / d.rect.width()) } ?: 1f
+        val reach = stickReach(d.rect, taken, gap, floor)
         listOf("up", "down", "left", "right").forEachIndexed { k, dir ->
             cfg.append(String.format(Locale.US, "%s_desc%d_reach_%s = %.3f\n", p, i, dir, reach[k]))
         }
@@ -153,16 +155,16 @@ internal object OverlayWriter {
     /**
      * How far past its [travel] square a stick's touch zone reaches up, down, left and right, as the engine's
      * `reach_*` multiples of the range: 2 where it is free, short of [gap] before each of the [taken] areas,
-     * never under 1. The engine's radial hitbox is the ellipse inscribed in that box, so each axis keeps the
-     * same reach on both sides: an off-centre ellipse would leave part of the travel circle untouchable.
+     * never under [floor] (the well). The engine's radial hitbox is the ellipse inscribed in that box, so each
+     * axis keeps the same reach on both sides: an off-centre ellipse would leave part of the travel circle untouchable.
      * The screen's edge needs no pulling back, a touch never lands past it.
      */
-    private fun stickReach(travel: RectF, taken: List<RectF>, gap: Float): FloatArray {
+    private fun stickReach(travel: RectF, taken: List<RectF>, gap: Float, floor: Float): FloatArray {
         val cx = travel.centerX()
         val cy = travel.centerY()
         val range = travel.width() / 2f
         // Vertical, horizontal.
-        val reach = floatArrayOf(2f, 2f)
+        val reach = floatArrayOf(maxOf(2f, floor), maxOf(2f, floor))
         for (r in taken) {
             val zone = RectF(cx - range * reach[1], cy - range * reach[0], cx + range * reach[1], cy + range * reach[0])
             if (!RectF.intersects(RectF(zone).apply { inset(-gap, -gap) }, r)) continue
@@ -179,13 +181,13 @@ internal object OverlayWriter {
             }
             // An area over the travel itself (a neighbour's extended edges): neither axis clears it, keep both short.
             if (vertical < 0f && horizontal < 0f) {
-                reach[0] = 1f
-                reach[1] = 1f
+                reach[0] = floor
+                reach[1] = floor
                 continue
             }
             val axis = if (vertical >= horizontal) 0 else 1
             val pulled = maxOf(vertical, horizontal)
-            reach[axis] = minOf(reach[axis], pulled).coerceAtLeast(1f)
+            reach[axis] = minOf(reach[axis], pulled).coerceAtLeast(floor)
         }
         // Up, down, left, right.
         return floatArrayOf(reach[0], reach[0], reach[1], reach[1])
