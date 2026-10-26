@@ -102,6 +102,8 @@ import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.openemux.mobile.data.Console
 import com.openemux.mobile.data.Rom
+import com.openemux.mobile.data.ShelfContent
+import com.openemux.mobile.data.shelfContent
 import com.retroarch.R
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
@@ -110,6 +112,8 @@ fun ShelfScreen() {
     val a = LocalActions.current
     val roms by a.app.library.roms.collectAsState()
     val meta by a.app.library.meta.collectAsState()
+    val loaded by a.app.library.loaded.collectAsState()
+    val content = shelfContent(loaded, roms)
     val focusedShelf = rememberSaveable { mutableStateOf<String?>(null) }
     val lib = a.app.library
     val present = lib.orderedConsoles(meta.consoleOrder).filter { c -> roms.any { it.console == c } }
@@ -155,7 +159,7 @@ fun ShelfScreen() {
             horizontalArrangement = Arrangement.spacedBy(spec.gap.dp),
         ) {
             if (spec.tablet) item(span = { GridItemSpan(maxLineSpan) }) {
-                TabletShelfHeader(spec, roms)
+                TabletShelfHeader(spec, roms, content != ShelfContent.Loading)
             } else item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(Modifier.bleed(spec.sidePadding.dp)) {
                     // The grid clips at its top: the room above the header is the focus ring's.
@@ -175,13 +179,14 @@ fun ShelfScreen() {
                     Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 16.dp)) {
                         Text(stringResource(R.string.library_shelf_title), style = Type.Display)
                         val consoles = Console.entries.count { c -> roms.any { it.console == c } }
-                        Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 6.dp))
+                        // No count until the library is known: "0 consoles" reads as a lost library.
+                        if (content != ShelfContent.Loading) Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 6.dp))
                     }
                     UpdateBanner(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
                     ArtworkSyncPill(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
                 }
             }
-            if (roms.isEmpty()) {
+            if (content == ShelfContent.Empty) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(
                         stringResource(R.string.library_shelf_empty_title),
@@ -191,7 +196,7 @@ fun ShelfScreen() {
                         Modifier.bleed(spec.sidePadding.dp),
                     )
                 }
-            } else {
+            } else if (content == ShelfContent.Shelves) {
                 if (spec.tablet) {
                     if (playing.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
                         Column(Modifier.padding(top = 28.dp)) {
@@ -457,14 +462,15 @@ private fun ShelfCard(
 
 /** The tablet shelf's top: title and counts, then search and import on the same row. */
 @Composable
-private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>) {
+private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>, known: Boolean) {
     val a = LocalActions.current
     Column(Modifier.padding(top = spec.topPadding.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.library_shelf_title), style = Type.Display.copy(fontSize = 36.sp, lineHeight = 40.sp))
                 val consoles = Console.entries.count { c -> roms.any { it.console == c } }
-                Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp))
+                // As on the phone header: no count while the library is not known yet.
+                if (known) Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp))
             }
             val search = stringResource(R.string.library_search_all_consoles)
             if (spec.maxColumns > 2) {
@@ -591,6 +597,9 @@ fun LibraryScreen(filter: String) {
     val lib = a.app.library
     val roms by lib.roms.collectAsState()
     val meta by lib.meta.collectAsState()
+    val loaded by lib.loaded.collectAsState()
+    // The empty texts wait until the library is known, as on the shelf.
+    val known = shelfContent(loaded, roms) != ShelfContent.Loading
     val searchRequested = filter == "SEARCH"
     var mode by rememberSaveable { mutableStateOf(ViewMode.Carts) }
     var sort by rememberSaveable { mutableStateOf(SortMode.Az) }
@@ -641,7 +650,7 @@ fun LibraryScreen(filter: String) {
             searching = searching, query = query, onQuery = { query = it },
             onSearch = { searching = !searching; if (!searching) query = "" },
             sort = sort, onSort = { sort = if (sort == SortMode.Az) SortMode.Recent else SortMode.Az },
-            focusedRom = focusedRom,
+            focusedRom = focusedRom, known = known,
         )
         return
     }
@@ -744,7 +753,7 @@ fun LibraryScreen(filter: String) {
                     Text(stringResource(if (sort == SortMode.Az) R.string.library_section_carts else R.string.library_section_recent), style = Type.Section.copy(fontSize = 17.sp), modifier = Modifier.weight(1f))
                     ViewToggle(mode) { mode = it }
                 }
-                if (list.isEmpty()) {
+                if (list.isEmpty() && known) {
                     Text(
                         if (query.isNotBlank()) stringResource(R.string.library_no_results, query) else stringResource(R.string.library_empty_list),
                         style = Type.Small, modifier = Modifier.padding(vertical = 24.dp),
@@ -823,6 +832,7 @@ private fun LandscapeLibrary(
     sort: SortMode,
     onSort: () -> Unit,
     focusedRom: MutableState<String?>,
+    known: Boolean,
 ) {
     val a = LocalActions.current
     val lib = a.app.library
@@ -848,7 +858,7 @@ private fun LandscapeLibrary(
             val caption = 28.dp
             // Room above and below, so nothing touches the edges.
             val itemH = maxHeight - caption - 56.dp
-            if (list.isEmpty()) {
+            if (list.isEmpty() && known) {
                 Text(
                     if (query.isNotBlank()) stringResource(R.string.library_no_results, query) else stringResource(R.string.library_empty_list),
                     style = Type.Small, modifier = Modifier.align(Alignment.Center),
@@ -988,6 +998,7 @@ fun RecentScreen() {
     val lib = a.app.library
     val roms by lib.roms.collectAsState()
     val meta by lib.meta.collectAsState()
+    val loaded by lib.loaded.collectAsState()
     val recent = roms.filter { (meta.roms[it.key]?.lastPlayed ?: 0) > 0 }.sortedByDescending { meta.roms[it.key]!!.lastPlayed }
     GamepadButtons(hints = listOf("A" to stringResource(R.string.library_hint_detail), "L1 R1" to stringResource(R.string.library_hint_tabs)))
 
@@ -995,7 +1006,7 @@ fun RecentScreen() {
         item {
             Text(stringResource(R.string.library_recent_title), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp))
         }
-        if (recent.isEmpty()) {
+        if (recent.isEmpty() && shelfContent(loaded, roms) != ShelfContent.Loading) {
             item { EmptyState(stringResource(R.string.library_recent_empty_title), stringResource(R.string.library_recent_empty_body), null, {}) }
         }
         items(recent, key = { it.key }) { rom ->
