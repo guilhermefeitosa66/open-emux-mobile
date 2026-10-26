@@ -106,6 +106,19 @@
 #endif
 
 #ifdef ANDROID
+void android_app_toggle_states(bool fast_forward, bool turbo)
+{
+   JNIEnv *env = jni_thread_getenv();
+
+   if (!env || !g_android || !g_android->onToggleStates)
+      return;
+
+   CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
+         g_android->onToggleStates,
+         fast_forward ? JNI_TRUE : JNI_FALSE,
+         turbo        ? JNI_TRUE : JNI_FALSE);
+}
+
 static void frontend_unix_set_sustained_performance_mode(bool on);
 
 enum
@@ -3657,6 +3670,8 @@ static void frontend_unix_init(void *data)
          "onExternalMenuInput", "(IIIFF)Z");
    GET_METHOD_ID(env, android_app->onOverlayChanged, class,
          "onOverlayChanged", "(Ljava/lang/String;)V");
+   GET_METHOD_ID(env, android_app->onToggleStates, class,
+         "onToggleStates", "(ZZ)V");
    GET_METHOD_ID(env, android_app->getUserLanguageString, class,
          "getUserLanguageString", "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->isPlayStoreBuild, class,

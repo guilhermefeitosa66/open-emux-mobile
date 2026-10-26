@@ -25,6 +25,15 @@
  *   8. an image the LED driver hid between passes is not left hidden
  *      when its LED comes back on before the next pass;
  *   9. without the cache block every image is set every pass.
+ *
+ * A desc can also be lit by a frontend state (_lit_by: fast_forward,
+ * turbo), how the Android skin draws a toggle's "on" look:
+ *
+ *  10. its image shows only while its state is on, each state on its
+ *      own, with or without the LED driver;
+ *  11. a press does not show it while its state is off;
+ *  12. LED images behave as before on a page that also has lit descs;
+ *  13. the pack's string names the state, and an unknown one none.
  */
 
 #include <stdio.h>
@@ -160,13 +169,13 @@ static unsigned pass(float mod, bool show_input, uint32_t lit,
       const unsigned *map)
 {
    unsigned before = calls;
-   input_overlay_alpha_pass(&pack, mod, show_input, mod, lit, map);
+   input_overlay_alpha_pass(&pack, mod, show_input, mod, 0, lit, map);
    return calls - before;
 }
 
 static bool hidden(unsigned image, uint32_t lit, const unsigned *map)
 {
-   return input_overlay_image_hidden(&pack, image, lit, map);
+   return input_overlay_image_hidden(&pack, image, 0, lit, map);
 }
 
 static void test_map_reaches_its_slots(void)
@@ -309,6 +318,113 @@ static void test_alpha_no_cache(void)
    check(alpha[1] == 2.0f * 0.7f, "a press is still lit");
 }
 
+/* --- images lit by frontend state ----------------------------------- */
+
+#define FF    (1u << (OVERLAY_LIT_BY_FAST_FORWARD - 1))
+#define TURBO (1u << (OVERLAY_LIT_BY_TURBO - 1))
+
+/* Image 1 is lit by fast forward, image 3 by turbo. */
+static void build_lit(void)
+{
+   build(NULL);
+   descs[1].lit_by = OVERLAY_LIT_BY_FAST_FORWARD;
+   descs[3].lit_by = OVERLAY_LIT_BY_TURBO;
+   pack.flags     |= INPUT_OVERLAY_HAS_LIT_BY;
+}
+
+static bool lit_hidden(unsigned image, uint32_t states, uint32_t lit,
+      const unsigned *map)
+{
+   return input_overlay_image_hidden(&pack, image, states, lit, map);
+}
+
+static void lit_pass(bool show_input, uint32_t states)
+{
+   input_overlay_alpha_pass(&pack, 0.7f, show_input, 0.7f, states,
+         0, NULL);
+}
+
+static void test_lit_by(void)
+{
+   printf("images lit by frontend state\n");
+
+   build_lit();
+   check(lit_hidden(1, 0, 0, NULL) && lit_hidden(3, 0, 0, NULL),
+         "with every state off, both lit images are hidden");
+   check(!lit_hidden(0, 0, 0, NULL) && !lit_hidden(2, 0, 0, NULL),
+         "and the other images are not");
+   check(!lit_hidden(1, FF, 0, NULL) && lit_hidden(3, FF, 0, NULL),
+         "fast forward on shows its image only");
+   check(lit_hidden(1, TURBO, 0, NULL) && !lit_hidden(3, TURBO, 0, NULL),
+         "turbo on shows its image only");
+   check(!lit_hidden(1, FF | TURBO, 0, NULL)
+         && !lit_hidden(3, FF | TURBO, 0, NULL),
+         "both on shows both");
+
+   led_map[0] = 4;
+   check(lit_hidden(1, 0, 1u << 0, led_map)
+         && !lit_hidden(1, FF, 1u << 0, led_map),
+         "the LED driver in use does not change it");
+
+   with_cache();
+   lit_pass(false, FF);
+   check(alpha[1] == 0.7f && alpha[3] == 0.0f && alpha[0] == 0.7f,
+         "the pass hides the images whose state is off");
+   lit_pass(false, TURBO);
+   check(alpha[1] == 0.0f && alpha[3] == 0.7f,
+         "and follows the states as they change");
+}
+
+static void test_lit_by_pressed(void)
+{
+   printf("a pressed image lit by state\n");
+
+   build_lit();
+   descs[1].touch_mask = 1;
+   descs[1].alpha_mod  = 2.0f;
+   lit_pass(true, 0);
+   check(alpha[1] == 0.0f, "its state off, a press keeps it hidden");
+   lit_pass(true, FF);
+   check(alpha[1] == 2.0f * 0.7f, "its state on, a press lights it");
+}
+
+static void test_lit_by_with_leds(void)
+{
+   static const uint8_t leds[IMAGES] = { 0, 0, 1, 0, 0 };
+
+   printf("LED images on a page with lit images\n");
+
+   build(leds);
+   descs[1].lit_by = OVERLAY_LIT_BY_FAST_FORWARD;
+   pack.flags     |= INPUT_OVERLAY_HAS_LIT_BY;
+
+   check(lit_hidden(2, FF, 0, led_map) && !lit_hidden(2, 0, 1u << 0, led_map),
+         "a named LED image still follows its LED alone");
+   check(!lit_hidden(2, 0, 0, NULL),
+         "and is not hidden without the LED driver");
+   check(lit_hidden(1, 0, 1u << 0, led_map),
+         "a lit image does not follow an LED");
+
+   /* A page with no lit descs ignores the states mask. */
+   build(NULL);
+   check(!lit_hidden(1, 0, 0, NULL) && !lit_hidden(1, FF, 0, NULL),
+         "without lit descs no state hides anything");
+}
+
+static void test_lit_by_parse(void)
+{
+   printf("the _lit_by string\n");
+
+   check(input_overlay_lit_by_parse("fast_forward")
+         == OVERLAY_LIT_BY_FAST_FORWARD, "\"fast_forward\"");
+   check(input_overlay_lit_by_parse("turbo") == OVERLAY_LIT_BY_TURBO,
+         "\"turbo\"");
+   check(input_overlay_lit_by_parse("rewind") == OVERLAY_LIT_BY_NONE
+         && input_overlay_lit_by_parse("") == OVERLAY_LIT_BY_NONE
+         && input_overlay_lit_by_parse(NULL) == OVERLAY_LIT_BY_NONE,
+         "anything else names no state");
+}
+
 int main(void)
 {
    test_led_driver();
@@ -319,12 +435,16 @@ int main(void)
    test_alpha_cache();
    test_alpha_cache_leds();
    test_alpha_no_cache();
+   test_lit_by();
+   test_lit_by_pressed();
+   test_lit_by_with_leds();
+   test_lit_by_parse();
 
    if (failures)
    {
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("overlay LED images hold\n");
+   printf("overlay LED and lit images hold\n");
    return 0;
 }

@@ -52,9 +52,18 @@ when the content closes, and the library must survive that.
    and keeps each orientation's last layout. `android_app_overlay_changed()`
    in `frontend/drivers/platform_unix.c`, called from `CMD_EVENT_OVERLAY_NEXT`
    in `retroarch.c`.
+5. **Toggles lit.** An overlay desc can name a frontend state its image
+   shows (`overlayN_descM_lit_by = "fast_forward"` or `"turbo"`): the image
+   is hidden while that state is off, with or without the overlay LED
+   driver (`input/input_overlay_alpha.c`). When either state changes, the
+   activity's `onToggleStates()` hears it once, so the pause sheet shows the
+   engine's fast forward. `android_app_toggle_states()` in
+   `frontend/drivers/platform_unix.c`, called from `input_overlay_states()`
+   in `input/input_driver.c` on every input poll, whether or not an overlay
+   is shown (a connected gamepad hides it).
 
 Upstream behaviour is kept: the base `RetroActivityCommon` returns false
-from the first two and ignores the overlay change, so the stock RetroArch
+from the first two and ignores the overlay change and the toggles, so the stock RetroArch
 app still opens and drives its own menu.
 
 Two config-only keys (not in the menu; their defaults keep upstream
@@ -82,6 +91,10 @@ a RetroPad button, an analog stick or a hotkey. `SkinRenderer` draws it at
 the screen's exact pixel size (portrait and landscape) and writes a RetroArch
 overlay with those touch areas, plus `menu_toggle` and the quick actions
 (`save_state`, `load_state`, `turbo_fire_toggle`, `toggle_fast_forward`).
+Turbo and fast forward each get a `nul` desc over their button with the
+"on" pill as its image and `_lit_by` naming the state, so the engine shows
+the pill exactly while the toggle is on (never fast forward's in
+RetroAchievements hardcore, where its button is greyed out).
 Each overlay also sets where the game is drawn (`overlayN_viewport`, which
 RetroArch fits keeping the aspect): on top in portrait, capped like the
 design, and centred between the control sides in landscape, with the quick
@@ -99,7 +112,12 @@ a touch area, with each console's button names translated to the RetroPad
 as `data/Skin.kt` does. A skin in `files/skins/<console>/` takes the
 bundled one's place, and one that fails to load falls back to the drawn
 skin. The NDS skin draws its two screens one over the other, and DeSmuME is
-set to that layout.
+set to that layout. An item bound to turbo or toggle fast forward gets the
+same lit `nul` desc as the drawn strip: the accent pill over the item's
+frame, with the skin's own glyph lifted off the art (what differs from the
+colour around it) and drawn on it in white, so a user's skin lights up too.
+`launch/OverlayWriter.kt` writes the overlays and their images for both
+renderers.
 
 The art comes from a design canvas whose Skin component holds the layout
 engine and each console's colors; `tools/skins/build.py` renders it with

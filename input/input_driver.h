@@ -747,6 +747,8 @@ typedef struct
    int old_touch_index_lut[OVERLAY_MAX_TOUCH];
    /* Bit n: LED n + 1 is lit, for the overlay LED driver. */
    uint32_t overlay_leds_lit;
+   /* The _lit_by states mask at the last alpha pass. */
+   uint32_t overlay_states_last;
 #endif
    uint16_t flags;
    /* Read and written every poll; kept beside flags so the per-poll
