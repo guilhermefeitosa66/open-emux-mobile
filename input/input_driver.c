@@ -5871,22 +5871,6 @@ static bool input_overlay_poll(
 
       if (desc->flags & OVERLAY_DESC_MOVABLE)
       {
-         /* An eight-way area's image (a D-pad's circle) travels a
-          * circle, not the range's square: clamped per axis, it would
-          * reach sqrt(2) times as far on a diagonal and leave the pad. */
-         if (     desc->type == OVERLAY_TYPE_DPAD_AREA
-               || desc->type == OVERLAY_TYPE_ABXY_AREA)
-         {
-            float nx = x_dist / desc->range_x;
-            float ny = y_dist / desc->range_y;
-            float sq = nx * nx + ny * ny;
-            if (sq > 1.0f)
-            {
-               float k = (float)(1.0 / sqrt(sq));
-               x_dist *= k;
-               y_dist *= k;
-            }
-         }
          desc->delta_x = clamp_float(x_dist, -desc->range_x, desc->range_x)
             * ol->active->mod_w;
          desc->delta_y = clamp_float(y_dist, -desc->range_y, desc->range_y)
