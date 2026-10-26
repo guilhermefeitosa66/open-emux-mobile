@@ -96,8 +96,12 @@ class SkinRenderer(private val context: Context) {
             val descs = if (spec.portrait) layout.portrait(h) else layout.landscape(w)
             val image = spec.name.replace('@', '-') + ".png"
             OverlayWriter.saveImages(outDir, image, bitmap, descs)
-            // Touch areas a little larger than what is drawn: thumbs are wide.
-            OverlayWriter.write(cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture, grow = 1.12f)
+            bitmap.recycle()
+            // Touch areas a little larger than what is drawn: thumbs are wide. A stick's zone keeps clear of the game.
+            OverlayWriter.write(
+                cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture, grow = 1.12f,
+                clear = listOf(layout.picture), gap = 2f * unit,
+            )
         }
         val file = File(outDir, "skin.cfg")
         file.writeText(cfg.toString())
@@ -299,12 +303,24 @@ class SkinRenderer(private val context: Context) {
             paint.strokeWidth = r * 0.08f
             paint.color = 0x40000000
             c.drawCircle(box.centerX(), box.centerY() + r * 0.03f, r * 0.94f, paint)
-            paint.style = Paint.Style.FILL
-            paint.color = cl.knob ?: colors.knob
-            paint.setShadowLayer(s(6f), 0f, s(4f), 0x73000000)
-            c.drawCircle(box.centerX(), box.centerY(), r * 0.56f, paint)
-            if (cl.label.isNotEmpty()) text(cl.label, box, 0xFF3B2F7A.toInt(), s(13f), grotesk)
-            descs += OverlayDesc(cl.bind, box, radial = true)
+            // The knob is not painted into the skin: it is an image of its own, the size of its travel
+            // (the engine stretches it over the range), which the engine moves with the thumb.
+            val travel = r * OverlayWriter.KNOB_TRAVEL
+            val side = Math.round(2f * travel).coerceAtLeast(1)
+            val knob = Bitmap.createBitmap(side, side, Bitmap.Config.ARGB_8888)
+            val k = side / 2f
+            val kr = r * 0.5f
+            Canvas(knob).apply {
+                drawCircle(k, k, kr, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    color = cl.knob ?: colors.knob
+                    // Inside the margin the travel leaves around the knob, so the image's edge stays clear.
+                    setShadowLayer(r * 0.09f, 0f, r * 0.05f, 0x73000000)
+                })
+                // On the knob, which would hide it on the well.
+                if (cl.label.isNotEmpty()) text(this, cl.label, RectF(0f, 0f, side.toFloat(), side.toFloat()), 0xFF3B2F7A.toInt(), s(13f), grotesk)
+            }
+            val range = RectF(box.centerX() - travel, box.centerY() - travel, box.centerX() + travel, box.centerY() + travel)
+            descs += OverlayDesc(cl.bind, range, radial = true, well = box, knob = knob)
         }
 
         private fun shoulderRow(keys: List<SkinKey>, x0: Float, x1: Float, top: Float, h: Float, font: Float) {
@@ -437,11 +453,13 @@ class SkinRenderer(private val context: Context) {
             c.drawText(text, x(left + w / 2f), y(top) - paint.ascent(), paint)
         }
 
-        private fun text(label: String, box: RectF, color: Int, size: Float, face: Typeface) {
+        private fun text(label: String, box: RectF, color: Int, size: Float, face: Typeface) = text(c, label, box, color, size, face)
+
+        private fun text(on: Canvas, label: String, box: RectF, color: Int, size: Float, face: Typeface) {
             val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
                 this.color = color; typeface = face; textSize = size; textAlign = Paint.Align.CENTER
             }
-            c.drawText(label, box.centerX(), box.centerY() - (paint.ascent() + paint.descent()) / 2f, paint)
+            on.drawText(label, box.centerX(), box.centerY() - (paint.ascent() + paint.descent()) / 2f, paint)
         }
 
         private fun fill(box: RectF, color: Int) {

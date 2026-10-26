@@ -359,7 +359,7 @@ val Console.skin: Skin
             DARK.with(body = 0xFF16161A, strip = 0xFF0F0F12, ink = 0xFF8C8C9A, dpad = 0xFF2A2A30, shoulder = 0xFF2A2A30, stick = 0xFF2A2A30, knob = 0xFF3A3A42, pill = 0xFF2A2A30),
             listOf(
                 SkinCluster.DPad(SkinSide.LEFT, SkinRow.UPPER, 120f),
-                SkinCluster.Stick(SkinSide.LEFT, SkinRow.LOWER, 72f, "analog_left"),
+                SkinCluster.Stick(SkinSide.LEFT, SkinRow.LOWER, 96f, "analog_left"),
                 SkinCluster.Face(SkinSide.RIGHT, SkinRow.UPPER, Slots.DIAMOND, buttons(PS_LABELS, listOf(0xFF2A2A30), listOf(0xFFC8C8D0))),
             ),
             left = SHOULDER_L, right = SHOULDER_R,

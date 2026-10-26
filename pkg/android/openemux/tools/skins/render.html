@@ -8,10 +8,13 @@
 <script>
 const q = new URLSearchParams(location.search);
 const L = OE.layout(q.get('console'), q.get('device'), q.get('orient'), { export: true });
+// knob=<n> renders that stick's knob alone, on its own transparent square.
+const knob = q.get('knob') == null ? null : L.knobs[+q.get('knob')];
+const W = knob ? knob.size : L.W, H = knob ? knob.size : L.H;
 const root = document.getElementById('root');
-root.style.cssText = `position:relative;width:${L.W}px;height:${L.H}px;overflow:hidden;font-family:'Space Grotesk',sans-serif;`;
+root.style.cssText = `position:relative;width:${W}px;height:${H}px;overflow:hidden;font-family:'Space Grotesk',sans-serif;`;
 const NS = 'http://www.w3.org/2000/svg';
-for (const p of L.parts) {
+for (const p of (knob ? knob.parts : L.parts)) {
   const d = document.createElement('div');
   d.style.cssText = p.style;
   if (p.hasIcon) {
