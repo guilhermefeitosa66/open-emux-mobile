@@ -92,7 +92,7 @@ fun BackupScreen() {
         if (uri != null) backup.inspect(uri)
     }
 
-    Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
+    MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
             BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             FitText(stringResource(R.string.settings_backup), Type.Display, Modifier.padding(top = 4.dp))
@@ -157,13 +157,14 @@ fun BackupScreen() {
             },
         )
         Spacer(Modifier.height(28.dp))
-    }
+        Spacer(Modifier.height(hintBarInset))
+    } }
 
     (state as? BackupState.Confirm)?.let { confirm ->
         val m = confirm.manifest
         ModalBottomSheet({ backup.dismiss() }, containerColor = Oe.Sheet) {
             ImmersiveWindow()
-            Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
+            MarginFocusScroll { Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(stringResource(R.string.backup_confirm_title), style = Type.Title.copy(fontSize = 22.sp))
                 val day = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()).format(Date(m.created))
                 Text(
@@ -187,7 +188,7 @@ fun BackupScreen() {
                 Text(stringResource(R.string.backup_confirm_note), style = Type.Small, modifier = Modifier.padding(top = 14.dp, bottom = 16.dp))
                 PrimaryButton(stringResource(R.string.backup_confirm), { backup.restore(confirm) }, Modifier.fillMaxWidth(), height = 54.dp)
                 SecondaryButton(stringResource(R.string.backup_cancel), { backup.dismiss() }, Modifier.padding(top = 10.dp).fillMaxWidth(), height = 54.dp)
-            }
+            } }
         }
     }
 }
