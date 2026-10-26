@@ -112,7 +112,12 @@ a touch area, with each console's button names translated to the RetroPad
 as `data/Skin.kt` does. A skin in `files/skins/<console>/` takes the
 bundled one's place, and one that fails to load falls back to the drawn
 skin. The NDS skin draws its two screens one over the other, and DeSmuME is
-set to that layout.
+set to that layout. An item bound to turbo or toggle fast forward gets the
+same lit `nul` desc as the drawn strip: the accent pill over the item's
+frame, with the skin's own glyph lifted off the art (what differs from the
+colour around it) and drawn on it in white, so a user's skin lights up too.
+`launch/OverlayWriter.kt` writes the overlays and their images for both
+renderers.
 
 The art comes from a design canvas whose Skin component holds the layout
 engine and each console's colors; `tools/skins/build.py` renders it with

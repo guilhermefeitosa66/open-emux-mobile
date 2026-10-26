@@ -27,7 +27,6 @@ import com.openemux.mobile.data.skin
 import com.openemux.mobile.ui.Icons
 import com.retroarch.R
 import java.io.File
-import java.util.Locale
 
 /**
  * Draws the console's controller skin (data/Skin.kt, the design's skin
@@ -37,28 +36,11 @@ import java.util.Locale
  */
 class SkinRenderer(private val context: Context) {
 
-    private companion object {
-        /** The app accent (Oe.Accent) and its light tone (Oe.AccentOnSoft, dark), for a toggle that is on. */
-        const val ACCENT = 0xFF7C3AED.toInt()
-        const val ACCENT_RING = 0xFFD4C4FF.toInt()
-    }
-
     /** One overlay: [rotate] is the one turning the screen switches to, [layoutNext] the NDS layout key's target. */
     private class Spec(
         val name: String, val portrait: Boolean, val aspect: Float, val rotate: String,
         val keypadOpen: Boolean = false, val layoutNext: String? = null,
     )
-
-    /**
-     * [radial] marks an analog stick, whose rect is its range; [next] is the overlay an overlay_next switches to;
-     * [lit] is a toggle's "on" image, drawn over its rect only while the engine has that state on.
-     */
-    private class Desc(
-        val name: String, val rect: RectF, val radial: Boolean = false, val next: String? = null, val lit: Lit? = null,
-    )
-
-    /** The image of a desc lit by an engine state (overlayN_descM_lit_by: fast_forward or turbo). */
-    private class Lit(val state: String, val bitmap: Bitmap)
 
     private val inter: Typeface = ResourcesCompat.getFont(context, R.font.inter_bold) ?: Typeface.DEFAULT_BOLD
     private val grotesk: Typeface = ResourcesCompat.getFont(context, R.font.grotesk_bold) ?: Typeface.DEFAULT_BOLD
@@ -113,63 +95,13 @@ class SkinRenderer(private val context: Context) {
             val layout = Layout(Canvas(bitmap), skin, unit, spec.aspect, spec.keypadOpen, toggle, spec.layoutNext, hardcore)
             val descs = if (spec.portrait) layout.portrait(h) else layout.landscape(w)
             val image = spec.name.replace('@', '-') + ".png"
-            File(outDir, image).outputStream().use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-            descs.forEach { d ->
-                d.lit?.let { lit ->
-                    File(outDir, litImage(image, lit)).outputStream().use { lit.bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
-                }
-            }
-            writeOverlay(cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture)
+            OverlayWriter.saveImages(outDir, image, bitmap, descs)
+            // Touch areas a little larger than what is drawn: thumbs are wide.
+            OverlayWriter.write(cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture, grow = 1.12f)
         }
         val file = File(outDir, "skin.cfg")
         file.writeText(cfg.toString())
         return file
-    }
-
-    private fun litImage(image: String, lit: Lit) = image.removeSuffix(".png") + "-lit-${lit.state}.png"
-
-    private fun writeOverlay(
-        cfg: StringBuilder, index: Int, name: String, other: String, image: String,
-        descs: List<Desc>, w: Int, h: Int, picture: RectF,
-    ) {
-        val p = "overlay$index"
-        cfg.append("${p}_name = \"$name\"\n")
-        // Where the engine draws the game, keeping its aspect inside this box; GL counts y from the bottom.
-        cfg.append(
-            String.format(
-                Locale.US, "%s_viewport = \"%.5f,%.5f,%.5f,%.5f\"\n",
-                p, picture.left / w, (h - picture.bottom) / h, picture.width() / w, picture.height() / h,
-            )
-        )
-        cfg.append("${p}_overlay = \"$image\"\n")
-        cfg.append("${p}_full_screen = true\n")
-        cfg.append("${p}_normalized = true\n")
-        cfg.append("${p}_range_mod = 1.0\n")
-        cfg.append("${p}_alpha_mod = 1.0\n")
-        cfg.append("${p}_descs = ${descs.size + 1}\n")
-        descs.forEachIndexed { i, d ->
-            // Touch areas a little larger than what is drawn: thumbs are wide. A lit image is stretched over its
-            // desc's range, so that stays exactly what was drawn.
-            val grow = if (d.radial || d.lit != null) 1f else 1.12f
-            val hw = d.rect.width() / 2f * grow
-            val hh = d.rect.height() / 2f * grow
-            cfg.append(
-                String.format(
-                    Locale.US, "%s_desc%d = \"%s,%.5f,%.5f,%s,%.5f,%.5f\"\n",
-                    p, i, d.name, d.rect.centerX() / w, d.rect.centerY() / h, if (d.radial) "radial" else "rect", hw / w, hh / h,
-                )
-            )
-            if (d.radial) cfg.append("${p}_desc${i}_saturate_pct = 0.65\n")
-            d.next?.let { cfg.append("${p}_desc${i}_next_target = \"$it\"\n") }
-            d.lit?.let {
-                cfg.append("${p}_desc${i}_overlay = \"${litImage(image, it)}\"\n")
-                cfg.append("${p}_desc${i}_lit_by = \"${it.state}\"\n")
-            }
-        }
-        // Unreachable switch that lets auto-rotate find the other orientation.
-        val n = descs.size
-        cfg.append("${p}_desc$n = \"overlay_next,0.5,0.5,rect,0.00001,0.00001\"\n")
-        cfg.append("${p}_desc${n}_next_target = \"$other\"\n")
     }
 
     /**
@@ -189,7 +121,7 @@ class SkinRenderer(private val context: Context) {
         private val hardcore: Boolean,
     ) {
         private val colors: SkinColors = skin.colors
-        private val descs = mutableListOf<Desc>()
+        private val descs = mutableListOf<OverlayDesc>()
 
         /** The game's box, in pixels, as the overlay's viewport. */
         var picture = RectF()
@@ -204,7 +136,7 @@ class SkinRenderer(private val context: Context) {
         private fun s(v: Float) = v * f * unit
         private fun rect(l: Float, t: Float, w: Float, h: Float) = RectF(x(l), y(t), x(l + w), y(t + h))
 
-        fun portrait(height: Int): List<Desc> {
+        fun portrait(height: Int): List<OverlayDesc> {
             val hd = height / unit
             // The picture on top, at full width up to the design's cap: taller ones narrow, centred.
             val gameH = minOf(390f / aspect, if (skin.family == SkinFamily.DUAL) 466f else 380f)
@@ -238,7 +170,7 @@ class SkinRenderer(private val context: Context) {
         }
 
         /** One row of shoulders, keys and menu on top, the controls under it, no name. */
-        private fun compact(top: Float, room: Float): List<Desc> {
+        private fun compact(top: Float, room: Float): List<OverlayDesc> {
             f = minOf(1f, room / 200f)
             val pd = maxOf(room, 200f)
             ox = 195f * (1f - f)
@@ -261,7 +193,7 @@ class SkinRenderer(private val context: Context) {
             return descs
         }
 
-        fun landscape(width: Int): List<Desc> {
+        fun landscape(width: Int): List<OverlayDesc> {
             val wd = width / unit
             // The picture centred between the control sides, with the strip under it.
             val gameW = minOf(wd - 2f * 170f, 354f * aspect)
@@ -317,7 +249,7 @@ class SkinRenderer(private val context: Context) {
                         c.drawRoundRect(box, radius, radius, paint)
                         val size = maxOf(11f, minOf(slot.w, slot.h) * k * (if (b.label.length > 2) 0.22f else 0.34f))
                         text(b.label, box, b.fg, s(size), grotesk)
-                        b.bind?.let { descs += Desc(it, box) }
+                        b.bind?.let { descs += OverlayDesc(it, box) }
                     }
                 }
             }
@@ -350,10 +282,10 @@ class SkinRenderer(private val context: Context) {
                 RectF(box.left + col * cell, box.top + row * cell, box.left + (col + 1) * cell, box.top + (row + 1) * cell)
             val (up, down, left, right) = binds
             descs += listOf(
-                Desc(up, cellRect(1, 0)), Desc(down, cellRect(1, 2)),
-                Desc(left, cellRect(0, 1)), Desc(right, cellRect(2, 1)),
-                Desc("$up|$left", cellRect(0, 0)), Desc("$up|$right", cellRect(2, 0)),
-                Desc("$down|$left", cellRect(0, 2)), Desc("$down|$right", cellRect(2, 2)),
+                OverlayDesc(up, cellRect(1, 0)), OverlayDesc(down, cellRect(1, 2)),
+                OverlayDesc(left, cellRect(0, 1)), OverlayDesc(right, cellRect(2, 1)),
+                OverlayDesc("$up|$left", cellRect(0, 0)), OverlayDesc("$up|$right", cellRect(2, 0)),
+                OverlayDesc("$down|$left", cellRect(0, 2)), OverlayDesc("$down|$right", cellRect(2, 2)),
             )
         }
 
@@ -372,7 +304,7 @@ class SkinRenderer(private val context: Context) {
             paint.setShadowLayer(s(6f), 0f, s(4f), 0x73000000)
             c.drawCircle(box.centerX(), box.centerY(), r * 0.56f, paint)
             if (cl.label.isNotEmpty()) text(cl.label, box, 0xFF3B2F7A.toInt(), s(13f), grotesk)
-            descs += Desc(cl.bind, box, radial = true)
+            descs += OverlayDesc(cl.bind, box, radial = true)
         }
 
         private fun shoulderRow(keys: List<SkinKey>, x0: Float, x1: Float, top: Float, h: Float, font: Float) {
@@ -384,7 +316,7 @@ class SkinRenderer(private val context: Context) {
                 val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = colors.shoulder }
                 c.drawRoundRect(box, s(12f), s(12f), paint)
                 text(key.label, box, colors.shoulderInk, s(font), inter)
-                descs += Desc(key.bind!!, box)
+                descs += OverlayDesc(key.bind!!, box)
             }
         }
 
@@ -398,7 +330,7 @@ class SkinRenderer(private val context: Context) {
                 style = Paint.Style.STROKE; strokeWidth = 2f * u; color = colors.menuInk; strokeCap = Paint.Cap.ROUND
             }
             for (ly in floatArrayOf(7f, 12f, 17f)) c.drawLine(left + 5 * u, top + ly * u, left + 19 * u, top + ly * u, stroke)
-            descs += Desc("menu_toggle", box)
+            descs += OverlayDesc("menu_toggle", box)
         }
 
         private fun pill(key: SkinKey, cx: Float, top: Float, w: Float, h: Float, font: Float) {
@@ -411,7 +343,7 @@ class SkinRenderer(private val context: Context) {
             // A [font] of 0 writes the label inside the key, for the compact panel.
             if (font == 0f) label(text, cx - w / 2f, top + h / 2f - 5.5f, w, 10f, 0.06f, alpha = 0xFF, color = colors.menuInk)
             else label(text, cx - 40f, top + h + 5f, 80f, font, 0.08f, alpha = 0xFF)
-            descs += if (keypad) Desc("overlay_next", box, next = toggle) else Desc(key.bind!!, box)
+            descs += if (keypad) OverlayDesc("overlay_next", box, next = toggle) else OverlayDesc(key.bind!!, box)
         }
 
         /** The keypad's keys in a grid of [w] by [h] around ([cx], [cy]), on the face buttons' side. */
@@ -432,7 +364,7 @@ class SkinRenderer(private val context: Context) {
                     }
                     c.drawRoundRect(box, s(10f), s(10f), paint)
                     text(k.label, box, colors.menuInk, s(minOf(18f, key * 0.4f)), grotesk)
-                    k.bind?.let { descs += Desc(it, box) }
+                    k.bind?.let { descs += OverlayDesc(it, box) }
                 }
             }
         }
@@ -453,11 +385,8 @@ class SkinRenderer(private val context: Context) {
                 c.drawPath(stripIcon(action, cx, cy, size), stripPaint(action, size, color))
                 val area = RectF(box.left + slot * i, box.top, box.left + slot * (i + 1), box.bottom)
                 if (off) return@forEachIndexed
-                descs += if (action == "screens") Desc("overlay_next", area, next = layoutNext) else Desc(action, area)
-                when (action) {
-                    "turbo_fire_toggle" -> descs += litPill(action, "turbo", cx, cy, slot, size)
-                    "toggle_fast_forward" -> descs += litPill(action, "fast_forward", cx, cy, slot, size)
-                }
+                descs += if (action == "screens") OverlayDesc("overlay_next", area, next = layoutNext) else OverlayDesc(action, area)
+                OverlayWriter.LIT_BY[action]?.let { descs += litPill(action, it, cx, cy, slot, size) }
             }
         }
 
@@ -487,21 +416,13 @@ class SkinRenderer(private val context: Context) {
          * A toggle's "on" look, shown by the engine while [state] is on: the app accent's pill, 46 x 30 (no wider than
          * the slot less 8), its light inner ring, and the icon over it in white. A "nul" desc, so it presses nothing.
          */
-        private fun litPill(action: String, state: String, cx: Float, cy: Float, slot: Float, size: Float): Desc {
-            val w = maxOf(1, minOf(s(46f), slot - s(8f)).toInt())
-            val h = maxOf(1, s(30f).toInt())
-            val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(bitmap)
-            val radius = s(10f)
-            val ring = s(1.5f)
-            canvas.drawRoundRect(RectF(0f, 0f, w.toFloat(), h.toFloat()), radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ACCENT })
-            canvas.drawRoundRect(
-                RectF(ring / 2f, ring / 2f, w - ring / 2f, h - ring / 2f), radius - ring / 2f, radius - ring / 2f,
-                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = ACCENT_RING; style = Paint.Style.STROKE; strokeWidth = ring },
-            )
-            canvas.drawPath(stripIcon(action, w / 2f, h / 2f, size), stripPaint(action, size, 0xFFFFFFFF.toInt()))
+        private fun litPill(action: String, state: String, cx: Float, cy: Float, slot: Float, size: Float): OverlayDesc {
+            val bitmap = OverlayWriter.pill(minOf(s(46f), slot - s(8f)).toInt(), s(30f).toInt(), s(10f), s(1.5f))
+            val w = bitmap.width
+            val h = bitmap.height
+            Canvas(bitmap).drawPath(stripIcon(action, w / 2f, h / 2f, size), stripPaint(action, size, 0xFFFFFFFF.toInt()))
             val rect = RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f)
-            return Desc("nul", rect, lit = Lit(state, bitmap))
+            return OverlayDesc("nul", rect, lit = OverlayLit(state, bitmap))
         }
 
         private fun label(text: String, left: Float, top: Float, w: Float, font: Float, spacing: Float, alpha: Int = 0xB3, color: Int = colors.ink) {
