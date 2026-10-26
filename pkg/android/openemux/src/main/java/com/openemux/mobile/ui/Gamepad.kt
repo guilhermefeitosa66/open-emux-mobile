@@ -288,7 +288,7 @@ fun FocusRow(
 }
 
 /** Widens the layout by [x] on each side, past its parent's padding. */
-private fun Modifier.bleed(x: Dp): Modifier = layout { measurable, constraints ->
+internal fun Modifier.bleed(x: Dp): Modifier = layout { measurable, constraints ->
     val extra = if (constraints.hasBoundedWidth) (x * 2).roundToPx() else 0
     val placeable = measurable.measure(
         constraints.copy(minWidth = constraints.minWidth + extra, maxWidth = constraints.maxWidth + extra),
