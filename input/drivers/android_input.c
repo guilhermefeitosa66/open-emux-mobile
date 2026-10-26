@@ -1376,11 +1376,29 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
 static void android_pointer_set(android_input_t *android, unsigned i,
       struct video_viewport *vp, float x, float y)
 {
+   int full_w, full_h;
    /* a translation that fails (no viewport) leaves what was there */
    input_driver_translate_coord_viewport_confined_wrap(vp, x, y,
          &android->pointer[i].confined_pos, &android->pointer[i].full_pos);
-   input_driver_translate_coord_viewport_wrap(vp, x, y,
-         &android->pointer[i].pos, &android->pointer[i].full_pos);
+   if (!input_driver_translate_coord_viewport_wrap(vp, x, y,
+         &android->pointer[i].pos, &android->pointer[i].full_pos))
+      return;
+
+   /* OpenEmux: a finger that went down in the window and slid past its
+    * edge (into the strip a display cutout leaves) is still on the
+    * screen. Its screen position is held at that edge instead of being
+    * offscreen, which read as lifted: the overlay control it owns let
+    * go, and the touches after it were no longer read. The viewport
+    * position, the one a lightgun's offscreen test reads, is unchanged. */
+   full_w = (int)VIDEO_SCALE_W(vp->full_dims);
+   full_h = (int)VIDEO_SCALE_H(vp->full_dims);
+   if (x < 0 || y < 0 || x > full_w - 1 || y > full_h - 1)
+   {
+      uint32_t viewport_pos;
+      video_driver_translate_coord_viewport(vp,
+            (int)MIN(MAX(x, 0), full_w - 1), (int)MIN(MAX(y, 0), full_h - 1),
+            &viewport_pos, &android->pointer[i].full_pos, true);
+   }
 }
 
 /* The pen's position, written to pointer 0. */
