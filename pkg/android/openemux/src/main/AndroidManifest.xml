@@ -42,6 +42,7 @@
             android:name="com.openemux.mobile.MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:theme="@style/Theme.OpenEmux.Launch"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
             <intent-filter>

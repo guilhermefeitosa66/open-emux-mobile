@@ -3,16 +3,20 @@
     <color name="oe_bg">#FF121216</color>
     <color name="oe_accent">#FF7C3AED</color>
     <color name="oe_icon_background">#FF14101C</color>
-    <!-- Full screen from the starting window on: the bars never show before MainActivity hides them. -->
     <style name="Theme.OpenEmux.Base" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/oe_bg</item>
-        <item name="android:windowFullscreen">true</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
     <style name="Theme.OpenEmux" parent="Theme.OpenEmux.Base" />
+    <!-- MainActivity's starting window only: full screen from the first frame, so the bars never show before
+         the activity hides them. onCreate swaps back to Theme.OpenEmux, since a FLAG_FULLSCREEN window has its
+         adjustResize ignored below API 30 and the keyboard would cover the text fields. -->
+    <style name="Theme.OpenEmux.Launch" parent="Theme.OpenEmux">
+        <item name="android:windowFullscreen">true</item>
+    </style>
     <style name="Theme.OpenEmux.Game" parent="android:Theme.NoTitleBar.Fullscreen">
         <item name="android:windowBackground">@android:color/black</item>
     </style>

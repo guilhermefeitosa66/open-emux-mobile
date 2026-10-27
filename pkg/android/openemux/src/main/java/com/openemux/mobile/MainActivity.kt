@@ -22,6 +22,7 @@ import com.openemux.mobile.ui.Oe
 import com.openemux.mobile.ui.OpenEmuxRoot
 import com.openemux.mobile.ui.ProvideWindowLayout
 import com.openemux.mobile.ui.ThemePref
+import com.retroarch.R
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -31,12 +32,15 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemePref.load(this)
         Oe.syncSystem(this)
+        // The manifest's Theme.OpenEmux.Launch keeps the starting window full screen; the activity's own window
+        // must not carry its FLAG_FULLSCREEN, which makes adjustResize a no-op below API 30 (the keyboard would
+        // cover the text fields). The API 31+ system splash ignores the theme and is the system's to draw.
+        setTheme(R.style.Theme_OpenEmux)
         super.onCreate(savedInstanceState)
-        // Before the window is attached, so the first frame is already full screen rather than animating into it.
-        // The theme's windowFullscreen covers the starting window and does not fight the insets controller
-        // (bars still come back on a swipe); the API 31+ system splash ignores it and is the system's to draw.
-        enableEdgeToEdge(statusBarStyle = barStyle(Oe.dark), navigationBarStyle = barStyle(Oe.dark))
-        immersive()
+        // Before the window is attached, so the first frame is already full screen rather than animating into it;
+        // onResume hides the bars again, still before that first frame.
+        val style = barStyle(Oe.dark)
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
         setContent {
             val dark = Oe.dark
             LaunchedEffect(dark) { barIcons(dark) }
@@ -93,7 +97,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // A warm start or the way back from the game resumes before focus arrives: hide them already.
+        // The first frame, a warm start or the way back from the game: all resume before focus arrives.
         immersive()
     }
 
