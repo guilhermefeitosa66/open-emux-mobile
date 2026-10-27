@@ -30,11 +30,12 @@ class ShareServiceTest {
         dir.deleteRecursively()
     }
 
-    private fun service(sdk: Int) = ShareService(
+    private fun service(sdk: Int, probe: SpaceProbe = NioSpaceProbe) = ShareService(
         sdk,
         { storesMade++; IdentityStore(dir, backend) { IdentityStore.Defaults("Pixel", "phone") } },
         { ownId, onPeers -> discoveries++; Discovery(NoLock, emptyList(), PeerList(ownId, onChange = onPeers)) },
         { ShareServer(it, preferredPort = 0, bindAddress = loopback) },
+        probe,
     )
 
     private object NoLock : MulticastLockHandle {
@@ -84,6 +85,20 @@ class ShareServiceTest {
         assertFalse(service.running.value)
         assertEquals(DiscoveryState.Idle, service.discoveryState.value)
         service.stop()
+    }
+
+    @Test
+    fun `the receiver's plan measures space with the service's probe`() {
+        val lib = FakeLibrary()
+        val offer = IncomingOffer(
+            "offer1", OfferSender("c".repeat(32), "Phone", "phone", "d".repeat(64)),
+            manifest { game("g1", "SFC") { item("rom", "Game.sfc", "rom".toByteArray()) } }, "482913",
+        )
+        val service = service(34, FakeSpace(mapOf(lib.paths.base.path to 7L)))
+        val check = service.prepareReceive(offer, lib).spaceCheck().single()
+        assertEquals(7L, check.free)
+        assertFalse(check.ok)
+        lib.paths.base.parentFile!!.deleteRecursively()
     }
 
     @Test

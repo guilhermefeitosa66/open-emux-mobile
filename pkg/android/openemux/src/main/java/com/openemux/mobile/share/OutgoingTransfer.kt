@@ -46,6 +46,7 @@ class OutgoingTransfer(
         private set
 
     private val cancelled = CountDownLatch(1)
+    private var told = false
     private val items: Map<String, JSONObject> = linkedMapOf<String, JSONObject>().apply {
         val games = built.json.getJSONArray("games")
         for (g in 0 until games.length()) {
@@ -134,7 +135,12 @@ class OutgoingTransfer(
             }
             var bytes = 0L
             client.putFile(offerId!!, id, source, size) { n ->
-                checkCancel()
+                if (cancelled.count == 0L) {
+                    // The receiver hears the cancel while the upload is still open: cut first, and
+                    // it would end the transfer as a failed short upload rather than as cancelled.
+                    tellReceiver()
+                    throw LocalCancel()
+                }
                 bytes += n
                 done += n
                 report(item, bytes, done, total, sent.size, toSend.size)
@@ -165,6 +171,8 @@ class OutgoingTransfer(
 
     private fun tellReceiver() {
         val id = offerId ?: return
+        if (told) return
+        told = true
         try {
             client.cancel(id)
         } catch (e: ShareError) {

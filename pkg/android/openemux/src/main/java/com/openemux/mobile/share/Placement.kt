@@ -90,11 +90,17 @@ interface SpaceProbe {
     fun store(dir: File): Pair<Any, Long>
 }
 
+/** The JVM's [java.nio.file.FileStore]; Android refuses it with a [SecurityException]. */
 object NioSpaceProbe : SpaceProbe {
     override fun store(dir: File): Pair<Any, Long> {
         val store = Files.getFileStore(dir.toPath())
         return store to store.usableSpace
     }
+}
+
+/** The filesystem as [device] names it (`st_dev` on Android), measured with [File.getUsableSpace]. */
+class DeviceSpaceProbe(private val device: (File) -> Long) : SpaceProbe {
+    override fun store(dir: File): Pair<Any, Long> = device(dir) to dir.usableSpace
 }
 
 class ReceivePlan(val games: List<GamePlan>, private val probe: SpaceProbe = NioSpaceProbe, private val reserve: Long = SPACE_RESERVE) {
@@ -114,7 +120,8 @@ class ReceivePlan(val games: List<GamePlan>, private val probe: SpaceProbe = Nio
             while (!dir.exists()) dir = dir.parentFile ?: break
             val (key, free) = try {
                 probe.store(dir)
-            } catch (_: IOException) {
+            } catch (_: Exception) {
+                // Unmeasurable (an I/O error, or a platform that refuses to say) means no room, shown as such.
                 dir to 0L
             }
             val group = groups[key]

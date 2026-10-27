@@ -4,6 +4,7 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.system.Os
 import android.util.Log
 import com.openemux.mobile.data.Rom
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +33,7 @@ class ShareService(
     private val identityStore: () -> IdentityStore,
     private val newDiscovery: (ownId: String, onPeers: (List<Peer>) -> Unit) -> Discovery,
     private val newServer: (DeviceIdentity) -> ShareServer = { ShareServer(it) },
+    private val spaceProbe: SpaceProbe = NioSpaceProbe,
 ) {
     private val _identity = MutableStateFlow<DeviceIdentity?>(null)
     val identity: StateFlow<DeviceIdentity?> = _identity.asStateFlow()
@@ -136,7 +138,7 @@ class ShareService(
         policies: Map<String, Policy> = emptyMap(),
         overrides: Map<String, Policy> = emptyMap(),
         unchecked: Set<String> = emptySet(),
-    ): ReceivePlan = planReceive(offer.manifest, library.paths, CoreIdentities(library.paths), policies, overrides, unchecked)
+    ): ReceivePlan = planReceive(offer.manifest, library.paths, CoreIdentities(library.paths), policies, overrides, unchecked, spaceProbe)
 
     /**
      * Accepts [offerId] with [plan] and starts receiving into [library]. When a
@@ -274,6 +276,7 @@ class ShareService(
                         PeerList(ownId, onChange = onPeers),
                     )
                 },
+                spaceProbe = DeviceSpaceProbe { Os.stat(it.path).st_dev },
             ).also { Log.d(TAG, "share service created (sdk ${Build.VERSION.SDK_INT})") }
         }
     }
