@@ -184,6 +184,7 @@ fun ShelfScreen() {
     // The focused shelf keeps clear of the top and of the bars over the bottom.
     MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding()) {
         val columns = shelfColumns(maxWidth.value, spec.maxColumns, spec.sidePadding, spec.gap)
+        val cardSpec = shelfCardSpec(spec.tablet)
         LazyVerticalGrid(
             GridCells.Fixed(columns),
             Modifier.fillMaxSize().holdFocusAtEnd(FocusDirection.Down),
@@ -263,7 +264,7 @@ fun ShelfScreen() {
                     val moveDown = stringResource(R.string.library_shelf_move_down)
                     ShelfCard(
                         console, short, name, countString(R.plurals.library_games_count, list.size, list.size), background, ink,
-                        shelfCardSpec(spec.tablet), spec.cardHeight.dp, (spec.gap / 2).dp, if (spec.tablet) 24.dp else 22.dp,
+                        cardSpec, spec.cardHeight.dp, (spec.gap / 2).dp, if (spec.tablet) 24.dp else 22.dp,
                         Modifier
                             .then(if (isDragged) Modifier.zIndex(2f).graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
                             .restorableFocus(filter, focusedShelf, initial = shelves.first().second == filter)
@@ -436,7 +437,8 @@ private fun ShelfCard(
         Modifier
             .padding(vertical = spacing)
             .fillMaxWidth()
-            .height(height)
+            // At least [height]: a large font scale grows the card instead of clipping the count.
+            .heightIn(min = height)
             .gamepadFocus(corner = corner, scale = 1.02f)
             .then(focus)
             .clip(RoundedCornerShape(corner))
@@ -444,7 +446,7 @@ private fun ShelfCard(
             .clickable(role = Role.Button, onClick = onClick),
     ) {
         val tag = Type.Tag.copy(color = ink.copy(alpha = 0.72f), fontSize = 12.sp, letterSpacing = 1.sp)
-        Row(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(start = card.startPadding.dp, end = card.startPadding.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(horizontal = card.startPadding.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
             ShelfIconTile(console, card.box.dp, card.icon.dp, card.star.dp)
             Column(Modifier.padding(start = 16.dp)) {
                 Text(short, style = tag, maxLines = 1, overflow = TextOverflow.Ellipsis)
