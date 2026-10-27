@@ -55,7 +55,7 @@ class OpenEmuxApp : Application() {
         // A restore the process died in is finished or undone before anything reads the data.
         Paths(this).let { BackupRoots(it.base, it.internal).recover() }
         library = Library(this)
-        covers = Covers(this)
+        covers = Covers(this, library.paths)
         labels = Labels(library.paths)
         achievements = AchievementsStore(this, File(library.paths.launch, "current/retroarch.cfg"))
         launcher = GameLauncher(this, library, covers, labels, achievements)

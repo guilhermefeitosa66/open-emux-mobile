@@ -53,7 +53,7 @@ class Labels(private val paths: Paths) {
 
     private val usable get() = BuildConfig.SS_DEVID.isNotEmpty() && BuildConfig.SS_DEVPASSWORD.isNotEmpty()
 
-    private fun dir(console: Console) = File(paths.labels, console.id)
+    private fun dir(console: Console) = paths.labels(console)
     private fun file(rom: Rom) = File(dir(rom.console), "${rom.baseName}.png")
     private fun none(rom: Rom) = File(dir(rom.console), "${rom.baseName}.none")
 

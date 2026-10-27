@@ -28,7 +28,12 @@ class Item(
     val knownKind: Boolean get() = kind in KINDS
 
     companion object {
-        val KINDS = setOf("rom", "battery_save", "state", "cover", "label")
+        const val ROM = "rom"
+        const val BATTERY_SAVE = "battery_save"
+        const val STATE = "state"
+        const val COVER = "cover"
+        const val LABEL = "label"
+        val KINDS = setOf(ROM, BATTERY_SAVE, STATE, COVER, LABEL)
     }
 }
 

@@ -56,7 +56,7 @@ internal const val TAG = "OpenEmuxShare"
 /**
  * Error codes, on the wire and in the share layer's own failures. The UI
  * translates them (#591); nothing here is ever shown to a user as a sentence.
- * The last three never cross the network.
+ * The ones after [NO_SPACE] never cross the network.
  */
 object ErrorCode {
     const val BAD_REQUEST = "bad_request"
@@ -70,9 +70,14 @@ object ErrorCode {
     const val TOO_LARGE = "too_large"
     const val NOT_IMPLEMENTED = "not_implemented"
     const val INTERNAL = "internal"
+    const val NO_SPACE = "no_space"
     const val FINGERPRINT_MISMATCH = "fingerprint_mismatch"
     const val UNREACHABLE = "unreachable"
     const val UNAVAILABLE = "unavailable"
+    /** A file changed on the sender's disk after the manifest was built. */
+    const val SOURCE_CHANGED = "source_changed"
+    /** An accepted transfer went quiet for longer than [ShareProtocol.IDLE_TIMEOUT_MS]. */
+    const val IDLE_TIMEOUT = "idle_timeout"
 
     /** The HTTP status each wire error is answered with. */
     val HTTP_STATUS = mapOf(
@@ -87,7 +92,22 @@ object ErrorCode {
         TOO_LARGE to 413,
         NOT_IMPLEMENTED to 501,
         INTERNAL to 500,
+        NO_SPACE to 507,
     )
+}
+
+/**
+ * Why an offered item is answered `skip`, and (the last two) why a game is
+ * left out of a manifest. Senders treat a reason they do not know as a skip.
+ */
+object SkipReason {
+    const val INCOMPATIBLE_STATE = "incompatible_state"
+    const val EXISTS_SKIP = "exists_skip"
+    const val UNSUPPORTED_CONSOLE = "unsupported_console"
+    const val USER_UNCHECKED = "user_unchecked"
+    const val INVALID_ITEM = "invalid_item"
+    const val UNIT_INCOMPLETE = "unit_incomplete"
+    const val TOO_MANY_ITEMS = "too_many_items"
 }
 
 /**

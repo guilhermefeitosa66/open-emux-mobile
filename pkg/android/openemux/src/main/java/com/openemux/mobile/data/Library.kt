@@ -9,10 +9,13 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 
-/** Every directory the frontend and the RetroArch engine share. */
-class Paths(context: Context) {
-    val base: File = context.getExternalFilesDir(null) ?: context.filesDir
-    val internal: File = context.filesDir
+/**
+ * Every directory the frontend and the RetroArch engine share. [base] is the
+ * app's external files folder, [internal] its private one; the plain
+ * constructor lets the JVM tests build the same layout in a temp folder.
+ */
+class Paths(val base: File, val internal: File) {
+    constructor(context: Context) : this(context.getExternalFilesDir(null) ?: context.filesDir, context.filesDir)
 
     fun roms(console: Console) = File(base, "roms/${console.id}")
     fun states(console: Console) = File(base, "states/${console.id}")
@@ -27,6 +30,13 @@ class Paths(context: Context) {
     val meta = File(internal, "meta.json")
     val carts = File(internal, "carts")
     val labels = File(internal, "labels")
+
+    fun labels(console: Console) = File(labels, console.id)
+
+    /** Box art kept on the device (a game received through Share nearby), preferred over the mirror. */
+    fun covers(console: Console) = File(internal, "covers/${console.id}")
+
+    fun playtime(console: Console, stem: String) = File(playtime, "${console.id}_$stem.txt")
 }
 
 data class Rom(
@@ -201,7 +211,7 @@ class Library(private val context: Context) {
 
     fun autoState(rom: Rom): SaveState? = states(rom).firstOrNull { it.isAuto }
 
-    fun playtimeFile(rom: Rom) = File(paths.playtime, "${rom.console.id}_${rom.baseName}.txt")
+    fun playtimeFile(rom: Rom) = paths.playtime(rom.console, rom.baseName)
 
     fun playtimeSeconds(rom: Rom): Long =
         runCatching { playtimeFile(rom).readText().trim().toLong() }.getOrDefault(0L)

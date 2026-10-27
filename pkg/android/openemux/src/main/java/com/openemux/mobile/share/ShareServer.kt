@@ -40,7 +40,7 @@ fun interface FileReceiver {
  * spec §8. Offers wait for the user's answer through [accept] and [decline];
  * the default [listener] hears nothing, so offers expire unanswered until a
  * screen plugs in. File bodies go to [fileReceiver], which answers
- * `501 not_implemented` until the transfer lands (#595).
+ * `501 not_implemented` until a transfer is installed ([ShareService.accept]).
  */
 class ShareServer(
     private val identity: DeviceIdentity,
@@ -128,10 +128,13 @@ class ShareServer(
 
     fun decline(offerId: String) = offers.answer(offerId, false)
 
-    /** Cancel from this side; an upload in progress is cut. */
-    fun cancel(offerId: String) {
+    /**
+     * Cancel from this side; an upload in progress is cut, unless
+     * [closeUploads] is false: the upload that failed answers the error itself.
+     */
+    fun cancel(offerId: String, closeUploads: Boolean = true) {
         offers.cancelByReceiver(offerId)
-        synchronized(uploads) { uploads.remove(offerId)?.toList() }?.forEach(::closeQuietly)
+        if (closeUploads) synchronized(uploads) { uploads.remove(offerId)?.toList() }?.forEach(::closeQuietly)
     }
 
     private fun acceptLoop(server: ServerSocket, pool: ThreadPoolExecutor) {
