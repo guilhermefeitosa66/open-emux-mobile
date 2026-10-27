@@ -73,11 +73,6 @@ data class SkinSize(val short: Int, val long: Int, val cutout: Int) {
  */
 class SkinRenderer(private val context: Context) {
 
-    companion object {
-        /** Beside skin.cfg when the skin has tabletop overlays: their band, their names and the NDS screen gaps. */
-        const val TABLETOP_FILE = "tabletop.properties"
-    }
-
     private val inter: Typeface = ResourcesCompat.getFont(context, R.font.inter_bold) ?: Typeface.DEFAULT_BOLD
     private val grotesk: Typeface = ResourcesCompat.getFont(context, R.font.grotesk_bold) ?: Typeface.DEFAULT_BOLD
 
@@ -681,17 +676,20 @@ class SkinRenderer(private val context: Context) {
         }
     }
 
-    private companion object {
+    companion object {
+        /** Beside skin.cfg when the skin has tabletop overlays: their band, their names and the NDS screen gaps. */
+        const val TABLETOP_FILE = "tabletop.properties"
+
         /** How much larger than what is drawn a control's touch area is: thumbs are wide. */
-        const val TOUCH_GROW = SkinGeometry.TOUCH_GROW
+        private const val TOUCH_GROW = SkinGeometry.TOUCH_GROW
 
         /** How far the D-pad's circle travels from the centre, in the D-pad's 120-unit grid. */
-        const val DPAD_TRAVEL_UNITS = OverlayLines.DPAD_TRAVEL * 60f
+        private const val DPAD_TRAVEL_UNITS = OverlayLines.DPAD_TRAVEL * 60f
 
         /**
          * The D-pad's touch area over its travel: as far as the old 3x3 cells reached, each a third of the 120-unit
          * grid grown [TOUCH_GROW] times about its own centre, so the outer ones ended at 40 + 20 * grow from the middle.
          */
-        const val DPAD_REACH = (40f + 20f * TOUCH_GROW) / DPAD_TRAVEL_UNITS
+        private const val DPAD_REACH = (40f + 20f * TOUCH_GROW) / DPAD_TRAVEL_UNITS
     }
 }

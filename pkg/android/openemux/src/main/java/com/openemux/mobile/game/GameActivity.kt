@@ -395,7 +395,19 @@ class GameActivity : RetroActivityFuture() {
         val layout = NdsLayouts.next(orientation, ndsLayouts[orientation])
         ndsLayouts[orientation] = layout.id
         if (orientation == TABLETOP) {
-            Thread { RaCommand.send("OVERLAY_SELECT $TABLETOP@${layout.id}") }.start()
+            // Supersedes a posture switch still waiting for the engine, which would land on the old layout.
+            ++postureSeq
+            val name = "$TABLETOP@${layout.id}"
+            val gap = tabletopSkin?.gaps?.get(name) ?: 0
+            Thread {
+                // Hidden for a gamepad, the overlay is unloaded and cannot step on: set the core as the overlay would.
+                val reply = RaCommand.ask("OVERLAY_SELECT $name", 300)
+                if (reply != null && "no overlay is loaded" in reply) {
+                    NdsLayouts.save(filesDir, TABLETOP, layout)
+                    RaCommand.send("SET_CORE_OPTION desmume_screens_gap $gap")
+                    RaCommand.send("SET_CORE_OPTION desmume_screens_layout ${layout.value}")
+                }
+            }.start()
             return layout
         }
         Thread {

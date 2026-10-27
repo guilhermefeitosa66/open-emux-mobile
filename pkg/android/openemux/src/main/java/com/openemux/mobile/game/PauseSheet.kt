@@ -291,11 +291,10 @@ fun PauseSheet(
                             style = Type.Title.copy(fontSize = 17.sp, lineHeight = 21.sp),
                             maxLines = 2,
                         )
-                        val minutes = ((System.currentTimeMillis() - session.startedAt) / 60000).coerceAtLeast(0)
                         Row(Modifier.padding(top = 3.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
                                 when (page) {
-                                    Page.Main -> if (minutes < 1) stringResource(R.string.game_playing_now, session.coreName) else stringResource(R.string.game_playing_for, minutes.toInt(), session.coreName)
+                                    Page.Main -> playingFor(session)
                                     Page.States -> stringResource(R.string.game_tap_to_load)
                                     Page.Shader -> stringResource(R.string.game_shader_this_session)
                                 },
@@ -491,7 +490,7 @@ private fun QuitButton(modifier: Modifier, onQuit: () -> Unit) {
  */
 @Composable
 private fun PausedCard(session: PauseSession, cart: ImageBitmap?, modifier: Modifier, onResume: () -> Unit) {
-    Box(modifier.windowInsetsPadding(WindowInsets.displayCutout).pointerInput(Unit) { detectTapGestures { onResume() } }.padding(24.dp)) {
+    Box(modifier.windowInsetsPadding(WindowInsets.displayCutout).pointerInput(onResume) { detectTapGestures { onResume() } }.padding(24.dp)) {
         Text(
             stringResource(R.string.game_paused).uppercase(),
             style = Type.Tag.copy(color = Color.White),
@@ -504,14 +503,20 @@ private fun PausedCard(session: PauseSession, cart: ImageBitmap?, modifier: Modi
             if (cart != null) Image(cart, null, Modifier.width(72.dp), contentScale = ContentScale.FillWidth)
             Column {
                 Text(session.title, style = Type.Title.copy(color = Color.White, fontSize = 17.sp, lineHeight = 21.sp), maxLines = 2)
-                val minutes = ((System.currentTimeMillis() - session.startedAt) / 60000).coerceAtLeast(0)
                 Text(
-                    if (minutes < 1) stringResource(R.string.game_playing_now, session.coreName) else stringResource(R.string.game_playing_for, minutes.toInt(), session.coreName),
+                    playingFor(session),
                     style = Type.Small.copy(color = Color(0xB3FFFFFF)), modifier = Modifier.padding(top = 3.dp),
                 )
             }
         }
     }
+}
+
+/** How long the game has been played, and on which core: the sheet's header and the tabletop card. */
+@Composable
+private fun playingFor(session: PauseSession): String {
+    val minutes = ((System.currentTimeMillis() - session.startedAt) / 60000).coerceAtLeast(0)
+    return if (minutes < 1) stringResource(R.string.game_playing_now, session.coreName) else stringResource(R.string.game_playing_for, minutes.toInt(), session.coreName)
 }
 
 /** Left of the tablet panel, over the dimmed game: the "Paused" chip and the latest saved states, a tap loads one. */

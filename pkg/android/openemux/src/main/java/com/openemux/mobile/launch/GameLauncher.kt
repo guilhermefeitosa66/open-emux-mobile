@@ -156,7 +156,8 @@ class GameLauncher(
         // Hardcore refuses loading a state: start fresh rather than have the engine refuse it.
         val hardcore = cheevos.hardcoreActive
         // The fold as the library's window sees it now: the skin draws the tabletop shape for it.
-        val fold = withTimeoutOrNull(500) { runCatching { from.folds().first() }.getOrNull() }
+        // folds() already turns a tracker failure into null; a runCatching here would swallow the launch's cancellation.
+        val fold = withTimeoutOrNull(500) { from.folds().first() }
         val intent = withContext(Dispatchers.IO) {
             prepareEngine()
             val dir = File(paths.launch, "current").apply { deleteRecursively(); mkdirs() }
