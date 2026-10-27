@@ -21,6 +21,7 @@ import com.openemux.mobile.data.NDS_LAYOUTS
 import com.openemux.mobile.data.NdsLayouts
 import com.openemux.mobile.data.ScreenLayout
 import com.openemux.mobile.launch.GameSkin
+import com.openemux.mobile.launch.SkinGeometry
 import com.openemux.mobile.launch.SkinRenderer
 import com.openemux.mobile.launch.SkinSize
 import com.openemux.mobile.launch.TABLETOP
@@ -76,9 +77,6 @@ class GameActivity : RetroActivityFuture() {
     private val ndsLayouts = mutableMapOf<String, String>()
     private var ndsRestoring: String? = null
 
-    /** The overlay last shown, which a redrawn skin opens on (engine thread writes). */
-    @Volatile private var currentOverlay: String? = null
-
     // The window the skin in use was drawn for, and the one a redraw is under way for (skin thread writes).
     @Volatile private var skinSize: SkinSize? = null
     private val skinWanted = AtomicReference<SkinSize?>(null)
@@ -87,12 +85,18 @@ class GameActivity : RetroActivityFuture() {
     private val skinThread = Executors.newSingleThreadExecutor()
     private val handler = Handler(Looper.getMainLooper())
     private val skinCheck = Runnable { checkSkinSize() }
+    /** A fold turned up that the skin shown has no tabletop overlays for: redraw it at the same size. */
+    @Volatile private var skinStale = false
+    /** The fold a redraw was last asked for: one that still gives no tabletop overlays is not asked for again. */
+    private var staleFold: Fold? = null
 
-    // The overlay shown, the last flat one (to go back to), and whether the posture asks for tabletop (under ndsLayouts' lock).
-    private val tabletopSkin by lazy {
-        intent.getStringExtra("CONFIGFILE")?.let { File(File(it).parentFile, "skin/${SkinRenderer.TABLETOP_FILE}") }
-            ?.let { runCatching { TabletopSkin.parse(it.readText()) }.getOrNull() }
-    }
+    /** The skin's tabletop overlays: the launcher's, then each redrawn skin's. */
+    @Volatile private var tabletopSkin: TabletopSkin? = null
+    /** The fold last seen, which a redrawn skin is drawn for. */
+    @Volatile private var lastFold: Fold? = null
+
+    // The overlay shown, which a redrawn skin opens on, the last flat one (to go back to), and whether the posture asks
+    // for tabletop (under ndsLayouts' lock).
     private var overlay: String? = null
     private var flatOverlay: String? = null
     private var wantTabletop = false
@@ -107,6 +111,8 @@ class GameActivity : RetroActivityFuture() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Before the engine starts: it reports the overlays from its own thread.
+        tabletopSkin = intent.getStringExtra("CONFIGFILE")?.let { readTabletopSkin(File(File(it).parentFile, "skin")) }
         super.onCreate(savedInstanceState)
         sessionStart = System.currentTimeMillis()
         if (intent.hasExtra(GameExtras.LOAD_SLOT)) loadSlotWhenRunning(intent.getIntExtra(GameExtras.LOAD_SLOT, 0))
@@ -146,7 +152,7 @@ class GameActivity : RetroActivityFuture() {
         // replayed, stale, once focus is back. onWindowFocusChanged looks again then.
         if (!hasWindowFocus()) return
         val size = SkinSize.of(windowManager.currentWindowMetrics)
-        if (!size.differs(skinWanted.get() ?: skinSize)) return
+        if (!skinStale && !size.differs(skinWanted.get() ?: skinSize)) return
         skinWanted.set(size)
         // One redraw at a time; a newer window supersedes one still waiting.
         skinThread.execute {
@@ -154,7 +160,7 @@ class GameActivity : RetroActivityFuture() {
             try {
                 if (skinWanted.get() === size) {
                     // Back to the window the shown skin was drawn for: nothing to redraw.
-                    if (size.differs(skinSize)) redrawSkin(size) else skinWanted.compareAndSet(size, null)
+                    if (skinStale || size.differs(skinSize)) redrawSkin(size) else skinWanted.compareAndSet(size, null)
                 }
             } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
@@ -176,6 +182,9 @@ class GameActivity : RetroActivityFuture() {
             return
         }
         val dir = File(launchDir, "skin-${++skinSeq}")
+        skinStale = false
+        val bounds = windowManager.currentWindowMetrics.bounds
+        val first = overlayToReopen()
         val reply = runCatching {
             // Chosen as at launch: the console's package skin, else the drawn one.
             val skin = GameSkin.render(
@@ -183,7 +192,9 @@ class GameActivity : RetroActivityFuture() {
                 density = resources.displayMetrics.density,
                 hardcore = intent.getBooleanExtra(GameExtras.HARDCORE, false),
                 coreId = intent.getStringExtra(GameExtras.CORE_ID),
-                first = overlayToReopen(),
+                first = first,
+                // Drawn upright, as the launcher does: the fold goes with it.
+                fold = SkinGeometry.portraitFold(lastFold, bounds.width(), bounds.height()),
             ).file
             RaCommand.ask("OVERLAY_LOAD ${skin.absolutePath}", 2000)
         }.getOrNull()
@@ -191,6 +202,7 @@ class GameActivity : RetroActivityFuture() {
         if (ok) {
             Log.i(SKIN_TAG, "OVERLAY_LOAD skin for $size: ${dir.name}")
             skinSize = size
+            followRedrawnSkin(readTabletopSkin(dir))
             launchDir.listFiles { f -> f.isDirectory && f.name.startsWith("skin") && f != dir }?.forEach { it.deleteRecursively() }
         } else {
             Log.w(SKIN_TAG, "Skin for $size not loaded, keeping the one shown")
@@ -201,12 +213,36 @@ class GameActivity : RetroActivityFuture() {
         skinWanted.compareAndSet(size, null)
     }
 
+    private fun readTabletopSkin(dir: File): TabletopSkin? =
+        runCatching { TabletopSkin.parse(File(dir, SkinRenderer.TABLETOP_FILE).readText()) }.getOrNull()
+
+    /**
+     * The engine opened the redrawn skin on the overlay shown, when the skin still has it, and says nothing: a tabletop
+     * overlay the new window has none of was left for a flat one, and the core goes back with it. Then the posture is
+     * looked at again, against the new skin's band.
+     */
+    private fun followRedrawnSkin(tabletop: TabletopSkin?) {
+        synchronized(ndsLayouts) {
+            val shown = overlay
+            if (shown != null && TABLETOP in shown && tabletop?.overlays?.contains(shown) != true) {
+                // The old skin's band and package layout still apply to leaving it.
+                wantTabletop = false
+                onOverlayChanged(flatTarget() ?: "portrait")
+            } else if (shown != null && ndsScreens) {
+                // The same tabletop layout around a fold the new window puts elsewhere.
+                tabletop?.gaps?.get(shown)?.let { gap -> Thread { RaCommand.send("SET_CORE_OPTION desmume_screens_gap $gap") }.start() }
+            }
+            tabletopSkin = tabletop
+        }
+        runOnUiThread { if (!isDestroyed) onFold(lastFold) }
+    }
+
     /**
      * The overlay a redrawn skin opens on. An NDS layout picked from the pause
      * sheet leaves the hidden overlay behind: reopen on the layout the core shows.
      */
     private fun overlayToReopen(): String? = synchronized(ndsLayouts) {
-        val shown = currentOverlay ?: return null
+        val shown = overlay ?: return null
         if (!ndsScreens || '@' !in shown) return shown
         val orientation = shown.substringBefore('@')
         ndsLayouts[orientation]?.let { "$orientation@$it" } ?: shown
@@ -242,7 +278,7 @@ class GameActivity : RetroActivityFuture() {
     @OptIn(FlowPreview::class)
     override fun onStart() {
         super.onStart()
-        if (tabletopSkin == null) return
+        // Followed without tabletop overlays too: a skin redrawn for a fold gets them.
         postureJob?.cancel()
         // Postures flicker while the device is being folded: act once it settles.
         postureJob = scope.launch { folds().distinctUntilChanged().debounce(250).collect(::onFold) }
@@ -254,13 +290,22 @@ class GameActivity : RetroActivityFuture() {
         super.onStop()
     }
 
-
     /** The posture changed: switch to the tabletop skin, or back to the flat one, by name; the core keeps running. */
     private fun onFold(fold: Fold?) {
         val bounds = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(this).bounds
         val density = resources.displayMetrics.density
         val window = WindowLayout.of(bounds.width() / density, bounds.height() / density, fold = fold, density = density)
-        val want = wantsTabletop(window, tabletopSkin)
+        lastFold = fold
+        val skin = tabletopSkin
+        val want = wantsTabletop(window, skin)
+        // A fold the skin was not drawn for (it showed up after the window changed): the skin is drawn again for it.
+        if (skin == null && fold != staleFold && Build.VERSION.SDK_INT >= 30 &&
+            SkinGeometry.tabletopBandFor(fold, bounds.width(), bounds.height(), density) != null
+        ) {
+            staleFold = fold
+            skinStale = true
+            scheduleSkinCheck()
+        }
         if (BuildConfig.DEBUG) Log.d(TAG, "fold $fold in ${bounds.width()}x${bounds.height()}: tabletop $want")
         synchronized(ndsLayouts) {
             wantTabletop = want
@@ -280,12 +325,19 @@ class GameActivity : RetroActivityFuture() {
         if (ndsScreens) loadNdsLayouts()
         // A newer switch supersedes one still waiting for the engine.
         val seq = ++postureSeq
-        // On NDS, back to the portrait layout in use: the pause sheet may have changed it under the hidden overlay,
-        // and landing on another would step the overlays on from there, past the portrait ones.
-        val flat = flatOverlay?.let { f -> if (ndsScreens && f.startsWith("portrait@")) "portrait@${ndsLayouts["portrait"]}" else f }
-        val target = tabletopTarget(current, wantTabletop, skin.overlays, flat, ndsLayouts[TABLETOP]) ?: return false
+        val target = tabletopTarget(current, wantTabletop, skin.overlays, flatTarget(), ndsLayouts[TABLETOP]) ?: return false
         Thread { selectOverlay(target, seq) }.start()
         return true
+    }
+
+    /**
+     * Under ndsLayouts' lock: the flat overlay to go back to. On NDS, the portrait layout in use: the pause sheet may
+     * have changed it under the hidden overlay, and landing on another would step the overlays on from there, past
+     * the portrait ones.
+     */
+    private fun flatTarget(): String? {
+        if (ndsScreens) loadNdsLayouts()
+        return flatOverlay?.let { f -> if (ndsScreens && f.startsWith("portrait@")) "portrait@${ndsLayouts["portrait"]}" else f }
     }
 
     /**
@@ -327,7 +379,6 @@ class GameActivity : RetroActivityFuture() {
      * screen layout, which is kept for the orientation.
      */
     override fun onOverlayChanged(name: String): Unit = synchronized(ndsLayouts) {
-        currentOverlay = name
         val previous = overlay
         overlay = name
         if (TABLETOP !in name) flatOverlay = name

@@ -154,7 +154,10 @@ fold). These `portrait-tabletop` overlays go after the others in the same
 packaged skins have no tabletop art, so in tabletop every console uses the
 drawn skin, the twelve above included: their `skin.cfg` gets the drawn
 tabletop overlays after the package's own, and opening the device flat brings
-the package skin back (on NDS with its one-over-the-other layout).
+the package skin back (on NDS with its one-over-the-other layout). A skin
+redrawn for a new window (`OVERLAY_LOAD` above) is drawn for the fold the
+game sees then, and one drawn before the fold showed up is drawn again for
+it.
 
 The art comes from a design canvas whose Skin component holds the layout
 engine and each console's colors; `tools/skins/build.py` renders it with

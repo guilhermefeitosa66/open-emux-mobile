@@ -33,6 +33,19 @@ class SkinGeometryTabletopTest {
         assertEquals(foldH / 2f + 12 * d, band.endPx, 1f)
     }
 
+    @Test fun aFoldIsTurnedIntoThePortraitFrameASkinIsDrawnIn() {
+        assertNull(SkinGeometry.portraitFold(null, foldH, foldW))
+        // Already upright: as it is, and a square window too.
+        assertEquals(across, SkinGeometry.portraitFold(across, foldW, foldH))
+        assertEquals(across, SkinGeometry.portraitFold(across, foldW, foldW))
+        // A landscape window's book fold runs across the portrait frame, at the same place along the long side.
+        val book = Fold(vertical = true, halfOpened = true, leftPx = foldH / 2, topPx = 0, rightPx = foldH / 2 + 4, bottomPx = foldW)
+        val turned = SkinGeometry.portraitFold(book, foldH, foldW)!!
+        assertEquals(Fold(vertical = false, halfOpened = true, leftPx = 0, topPx = foldH / 2, rightPx = foldW, bottomPx = foldH / 2 + 4), turned)
+        // The band SkinSize's short x long frame gives for it is the one the landscape window gave.
+        assertEquals(SkinGeometry.tabletopBandFor(book, foldH, foldW, d), SkinGeometry.tabletopBandFor(turned, foldW, foldH, d))
+    }
+
     @Test fun theCutoutShiftsTheBandUp() {
         val band = SkinGeometry.tabletopBandFor(across, foldW, foldH, d, cutoutPx = 100)!!
         assertEquals((450 - 12) * d - 100, band.startPx, 2f)

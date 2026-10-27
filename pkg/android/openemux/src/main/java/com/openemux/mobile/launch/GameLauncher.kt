@@ -166,10 +166,13 @@ class GameLauncher(
             cartFile.outputStream().use { cart.compress(Bitmap.CompressFormat.PNG, 100, it) }
 
             // The largest window: right full screen; the game redraws it for split screen or free form.
-            val size = SkinSize.of((context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).maximumWindowMetrics)
+            val metrics = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).maximumWindowMetrics
+            val size = SkinSize.of(metrics)
             val core = library.effectiveCore(rom)
             val density = context.resources.displayMetrics.density
-            val drawn = GameSkin.render(context, paths.base, rom.console, size, File(dir, "skin"), density, hardcore, core.id, fold = fold)
+            // The skin is drawn upright: the fold goes with it.
+            val upright = SkinGeometry.portraitFold(fold, metrics.bounds.width(), metrics.bounds.height())
+            val drawn = GameSkin.render(context, paths.base, rom.console, size, File(dir, "skin"), density, hardcore, core.id, fold = upright)
             val skin = drawn.file
             val ndsLayouts = drawn.ndsLayouts
 

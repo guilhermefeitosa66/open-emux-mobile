@@ -169,6 +169,14 @@ object SkinGeometry {
         return if (band.startPx < half || long - band.endPx < half) null else band
     }
 
+    /**
+     * [fold] as seen in a [widthPx] x [heightPx] window, in the frame a skin is drawn in (SkinSize: short side across,
+     * long side down): a landscape window's fold is turned with it, as [tabletopBandFor] reads a landscape window.
+     */
+    fun portraitFold(fold: Fold?, widthPx: Int, heightPx: Int): Fold? =
+        if (fold == null || widthPx <= heightPx) fold
+        else Fold(!fold.vertical, fold.halfOpened, fold.topPx, fold.leftPx, fold.bottomPx, fold.rightPx)
+
     /** Whether [b] crosses the band from [start] to [end] (design units). */
     fun intersectsBand(b: Box, start: Float, end: Float) = b.y < end && b.bottom > start
 
