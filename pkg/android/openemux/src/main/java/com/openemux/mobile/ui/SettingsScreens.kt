@@ -870,7 +870,7 @@ fun ImportScreen() {
             } else {
                 PrimaryButton(stringResource(R.string.settings_import_pick_files), { files.launch(arrayOf("*/*")) }, Modifier.fillMaxWidth(), icon = Icons.File, height = 54.dp)
                 SecondaryButton(stringResource(R.string.settings_import_pick_folder), { folder.launch(null) }, Modifier.fillMaxWidth(), icon = Icons.Folder, height = 54.dp)
-                SecondaryButton(stringResource(R.string.settings_import_receive), { a.nav.navigate(Routes.SHARE_RECEIVE) }, Modifier.fillMaxWidth(), icon = Icons.Share, height = 54.dp)
+                SecondaryButton(stringResource(R.string.settings_import_receive), { a.nav.navigate(Routes.SHARE_RECEIVE) { launchSingleTop = true } }, Modifier.fillMaxWidth(), icon = Icons.Share, height = 54.dp)
             }
         }
         result?.let { r ->
