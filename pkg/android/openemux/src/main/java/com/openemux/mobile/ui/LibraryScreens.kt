@@ -654,7 +654,7 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
     val layout = LocalWindowLayout.current
     // On a wide tablet the picked game's detail sits beside the library; a tap picks, a second one opens it.
     // In tabletop the halves take the page instead.
-    val pane = layout.libraryPane && !LocalTabletop.current
+    val pane = libraryPaneShown()
     var picked by rememberSaveable { mutableStateOf<String?>(null) }
     // A pick handed over (by a screen of its own, or left here on the way to one) is kept only beside its pane:
     // back on a phone the game was already shown on its own, so it must not be opened a second time.

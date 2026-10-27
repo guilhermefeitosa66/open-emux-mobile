@@ -76,6 +76,15 @@ fun ListDetailScaffold(
     val listFocus = remember { FocusRequester() }
     val opener = remember { FocusRequester() }
     var focusInDetail by remember { mutableStateOf(false) }
+    // The detail can empty while it holds the gamepad's focus (its game removed from the pane):
+    // focus goes back to the list instead of being left on nothing. Read here, before the
+    // removal clears the detail's focus.
+    val wasInDetail = focusInDetail
+    LaunchedEffect(selected) {
+        if (!selected && wasInDetail && InputMode.gamepad) {
+            if (!runCatching { opener.requestFocus() }.getOrDefault(false)) runCatching { listFocus.requestFocus() }
+        }
+    }
     // Composed with the screen's NavHost entry, so it goes when the screen goes.
     BackHandler(enabled = backStep(selected, focusInDetail, InputMode.gamepad) != BackStep.Leave) {
         when (backStep(selected, focusInDetail, InputMode.gamepad)) {
@@ -122,6 +131,10 @@ fun PanePlaceholder(icon: String, text: String, modifier: Modifier = Modifier) {
         Text(text, style = Type.Small, textAlign = TextAlign.Center)
     }
 }
+
+/** Whether the library shows the picked game in a pane beside it: a wide tablet, and not in tabletop. */
+@Composable
+fun libraryPaneShown(): Boolean = LocalWindowLayout.current.libraryPane && !LocalTabletop.current
 
 /** Calls [onChange] when [split] crosses over after the first composition, never for how it started. */
 @Composable

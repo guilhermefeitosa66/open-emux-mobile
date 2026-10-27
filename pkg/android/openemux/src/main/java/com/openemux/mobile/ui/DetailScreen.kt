@@ -92,7 +92,7 @@ enum class DetailStyle { Phone, Pane, TwoColumns }
 fun DetailScreen(key: String) {
     val layout = LocalWindowLayout.current
     // Opened on its own beside a library that a resize gives its pane back: the game goes back there.
-    ReturnToSplit(layout.libraryPane && !LocalTabletop.current, Routes.LIBRARY, key)
+    ReturnToSplit(libraryPaneShown(), Routes.LIBRARY, key)
     RomDetail(key, if (layout.twoColumnDetail) DetailStyle.TwoColumns else DetailStyle.Phone)
 }
 
