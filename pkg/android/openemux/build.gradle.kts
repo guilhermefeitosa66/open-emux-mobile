@@ -132,4 +132,8 @@ dependencies {
     // Share nearby: the instrumented discovery test reads the multicast lock on a device.
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    // The main tabs' UI test drives the Compose tree on a device (test-only, Apache-2.0).
+    androidTestImplementation(composeBom)
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
