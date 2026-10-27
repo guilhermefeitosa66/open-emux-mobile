@@ -9,6 +9,11 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Share nearby: the Wi-Fi driver drops multicast (beacon, mDNS) without a
+         MulticastLock. Normal permission, granted at install. Raising targetSdk
+         past 36 may also need the local network runtime permission newer
+         Android versions are adding. -->
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
 
     <application
         android:name="com.openemux.mobile.OpenEmuxApp"

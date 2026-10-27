@@ -1,9 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 11 and older. The RetroAchievements token stays on the device:
-     its preferences and the launch config that carries it. -->
+     its preferences and the launch config that carries it. So does the Share
+     nearby identity: its key lives in the Keystore and never leaves the phone,
+     and a restored id would clone this device onto another. -->
 <full-backup-content>
     <exclude domain="sharedpref" path="cheevos.xml" />
     <exclude domain="file" path="launch" />
+    <exclude domain="file" path="share" />
     <exclude domain="file" path=".restore-staging" />
     <exclude domain="external" path=".restore-staging" />
 </full-backup-content>

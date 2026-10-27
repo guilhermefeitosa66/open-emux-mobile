@@ -45,6 +45,7 @@ android {
         buildConfigField("String", "SS_DEVID", localProp("screenscraper.devid"))
         buildConfigField("String", "SS_DEVPASSWORD", localProp("screenscraper.devpassword"))
         resValue("string", "app_name", "OpenEmux")
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildFeatures {
@@ -124,4 +125,9 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // android.jar's org.json is a stub on the JVM: the archive tests need the real one.
     testImplementation("org.json:json:20240303")
+    // Share nearby: P-256 test certificates for the loopback TLS tests (test-only, MIT).
+    testImplementation("org.bouncycastle:bcpkix-jdk18on:1.79")
+    // Share nearby: the instrumented discovery test reads the multicast lock on a device.
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }
