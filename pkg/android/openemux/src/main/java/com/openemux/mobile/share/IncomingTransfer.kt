@@ -107,7 +107,7 @@ class IncomingTransfer(
     private val totalBytes = sends.values.sumOf { it.size }
     private var doneBytes = 0L
     private var lastActivity = clock()
-    private var lastProgress = Long.MIN_VALUE
+    private var lastProgress: Long? = null
     private val lock = Any()
     private var watchdog: CountDownLatch? = null
 
@@ -242,13 +242,14 @@ class IncomingTransfer(
 
     private fun noteDirs(dir: File) {
         val missing = generateSequence(dir) { it.parentFile }.takeWhile { !it.exists() }.toList()
-        createdDirs += missing.reversed()
+        createdDirs += missing.asReversed()
     }
 
     private fun progress(decision: Decision, bytes: Long, final: Boolean) {
         val now = clock()
         val snapshot = synchronized(lock) {
-            if (!final && now - lastProgress < PROGRESS_INTERVAL_MS) return
+            val last = lastProgress
+            if (!final && last != null && now - last < PROGRESS_INTERVAL_MS) return
             lastProgress = now
             TransferProgress(
                 decision.itemId, decision.name, decision.kind, bytes, decision.size, doneBytes, totalBytes,
@@ -300,7 +301,7 @@ class IncomingTransfer(
 
     private fun removeCreatedDirs() {
         // Not empty (an upload still finishing will discard into it) or gone: either way left alone.
-        createdDirs.reversed().forEach { it.delete() }
+        createdDirs.toList().asReversed().forEach { it.delete() }
     }
 
     private fun finish(
@@ -395,10 +396,10 @@ class IncomingTransfer(
     }
 
     private fun rollback(committed: List<File>, aside: List<Pair<File, File>>) {
-        for (target in committed.reversed()) {
+        for (target in committed.asReversed()) {
             if (!target.delete()) Log.e(TAG, "share receive: could not remove $target on rollback")
         }
-        for ((moved, original) in aside.reversed()) {
+        for ((moved, original) in aside.asReversed()) {
             try {
                 ops.move(moved, original, replace = true)
             } catch (e: IOException) {
