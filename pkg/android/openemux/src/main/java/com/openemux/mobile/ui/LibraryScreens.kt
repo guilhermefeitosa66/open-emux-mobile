@@ -710,6 +710,13 @@ fun LibraryScreen(filter: String) {
     }
     BackHandler(enabled = selection.active) { selection = selection.clear() }
     if (confirmRemove) {
+        // The dialog is modal for the gamepad too: X, Start, L1/R1 and Select would otherwise
+        // reach the selection (or the filter) behind it and change which games get removed.
+        val swallow = {}
+        GamepadButtons(
+            hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.detail_cancel)),
+            l1 = swallow, r1 = swallow, x = swallow, y = swallow, select = swallow, start = swallow,
+        )
         val doomed = list.filter { it.key in selection }
         val n = doomed.size
         AlertDialog(
@@ -977,7 +984,6 @@ private fun SelectionBar(count: Int, allSelected: Boolean, onClose: () -> Unit, 
             )
             Box(
                 Modifier.height(40.dp).alpha(if (allSelected) 0.4f else 1f)
-                    .then(if (allSelected) Modifier else Modifier.gamepadFocus(corner = 20.dp))
                     .clip(RoundedCornerShape(20.dp)).background(Oe.Control)
                     .clickable(enabled = !allSelected, role = Role.Button, onClick = onSelectAll)
                     .padding(horizontal = 14.dp),
