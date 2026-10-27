@@ -47,6 +47,9 @@ class ShareService(
     val running: StateFlow<Boolean> = _running.asStateFlow()
 
     private var server: ShareServer? = null
+
+    /** The port the server listens on while running (the QR code carries it). */
+    val port: Int? get() = server?.port
     private var discovery: Discovery? = null
     private val store by lazy(identityStore)
 
@@ -132,10 +135,11 @@ class ShareService(
      */
     fun addManualPeer(address: ShareAddress): Peer {
         val client = client(address)
+        val list = currentPeers()
         val info = PeerInfo.parse(client.request("GET", "/info").second)
+        if (info.id == _identity.value?.id) throw ShareError.badRequest("that address is this device")
         val fp = client.peerFingerprint!!
         val announcement = Announcement(info.id, info.name, info.platform, info.versions, address.port, fp)
-        val list = currentPeers()
         list.seen(PeerPath.MANUAL, announcement, address.host)
         return list.peers().first { it.id == info.id && it.fp == fp }
     }
