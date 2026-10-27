@@ -143,11 +143,13 @@ class Library(
             Log.w(TAG, "ROM storage not ready, scan skipped: ${paths.base}")
             return@withContext
         }
+        var listed = true
         try {
-            scanRoms()
+            listed = scanRoms()
         } finally {
-            _loaded.value = true
+            if (listed) _loaded.value = true
         }
+        if (!listed) Log.w(TAG, "a ROM folder could not be listed, scan discarded: ${paths.base}")
     }
 
     private suspend fun awaitRoms(): Boolean {
@@ -158,11 +160,15 @@ class Library(
         return romsReady(paths.base)
     }
 
-    private fun scanRoms() {
+    /**
+     * False, with nothing published, when a folder cannot be listed: a null listing is an
+     * I/O error (storage going away mid-scan, a folder not reachable yet), not an empty folder.
+     */
+    private fun scanRoms(): Boolean {
         val found = Console.entries.flatMap { console ->
             val dir = paths.roms(console)
             dir.mkdirs()
-            val files = dir.listFiles().orEmpty().filter { it.isFile }
+            val files = (dir.listFiles() ?: return false).filter { it.isFile }
             // A disc's track files belong to its .cue, as in the desktop scanner.
             val tracks = files.filter { it.extension.equals("cue", ignoreCase = true) }.flatMap { cue ->
                 CUE_FILE.findAll(cue.readText()).map { it.groupValues[1].ifEmpty { it.groupValues[2] }.trim() }.toList()
@@ -174,6 +180,7 @@ class Library(
         _roms.value = found
         saveIndex(found)
         _revision.value++
+        return true
     }
 
     fun touch() {

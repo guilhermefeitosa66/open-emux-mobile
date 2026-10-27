@@ -140,4 +140,26 @@ class LibraryStartupTest {
         library.scan()
         assertEquals(listOf("GBA/Zelda (USA).gba"), keys(start()))
     }
+
+    @Test
+    fun aFolderThatCannotBeListedDiscardsTheScan() = runBlocking {
+        put(Console.SFC, "Aero (Europe).sfc")
+        start().scan()
+        val index = paths.index.readText()
+
+        // A console folder that cannot be listed (here a file in its place): listFiles() is null.
+        val gba = paths.roms(Console.GBA)
+        gba.deleteRecursively()
+        gba.writeText("")
+        val library = start()
+        library.scan()
+        assertEquals(listOf("SFC/Aero (Europe).sfc"), keys(library))
+        assertEquals(index, paths.index.readText())
+
+        // With no index to restore, the shelf stays loading rather than empty.
+        paths.index.delete()
+        val fresh = start()
+        fresh.scan()
+        assertEquals(ShelfContent.Loading, shelfContent(fresh.loaded.value, fresh.roms.value))
+    }
 }
