@@ -6,7 +6,7 @@ sheet of its own. It covers the desktop app's 31 systems (`data/Console.kt`),
 each with its own controller skin (`data/Skin.kt`).
 
 This directory lives inside a fork of RetroArch, published at
-<https://github.com/guilhermefeitosa66/open-emux-mobile> (branch
+<https://github.com/guilhermefeitosa66/openemux-android> (branch
 `openemux-mobile`); the `upstream` remote can fetch from libretro but its
 push URL is disabled on purpose.
 
