@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
@@ -57,7 +58,8 @@ fun Modifier.paneOpener(picked: Boolean): Modifier {
 /**
  * A list with the picked item's detail beside it. Exactly one of [listWidth]
  * and [detailWidth] is set; the other side takes the rest. Back focuses the
- * list again (gamepad in the detail), on the item marked with [paneOpener],
+ * list again (gamepad in the detail), on the item marked with [paneOpener]
+ * (as Left out of the detail does),
  * then clears the pick, then leaves the screen; each side brings focus back to
  * the item it last had.
  */
@@ -85,7 +87,13 @@ fun ListDetailScaffold(
         }
     }
     Row(Modifier.fillMaxSize()) {
-        Box(side(listWidth).focusRequester(listFocus).focusRestorer().focusGroup()) {
+        Box(
+            // Left from the detail lands on the picked item; with it scrolled off, the restorer below takes over.
+            side(listWidth)
+                .focusProperties { onEnter = { if (entersOnPicked(requestedFocusDirection)) runCatching { opener.requestFocus() } } }
+                .focusGroup()
+                .focusRequester(listFocus).focusRestorer().focusGroup(),
+        ) {
             CompositionLocalProvider(LocalPaneOpener provides opener, content = list)
         }
         VerticalDivider(color = Oe.Surface2, thickness = 1.dp)

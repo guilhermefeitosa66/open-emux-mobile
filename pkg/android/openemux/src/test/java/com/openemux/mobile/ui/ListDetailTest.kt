@@ -1,5 +1,6 @@
 package com.openemux.mobile.ui
 
+import androidx.compose.ui.focus.FocusDirection
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -133,6 +134,15 @@ class ListDetailTest {
         assertEquals(BackStep.ClearSelection, backStep(selected = true, focusInDetail = false, gamepad = false))
         assertEquals(BackStep.Leave, backStep(selected = false, focusInDetail = true, gamepad = false))
         assertEquals(BackStep.Leave, backStep(selected = false, focusInDetail = false, gamepad = false))
+    }
+
+    @Test
+    fun onlyLeftFromTheDetailLandsOnThePickedItem() {
+        assertTrue(entersOnPicked(FocusDirection.Left))
+        assertFalse(entersOnPicked(FocusDirection.Right))
+        assertFalse(entersOnPicked(FocusDirection.Up))
+        assertFalse(entersOnPicked(FocusDirection.Down))
+        assertFalse(entersOnPicked(FocusDirection.Enter))
     }
 
     @Test

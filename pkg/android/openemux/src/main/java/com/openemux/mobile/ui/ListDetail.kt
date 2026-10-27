@@ -1,5 +1,7 @@
 package com.openemux.mobile.ui
 
+import androidx.compose.ui.focus.FocusDirection
+
 // The list + detail decisions as plain values, so they run as JVM unit tests:
 // which settings item a pane shows, where it lives as a screen of its own,
 // and what Back does while a detail is open beside its list.
@@ -78,6 +80,13 @@ fun backStep(selected: Boolean, focusInDetail: Boolean, gamepad: Boolean): BackS
     selected -> BackStep.ClearSelection
     else -> BackStep.Leave
 }
+
+/**
+ * Whether focus coming into the list in [requested] lands on the picked item:
+ * Left from the detail does, the way Back does, instead of on whatever row
+ * sits level with the detail item it left.
+ */
+fun entersOnPicked(requested: FocusDirection): Boolean = requested == FocusDirection.Left
 
 /** How many saved states the two-column detail shows in a row in [widthDp]: 3 to 4 cells of at least 120dp. */
 fun detailStatesCount(widthDp: Float): Int = gridColumns(widthDp, 120f, 10f, 3).coerceAtMost(4)
