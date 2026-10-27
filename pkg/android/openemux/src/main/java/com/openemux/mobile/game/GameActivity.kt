@@ -182,6 +182,7 @@ class GameActivity : RetroActivityFuture() {
             return
         }
         val dir = File(launchDir, "skin-${++skinSeq}")
+        val stale = skinStale
         skinStale = false
         val bounds = windowManager.currentWindowMetrics.bounds
         val first = overlayToReopen()
@@ -206,6 +207,8 @@ class GameActivity : RetroActivityFuture() {
             launchDir.listFiles { f -> f.isDirectory && f.name.startsWith("skin") && f != dir }?.forEach { it.deleteRecursively() }
         } else {
             Log.w(SKIN_TAG, "Skin for $size not loaded, keeping the one shown")
+            // A redraw for the fold is still owed: the next look (focus back, a new window) tries again.
+            if (stale) skinStale = true
             // No answer is not a refusal: the engine may be loading this skin right now, so it stays on disk.
             if (reply != null) dir.deleteRecursively()
         }
@@ -217,23 +220,33 @@ class GameActivity : RetroActivityFuture() {
         runCatching { TabletopSkin.parse(File(dir, SkinRenderer.TABLETOP_FILE).readText()) }.getOrNull()
 
     /**
-     * The engine opened the redrawn skin on the overlay shown, when the skin still has it, and says nothing: a tabletop
-     * overlay the new window has none of was left for a flat one, and the core goes back with it. Then the posture is
-     * looked at again, against the new skin's band.
+     * The engine opens a redrawn skin on its first overlay and says nothing: the drawn skin puts the one shown first
+     * when it still has it, a package skin only its own flat ones. A tabletop overlay is selected again by name (a
+     * no-op when it is the one shown); one the new window has none of is left for the flat one, which is selected too,
+     * and the core goes back with it. Then the posture is looked at again, against the new skin's band.
      */
     private fun followRedrawnSkin(tabletop: TabletopSkin?) {
-        synchronized(ndsLayouts) {
-            val shown = overlay
-            if (shown != null && TABLETOP in shown && tabletop?.overlays?.contains(shown) != true) {
-                // The old skin's band and package layout still apply to leaving it.
-                wantTabletop = false
-                onOverlayChanged(flatTarget() ?: "portrait")
-            } else if (shown != null && ndsScreens) {
-                // The same tabletop layout around a fold the new window puts elsewhere.
-                tabletop?.gaps?.get(shown)?.let { gap -> Thread { RaCommand.send("SET_CORE_OPTION desmume_screens_gap $gap") }.start() }
+        val target = synchronized(ndsLayouts) {
+            val shown = overlay?.takeIf { TABLETOP in it }
+            val target = when {
+                shown == null -> null
+                tabletop?.overlays?.contains(shown) == true -> {
+                    // The same tabletop layout around a fold the new window puts elsewhere.
+                    if (ndsScreens) tabletop?.gaps?.get(shown)?.let { gap -> Thread { RaCommand.send("SET_CORE_OPTION desmume_screens_gap $gap") }.start() }
+                    shown
+                }
+                else -> {
+                    // The old skin's band and package layout still apply to leaving it.
+                    wantTabletop = false
+                    (flatTarget() ?: "portrait").also(::onOverlayChanged)
+                }
             }
             tabletopSkin = tabletop
+            target
         }
+        // Outside the lock, which the engine thread takes to report the switch; before the posture is looked at
+        // again, so a switch that sends comes after this one.
+        if (target != null) RaCommand.ask("OVERLAY_SELECT $target", 300)
         runOnUiThread { if (!isDestroyed) onFold(lastFold) }
     }
 
@@ -298,9 +311,10 @@ class GameActivity : RetroActivityFuture() {
         lastFold = fold
         val skin = tabletopSkin
         val want = wantsTabletop(window, skin)
-        // A fold the skin was not drawn for (it showed up after the window changed): the skin is drawn again for it.
-        if (skin == null && fold != staleFold && Build.VERSION.SDK_INT >= 30 &&
-            SkinGeometry.tabletopBandFor(fold, bounds.width(), bounds.height(), density) != null
+        // A fold the skin was not drawn for (it showed up after the window changed, or a redraw drew for the fold of
+        // the window before): the skin is drawn again for it.
+        if (fold != staleFold && Build.VERSION.SDK_INT >= 30 &&
+            skinMissesFold(SkinGeometry.tabletopBandFor(fold, bounds.width(), bounds.height(), density), density, skin)
         ) {
             staleFold = fold
             skinStale = true

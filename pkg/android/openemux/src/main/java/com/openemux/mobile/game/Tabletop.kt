@@ -1,6 +1,7 @@
 package com.openemux.mobile.game
 
 import com.openemux.mobile.launch.TABLETOP
+import com.openemux.mobile.launch.TabletopBand
 import com.openemux.mobile.ui.WindowLayout
 import com.openemux.mobile.ui.forbiddenBand
 import com.openemux.mobile.ui.tabletop
@@ -45,6 +46,17 @@ fun wantsTabletop(window: WindowLayout, skin: TabletopSkin?): Boolean {
     if (skin == null || window.widthDp >= window.heightDp || !window.tabletop) return false
     val band = forbiddenBand(window)!!
     return abs(band.startDp - skin.bandStartDp) <= BAND_MATCH_DP && abs(band.endDp - skin.bandEndDp) <= BAND_MATCH_DP
+}
+
+/**
+ * Whether the skin shown has to be drawn again for a fold whose [band] (SkinGeometry.tabletopBandFor, in px of the
+ * window it was seen in) there is: the skin has no tabletop overlays, or has them around a band elsewhere (drawn for
+ * a fold seen in the window before, or for none).
+ */
+fun skinMissesFold(band: TabletopBand?, density: Float, skin: TabletopSkin?): Boolean {
+    if (band == null) return false
+    if (skin == null) return true
+    return abs(band.startPx / density - skin.bandStartDp) > BAND_MATCH_DP || abs(band.endPx / density - skin.bandEndDp) > BAND_MATCH_DP
 }
 
 /**

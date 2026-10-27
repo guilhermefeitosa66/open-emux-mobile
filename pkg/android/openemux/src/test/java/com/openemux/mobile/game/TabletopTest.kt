@@ -1,6 +1,7 @@
 package com.openemux.mobile.game
 
 import com.openemux.mobile.launch.TABLETOP
+import com.openemux.mobile.launch.TabletopBand
 import com.openemux.mobile.ui.Fold
 import com.openemux.mobile.ui.WindowLayout
 import org.junit.Assert.assertEquals
@@ -81,5 +82,16 @@ class TabletopTest {
         assertNull(tabletopTarget("portrait", true, listOf("portrait", "landscape"), null, null))
         assertNull(tabletopTarget("portrait@stacked", true, nds, null, "gone"))
         assertNull(tabletopTarget("$TABLETOP@halves", false, nds, null, "halves"))
+    }
+
+    @Test fun aSkinMissesAFoldWithoutTabletopOverlaysOrWithThemElsewhere() {
+        // The skin's band, 438..462 dp, at 2 px per dp.
+        assertFalse(skinMissesFold(null, 2f, null))
+        assertFalse(skinMissesFold(null, 2f, skin))
+        assertTrue(skinMissesFold(TabletopBand(876f, 924f), 2f, null))
+        assertFalse(skinMissesFold(TabletopBand(876f, 924f), 2f, skin))
+        assertFalse(skinMissesFold(TabletopBand(890f, 910f), 2f, skin))
+        assertTrue(skinMissesFold(TabletopBand(840f, 924f), 2f, skin))
+        assertTrue(skinMissesFold(TabletopBand(876f, 960f), 2f, skin))
     }
 }
