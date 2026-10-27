@@ -36,8 +36,15 @@ fun decodeLibraryIndex(
             if (name.substringAfterLast('.', "").lowercase() !in console.extensions) return@mapNotNull null
             Rom(key, console, File(romsDir(console), name), titleFromFileName(name))
         }
-        .sortedBy { it.title.lowercase() }
+        .sortedWith(ROM_ORDER)
 }
+
+/**
+ * The library's order: by title, then by key, so games whose titles match (one game on
+ * two consoles, two regions of one) keep one order whatever order the files are listed
+ * in, and a scan of unchanged files equals the index it is compared with.
+ */
+val ROM_ORDER: Comparator<Rom> = compareBy<Rom>({ it.title.lowercase() }, { it.key })
 
 /** What a library screen shows: nothing while the library is not known yet, the empty state only once it is. */
 enum class ShelfContent { Loading, Empty, Shelves }

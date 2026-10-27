@@ -14,7 +14,7 @@ class LibraryIndexTest {
     private fun rom(console: Console, name: String) =
         Rom("${console.id}/$name", console, File(dir(console), name), titleFromFileName(name))
 
-    private fun scanned(vararg roms: Rom) = roms.sortedBy { it.title.lowercase() }
+    private fun scanned(vararg roms: Rom) = roms.sortedWith(ROM_ORDER)
 
     @Test
     fun aDecodedIndexEqualsTheScanItCameFrom() {
@@ -75,5 +75,19 @@ class LibraryIndexTest {
         assertEquals(ShelfContent.Empty, shelfContent(loaded = true, roms = emptyList()))
         assertEquals(ShelfContent.Shelves, shelfContent(loaded = false, roms = some))
         assertEquals(ShelfContent.Shelves, shelfContent(loaded = true, roms = some))
+    }
+
+    @Test
+    fun matchingTitlesDecodeInOneOrderWhateverOrderTheyWereListedIn() {
+        val listed = listOf(
+            rom(Console.SFC, "Mario (USA).sfc"),
+            rom(Console.FC, "Mario (USA).nes"),
+            rom(Console.GBA, "mario.gba"),
+            rom(Console.FC, "Mario (Europe).nes"),
+        )
+        val expected = listOf("FC/Mario (Europe).nes", "FC/Mario (USA).nes", "GBA/mario.gba", "SFC/Mario (USA).sfc")
+        assertEquals(expected, listed.sortedWith(ROM_ORDER).map { it.key })
+        assertEquals(expected, decodeLibraryIndex(encodeLibraryIndex(listed), dir)!!.map { it.key })
+        assertEquals(expected, decodeLibraryIndex(encodeLibraryIndex(listed.reversed()), dir)!!.map { it.key })
     }
 }

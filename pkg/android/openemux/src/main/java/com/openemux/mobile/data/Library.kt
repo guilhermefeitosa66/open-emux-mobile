@@ -1,7 +1,10 @@
 package com.openemux.mobile.data
 
 import android.content.Context
+import android.os.Environment
+import android.util.Log
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -91,8 +94,21 @@ fun titleFromFileName(name: String): String {
     return cleaned.ifEmpty { stem }
 }
 
-class Library(private val context: Context) {
-    val paths = Paths(context)
+private const val TAG = "OpenEmuxLibrary"
+
+/**
+ * [romsReady] says whether the ROM folders under [Paths.base] can be listed right
+ * now; while they cannot, a scan would read as "every game is gone" (issue #608).
+ */
+class Library(
+    val paths: Paths,
+    private val romsReady: (File) -> Boolean,
+    private val storageRetryMs: Long = STORAGE_RETRY_MS,
+) {
+    // Shared storage that is not mounted yet (right after a boot) or the internal fallback holds none of the user's ROMs.
+    constructor(context: Context) : this(Paths(context), { base ->
+        base != context.filesDir && Environment.getExternalStorageState(base) == Environment.MEDIA_MOUNTED
+    })
 
     private val _roms = MutableStateFlow<List<Rom>>(emptyList())
     val roms: StateFlow<List<Rom>> = _roms.asStateFlow()
@@ -116,12 +132,30 @@ class Library(private val context: Context) {
         loadIndex()
     }
 
+    /**
+     * Lists the ROM folders and publishes what is there. While the shared storage is not
+     * ready it waits a little, then gives up and leaves the library as it was restored:
+     * the next scan (the next resume) decides, so an unmounted folder never empties the
+     * shelf nor the index the next cold start opens on.
+     */
     suspend fun scan() = withContext(Dispatchers.IO) {
+        if (!awaitRoms()) {
+            Log.w(TAG, "ROM storage not ready, scan skipped: ${paths.base}")
+            return@withContext
+        }
         try {
             scanRoms()
         } finally {
             _loaded.value = true
         }
+    }
+
+    private suspend fun awaitRoms(): Boolean {
+        repeat(STORAGE_TRIES - 1) {
+            if (romsReady(paths.base)) return true
+            delay(storageRetryMs)
+        }
+        return romsReady(paths.base)
     }
 
     private fun scanRoms() {
@@ -136,7 +170,7 @@ class Library(private val context: Context) {
             files
                 .filter { it.extension.lowercase() in console.extensions && it.name !in tracks }
                 .map { Rom("${console.id}/${it.name}", console, it, titleFromFileName(it.name)) }
-        }.sortedBy { it.title.lowercase() }
+        }.sortedWith(ROM_ORDER)
         _roms.value = found
         saveIndex(found)
         _revision.value++
@@ -289,7 +323,13 @@ class Library(private val context: Context) {
             tmp.writeText(encodeLibraryIndex(roms))
             if (!tmp.renameTo(paths.index)) error("rename failed")
             indexed = keys
-        }
+        }.onFailure { Log.w(TAG, "library index not written", it) }
+    }
+
+    companion object {
+        /** About ten seconds of waiting for the shared storage after a boot. */
+        internal const val STORAGE_TRIES = 20
+        private const val STORAGE_RETRY_MS = 500L
     }
 
     private fun loadMeta(): Meta {

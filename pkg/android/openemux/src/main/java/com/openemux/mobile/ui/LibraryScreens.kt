@@ -263,11 +263,12 @@ fun ShelfScreen() {
                     val isDragged = console != null && console == dragged
                     val moveUp = stringResource(R.string.library_shelf_move_up)
                     val moveDown = stringResource(R.string.library_shelf_move_down)
+                    // No fade-in: a card that arrives (the library restored, a scan, an import) is drawn at once; reordering still slides.
                     ShelfCard(
                         console, short, name, countString(R.plurals.library_games_count, list.size, list.size), list, background, ink, cardWidth,
                         spec.cardHeight.dp, (spec.gap / 2).dp, if (spec.tablet) 24.dp else 22.dp,
                         Modifier
-                            .then(if (isDragged) Modifier.zIndex(2f).graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
+                            .then(if (isDragged) Modifier.zIndex(2f).graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem(fadeInSpec = null))
                             .restorableFocus(filter, focusedShelf, initial = shelves.first().second == filter)
                             .then(
                                 if (console == null) Modifier else Modifier
