@@ -70,6 +70,8 @@ open class FileOps {
     open fun setMtime(file: File, millis: Long) {
         Files.setLastModifiedTime(file.toPath(), FileTime.fromMillis(millis))
     }
+
+    open fun delete(file: File): Boolean = file.delete()
 }
 
 /**
@@ -350,7 +352,7 @@ class IncomingTransfer(
             return
         }
         for ((moved, _) in aside) {
-            if (!moved.delete()) Log.w(TAG, "share receive: replaced file kept at $moved")
+            if (!ops.delete(moved)) Log.w(TAG, "share receive: replaced file kept at $moved")
         }
         staged.clear()
         for (decision in plan.toSend().filter { it.kind == Item.LABEL }) {
@@ -397,7 +399,7 @@ class IncomingTransfer(
 
     private fun rollback(committed: List<File>, aside: List<Pair<File, File>>) {
         for (target in committed.asReversed()) {
-            if (!target.delete()) Log.e(TAG, "share receive: could not remove $target on rollback")
+            if (!ops.delete(target)) Log.e(TAG, "share receive: could not remove $target on rollback")
         }
         for ((moved, original) in aside.asReversed()) {
             try {

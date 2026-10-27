@@ -44,6 +44,7 @@ class FakeLibrary(root: File = Files.createTempDirectory("share-lib").toFile()) 
     /** The core each console defaults to, as `ConsoleSettings.core`. */
     val consoleCore = mutableMapOf<Console, String>()
     var failOnReceived = false
+    var failOnUpdate = false
 
     init {
         paths.base.mkdirs()
@@ -65,6 +66,7 @@ class FakeLibrary(root: File = Files.createTempDirectory("share-lib").toFile()) 
     override fun effectiveCore(rom: Rom): CoreDef = rom.console.core(romMeta(rom.key).core ?: consoleCore[rom.console])
     override fun playtimeSeconds(rom: Rom) = playtime[rom.key] ?: 0L
     override fun updateRom(key: String, change: (RomMeta) -> RomMeta) {
+        if (failOnUpdate) throw IllegalStateException("meta.json is read-only")
         meta[key] = change(romMeta(key))
     }
 

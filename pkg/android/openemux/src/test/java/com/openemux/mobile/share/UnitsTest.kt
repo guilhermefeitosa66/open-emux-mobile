@@ -56,6 +56,8 @@ class UnitsTest {
             roles(Units.collectUnit(m3u)),
         )
         assertNull(Units.collectUnit(File(dir, "Bad.m3u").put("D9.chd\n")))
+        File(dir, "bare.bin").put("b")
+        assertEquals(listOf("Bare.cue" to "cue", "bare.bin" to "bin"), roles(Units.collectUnit(File(dir, "Bare.cue").put("FILE bare.bin BINARY\n"))))
         File(dir, "D3.cue").put("FILE \"none.bin\" BINARY\n")
         assertNull(Units.collectUnit(File(dir, "Bad2.m3u").put("D3.cue\n")))
     }

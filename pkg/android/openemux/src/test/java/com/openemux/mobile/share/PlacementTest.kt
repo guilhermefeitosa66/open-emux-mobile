@@ -464,4 +464,42 @@ class PlacementTest {
         lib.installCore(psx, "Beetle PSX", "0.9.45")
         assertEquals("incompatible_state", plan(manifest).of("g1i5").reason)
     }
+
+    @Test
+    fun `a state item without its state block is never compatible`() {
+        lib.installCore(snes9x, "Snes9x", "1.62.3")
+        val item = Item("i1", "state", "G.state", 1, 1.0, null, JSONObject())
+        assertFalse(stateCompatible(item, Console.SFC, CoreIdentities(paths)))
+    }
+
+    @Test
+    fun `two items of one game aiming at the same file send only the first`() {
+        val plan = plan(manifest {
+            game("g1", "SFC") {
+                item("rom", "G.sfc")
+                item("battery_save", "G.srm", "a".toByteArray())
+                item("battery_save", "G.srm", "b".toByteArray())
+            }
+        })
+        assertTrue(plan.of("g1i2").send)
+        assertEquals("exists_skip", plan.of("g1i3").reason)
+    }
+
+    @Test
+    fun `replacing a ROM whose name leaves no room for the temporary file is invalid`() {
+        val stem = "w".repeat(230)
+        File(sfcRoms, "$stem.sfc").put("local")
+        val plan = plan(manifest { game("g1", "SFC") { item("rom", "$stem.sfc", "incoming".toByteArray()) } }, policies = mapOf("rom" to Policy.REPLACE))
+        assertEquals("invalid_item", plan.of("g1i1").reason)
+        assertEquals(RomStatus.ABSENT, plan.games.single().romStatus)
+    }
+
+    @Test
+    fun `a local ROM that cannot be read is not the same game`() {
+        val local = File(sfcRoms, "G.sfc").put("rom")
+        local.setReadable(false)
+        if (local.canRead()) return // running as root: nothing is unreadable
+        val plan = plan(manifest { game("g1", "SFC") { item("rom", "G.sfc", "rom".toByteArray()) } })
+        assertEquals(RomStatus.KEPT_BOTH, plan.games.single().romStatus)
+    }
 }

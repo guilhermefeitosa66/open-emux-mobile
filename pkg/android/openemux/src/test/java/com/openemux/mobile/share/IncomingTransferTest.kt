@@ -285,16 +285,24 @@ class IncomingTransferTest {
         assertEquals(listOf("g1i5" to "exists_skip"), results.single().skipped)
     }
 
-    /** Moves fail on the [failAt]-th call; links are unsupported when [noLinks]. */
-    private class FlakyOps(val failAt: Int = -1, val noLinks: Boolean = false, val noMtime: Boolean = false) : FileOps() {
+    /** Moves fail on the [failAt]-th call (and the ones in [alsoFail]); links are unsupported when [noLinks]. */
+    private class FlakyOps(
+        val failAt: Int = -1,
+        val noLinks: Boolean = false,
+        val noMtime: Boolean = false,
+        val alsoFail: Set<Int> = emptySet(),
+        val noDelete: Boolean = false,
+    ) : FileOps() {
         var moves = 0
+
+        override fun delete(file: File): Boolean = if (noDelete) false else super.delete(file)
         override fun link(target: File, existing: File) {
             if (noLinks) throw UnsupportedOperationException("no links here")
             super.link(target, existing)
         }
 
         override fun move(from: File, to: File, replace: Boolean) {
-            if (++moves == failAt) throw IOException("move $moves failed")
+            if (++moves == failAt || moves in alsoFail) throw IOException("move $moves failed")
             super.move(from, to, replace)
         }
 
@@ -445,5 +453,50 @@ class IncomingTransferTest {
         File(paths.states(Console.SFC), ".Game.state1.0a0b0c0d.tmp").put("x")
         assertTrue(lib.states(rom).isEmpty())
         assertTrue(tmp.startsWith("."))
+    }
+
+    @Test
+    fun `a rollback that cannot undo everything still ends the transfer`() {
+        sfc(paths::saves, "Game.srm").put("old", mtime = 1_600_000_000)
+        sfc(paths::states, "Game.state1").put("old", mtime = 1_600_000_000)
+        // The state's move in fails (4); putting the save back fails too (6), and nothing can be deleted.
+        val transfer = transfer(ops = FlakyOps(failAt = 4, alsoFail = setOf(6), noDelete = true))
+        putAll(transfer, listOf("g1i1", "g1i2", "g1i3", "g1i4"))
+        assertEquals(ErrorCode.INTERNAL, assertThrows(ShareError::class.java) { transfer.put("g1i5") }.code)
+        assertEquals(TransferStatus.FAILED, transfer.status.value)
+        // The save is left aside, where the log says it is.
+        assertTrue(sfc(paths::saves, ".Game.srm.share-old-offer1").exists())
+    }
+
+    @Test
+    fun `a replaced file that cannot be deleted is only logged`() {
+        sfc(paths::saves, "Game.srm").put("old", mtime = 1_600_000_000)
+        val transfer = transfer(ops = FlakyOps(noDelete = true))
+        putAll(transfer)
+        assertEquals(TransferStatus.DONE, transfer.status.value)
+        assertTrue(sfc(paths::saves, ".Game.srm.share-old-offer1").exists())
+    }
+
+    @Test
+    fun `settings that cannot be saved do not undo the transfer`() {
+        lib.failOnUpdate = true
+        val transfer = transfer()
+        putAll(transfer)
+        assertEquals(TransferStatus.DONE, transfer.status.value)
+        assertTrue(sfc(paths::roms, "Game.sfc").exists())
+    }
+
+    @Test
+    fun `games that did not come take no settings`() {
+        val manifest = manifest {
+            game("g1", "DREAMCAST", "Far", JSONObject().put("favorite", true)) { item("rom", "Far.cdi") }
+            game("g2", "SFC", "Off", JSONObject().put("favorite", true)) { item("rom", "Off.sfc") }
+            game("g3", "SFC", "On", JSONObject().put("playtime_seconds", 60L).put("favorite", true)) { item("rom", "On.sfc") }
+        }
+        val plan = planReceive(manifest, paths, CoreIdentities(paths), unchecked = setOf("g2"), probe = FakeSpace())
+        val transfer = IncomingTransfer("offer1", plan, lib, CoreIdentities(paths), clock)
+        transfer.handlePut("g3i1", ByteArrayInputStream("On.sfc".toByteArray()), 6)
+        assertEquals(setOf("SFC/On.sfc"), lib.meta.keys)
+        assertEquals("60", paths.playtime(Console.SFC, "On").readText())
     }
 }

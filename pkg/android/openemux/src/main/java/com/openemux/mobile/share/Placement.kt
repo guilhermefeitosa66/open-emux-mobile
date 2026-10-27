@@ -379,7 +379,7 @@ private class Planner(
         val suffix = item.name.substringAfterLast('.', "").lowercase()
         val cover = item.kind == Item.COVER
         val allowed = if (cover) suffix in Units.ART_SUFFIXES else suffix == "png"
-        if (!allowed || !Units.isReceivableName("${plan.finalStem}.$suffix")) return skip(plan, item, SkipReason.INVALID_ITEM)
+        if (!allowed) return skip(plan, item, SkipReason.INVALID_ITEM)
         val dir = if (cover) paths.covers(console) else paths.labels(console)
         val target = File(dir, "${plan.finalStem}.$suffix")
         val existing = if (cover) Covers.localCover(paths, console, plan.finalStem) else target.takeIf { it.exists() }
