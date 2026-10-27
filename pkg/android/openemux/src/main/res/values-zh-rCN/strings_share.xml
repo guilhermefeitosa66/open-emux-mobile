@@ -145,8 +145,7 @@
     <string name="share_notif_offer_text">点按查看。验证码 %1$s。</string>
     <string name="share_notif_failed">传输失败</string>
     <string name="settings_share_section">附近共享</string>
-    <string name="settings_share_receive">接收游戏</string>
-    <string name="settings_share_receive_hint">允许其他设备向你发送游戏</string>
+    <string name="settings_import_receive">接收游戏</string>
     <string name="settings_device_name">设备名称</string>
     <string name="settings_device_name_label">其他设备看到的名称</string>
     <string name="settings_device_name_hint">留空则使用“%1$s”。</string>

@@ -269,16 +269,7 @@ private fun SettingsList(picked: SettingsItem?, onRename: () -> Unit, onPick: (S
             val share = a.app.shareCoordinator
             val name by share.deviceName.collectAsState()
             LaunchedEffect(Unit) { share.loadName() }
-            ListRow(
-                stringResource(R.string.settings_share_receive), subtitle = stringResource(R.string.settings_share_receive_hint), minHeight = 60.dp,
-                leading = {
-                    Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Oe.AccentTint), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Share, Oe.AccentText, 22.dp)
-                    }
-                },
-                onClick = { a.nav.navigate(Routes.SHARE_RECEIVE) },
-            )
-            ListRow(stringResource(R.string.settings_device_name), value = name ?: "…", divider = true, onClick = onRename)
+            ListRow(stringResource(R.string.settings_device_name), value = name ?: "…", onClick = onRename)
         }
 
         SectionHeader(stringResource(R.string.settings_section_general))
@@ -879,6 +870,7 @@ fun ImportScreen() {
             } else {
                 PrimaryButton(stringResource(R.string.settings_import_pick_files), { files.launch(arrayOf("*/*")) }, Modifier.fillMaxWidth(), icon = Icons.File, height = 54.dp)
                 SecondaryButton(stringResource(R.string.settings_import_pick_folder), { folder.launch(null) }, Modifier.fillMaxWidth(), icon = Icons.Folder, height = 54.dp)
+                SecondaryButton(stringResource(R.string.settings_import_receive), { a.nav.navigate(Routes.SHARE_RECEIVE) }, Modifier.fillMaxWidth(), icon = Icons.Share, height = 54.dp)
             }
         }
         result?.let { r ->
