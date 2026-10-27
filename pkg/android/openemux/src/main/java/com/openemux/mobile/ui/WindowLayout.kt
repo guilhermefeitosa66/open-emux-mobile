@@ -253,10 +253,10 @@ data class ShelfSpec(
 )
 
 fun shelfSpecOf(layout: WindowLayout): ShelfSpec = when {
-    layout.nav != NavKind.TabletRail -> ShelfSpec(false, 2, 0, 108f, SHELF_GAP_DP, SHELF_SIDE_DP, 0f, false)
-    layout.width == SizeClass.Expanded -> ShelfSpec(true, 3, 3, 168f, 16f, 40f, 32f, false)
+    layout.nav != NavKind.TabletRail -> ShelfSpec(false, 2, 0, 104f, SHELF_GAP_DP, SHELF_SIDE_DP, 0f, false)
+    layout.width == SizeClass.Expanded -> ShelfSpec(true, 3, 3, 148f, 16f, 40f, 32f, false)
     // A tall portrait tablet has room under the grid for what came in last.
-    else -> ShelfSpec(true, 2, 2, 160f, 14f, 32f, 40f, layout.height == SizeClass.Expanded)
+    else -> ShelfSpec(true, 2, 2, 148f, 14f, 32f, 40f, layout.height == SizeClass.Expanded)
 }
 
 /** The setup side by side (explanation, then progress) on a wide tablet; stacked everywhere else. */
