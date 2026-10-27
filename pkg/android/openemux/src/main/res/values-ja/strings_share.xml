@@ -145,8 +145,7 @@
     <string name="share_notif_offer_text">タップして確認。コード %1$s。</string>
     <string name="share_notif_failed">転送に失敗しました</string>
     <string name="settings_share_section">近くの端末と共有</string>
-    <string name="settings_share_receive">ゲームを受け取る</string>
-    <string name="settings_share_receive_hint">ほかの端末からゲームを受け取ります</string>
+    <string name="settings_import_receive">ゲームを受け取る</string>
     <string name="settings_device_name">端末名</string>
     <string name="settings_device_name_label">ほかの端末に表示される名前</string>
     <string name="settings_device_name_hint">空欄にすると「%1$s」を使います。</string>

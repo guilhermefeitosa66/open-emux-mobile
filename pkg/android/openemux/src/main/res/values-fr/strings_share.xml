@@ -145,8 +145,7 @@
     <string name="share_notif_offer_text">Touchez pour voir. Code %1$s.</string>
     <string name="share_notif_failed">Échec du transfert</string>
     <string name="settings_share_section">Partage à proximité</string>
-    <string name="settings_share_receive">Recevoir des jeux</string>
-    <string name="settings_share_receive_hint">Laisser un autre appareil vous envoyer des jeux</string>
+    <string name="settings_import_receive">Recevoir des jeux</string>
     <string name="settings_device_name">Nom de l’appareil</string>
     <string name="settings_device_name_label">Nom vu par les autres appareils</string>
     <string name="settings_device_name_hint">Laissez vide pour utiliser « %1$s ».</string>

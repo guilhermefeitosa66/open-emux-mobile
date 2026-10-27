@@ -85,7 +85,7 @@ import com.retroarch.R
 /**
  * Routes `share` and `share/receive` (spec 01, 04, 07, 08, 11): the devices on
  * the network, this device, and, while sending, the wait, the progress and the
- * result in place of the list. [receive] is the mode Settings opens: no
+ * result in place of the list. [receive] is the mode the Import tab opens: no
  * games to send, the list read-only.
  */
 @Composable
@@ -127,7 +127,7 @@ fun ShareScreen(receive: Boolean) {
     MarginFocusScroll(trailing = FocusMargin + hintBarInset) {
         Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
             Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
-                BackLink(stringResource(if (receive) R.string.settings_title else R.string.settings_tab_library)) {
+                BackLink(stringResource(if (receive) R.string.settings_tab_import else R.string.settings_tab_library)) {
                     if (outgoing && transfer.busy) confirmCancel = true else a.nav.popBackStack()
                 }
                 FitText(stringResource(if (receive) R.string.share_receive_title else R.string.share_title), Type.Display, Modifier.padding(top = 4.dp))

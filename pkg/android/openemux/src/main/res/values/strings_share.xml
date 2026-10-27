@@ -145,8 +145,7 @@
     <string name="share_notif_offer_text">Tap to review. Code %1$s.</string>
     <string name="share_notif_failed">Transfer failed</string>
     <string name="settings_share_section">Share Nearby</string>
-    <string name="settings_share_receive">Receive Games</string>
-    <string name="settings_share_receive_hint">Let another device send you games</string>
+    <string name="settings_import_receive">Receive games</string>
     <string name="settings_device_name">Device Name</string>
     <string name="settings_device_name_label">Name other devices see</string>
     <string name="settings_device_name_hint">Leave empty to use “%1$s”.</string>

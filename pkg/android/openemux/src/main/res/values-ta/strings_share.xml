@@ -145,8 +145,7 @@
     <string name="share_notif_offer_text">பார்க்கத் தட்டவும். குறியீடு %1$s.</string>
     <string name="share_notif_failed">பரிமாற்றம் தோல்வியடைந்தது</string>
     <string name="settings_share_section">அருகில் பகிர்</string>
-    <string name="settings_share_receive">கேம்களைப் பெறு</string>
-    <string name="settings_share_receive_hint">மற்றொரு சாதனம் உங்களுக்குக் கேம்களை அனுப்ப அனுமதி</string>
+    <string name="settings_import_receive">கேம்களைப் பெறு</string>
     <string name="settings_device_name">சாதனப் பெயர்</string>
     <string name="settings_device_name_label">மற்ற சாதனங்கள் பார்க்கும் பெயர்</string>
     <string name="settings_device_name_hint">“%1$s” பயன்படுத்த காலியாக விடவும்.</string>
