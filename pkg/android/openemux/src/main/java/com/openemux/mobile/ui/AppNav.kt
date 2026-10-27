@@ -72,6 +72,17 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
+import android.widget.Toast
+import androidx.compose.runtime.LaunchedEffect
+import com.openemux.mobile.share.ShareEvent
+import com.openemux.mobile.ui.share.ConnectByAddressScreen
+import com.openemux.mobile.ui.share.IncomingOfferSheet
+import com.openemux.mobile.ui.share.ShareScreen
+import com.openemux.mobile.ui.share.WhatToSendScreen
 import com.openemux.mobile.OpenEmuxApp
 import com.openemux.mobile.data.Rom
 import com.openemux.mobile.data.Setup
@@ -92,11 +103,16 @@ object Routes {
     const val ABOUT = "about"
     const val LICENSES = "about/licenses"
     const val LICENSE = "about/license/{id}"
+    const val SHARE = "share"
+    const val SHARE_RECEIVE = "share/receive"
+    const val SHARE_ITEMS = "share/items"
+    const val SHARE_ADDRESS = "share/address?addr={addr}"
 
     fun library(filter: String) = "library/$filter"
     fun rom(key: String) = "rom/${Uri.encode(key)}"
     fun console(id: String) = "settings/$id"
     fun license(id: String) = "about/license/$id"
+    fun shareAddress(address: String) = "share/address?addr=${Uri.encode(address)}"
 }
 
 /** What every screen needs: the app's data, navigation and the game launcher. */
@@ -205,6 +221,12 @@ fun OpenEmuxRoot() {
                         composable(Routes.ABOUT) { AboutScreen() }
                         composable(Routes.LICENSES) { LicensesScreen() }
                         composable(Routes.LICENSE) { LicenseTextScreen(it.arguments?.getString("id").orEmpty()) }
+                        composable(Routes.SHARE) { ShareScreen(receive = false) }
+                        composable(Routes.SHARE_RECEIVE) { ShareScreen(receive = true) }
+                        composable(Routes.SHARE_ITEMS) { WhatToSendScreen() }
+                        composable(Routes.SHARE_ADDRESS, listOf(navArgument("addr") { defaultValue = "" })) {
+                            ConnectByAddressScreen(it.arguments?.getString("addr").orEmpty())
+                        }
                     }
                     if (tabletop) {
                         // The tabs, the hints and the toast are on the bottom half.
@@ -228,7 +250,36 @@ fun OpenEmuxRoot() {
                 }
                 }
                 launching?.let { LaunchingOverlay(it) }
+                // Share nearby: an incoming offer over whatever is open, a link to an address, an expired offer's toast.
+                IncomingOfferSheet()
+                ShareLinks()
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShareLinks() {
+    val a = LocalActions.current
+    val context = LocalContext.current
+    val share = a.app.shareCoordinator
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    // Only the activity in front takes a link: one stopped behind it would navigate where nobody sees.
+    LaunchedEffect(share) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            share.link.collect { uri ->
+                if (uri != null) {
+                    share.link.value = null
+                    a.nav.navigate(Routes.shareAddress(uri)) { launchSingleTop = true }
+                }
+            }
+        }
+    }
+    LaunchedEffect(share) {
+        share.events.collect { event ->
+            if (event is ShareEvent.OfferExpired) {
+                Toast.makeText(context, context.getString(R.string.share_offer_expired_toast, event.sender), Toast.LENGTH_LONG).show()
             }
         }
     }

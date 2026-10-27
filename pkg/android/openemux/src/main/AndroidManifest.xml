@@ -14,6 +14,15 @@
          past 36 may also need the local network runtime permission newer
          Android versions are adding. -->
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <!-- Share nearby: a transfer runs in a dataSync foreground service with a
+         progress notification, holding a partial wake lock and a Wi-Fi lock so
+         it survives the screen going off. Android 15 caps dataSync at 6 h a
+         day, far above any library transfer; whoever raises targetSdk past 36
+         checks the foreground service type rules again. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application
         android:name="com.openemux.mobile.OpenEmuxApp"
@@ -32,13 +41,27 @@
         <activity
             android:name="com.openemux.mobile.MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <!-- Share nearby: a QR code or link with another device's address
+                 opens Connect by Address with it filled in, nothing more. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="openemux-share" />
+            </intent-filter>
         </activity>
+
+        <service
+            android:name="com.openemux.mobile.share.TransferService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- The RetroArch engine in a process of its own: it exits the process
              when the content closes, and the library must survive that. Same

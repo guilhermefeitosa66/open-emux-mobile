@@ -139,18 +139,26 @@ class OutgoingTransferTest {
     }
 
     @Test
-    fun `a local cancel mid-upload tells the receiver`() {
+    fun `a local cancel mid-upload tells the receiver before the upload is cut`() {
         lateinit var transfer: OutgoingTransfer
         val client = object : FakeClient(answer("accepted", send("g1i1"), send("g1i3"))) {
+            var toldWhileOpen: List<String>? = null
+
             override fun putFile(offerId: String, itemId: String, file: File, size: Long, onChunk: (Int) -> Unit) {
                 onChunk(1)
                 transfer.cancel()
-                onChunk(1)
+                try {
+                    onChunk(1)
+                } finally {
+                    toldWhileOpen = cancels.toList()
+                }
             }
         }
         transfer = transfer(client)
         val result = transfer.run()
         assertEquals(SendResult.CANCELLED, result.status)
+        // Once, and already while the upload was open.
+        assertEquals(listOf("offer1"), client.toldWhileOpen)
         assertEquals(listOf("offer1"), client.cancels)
         assertTrue(result.sent.isEmpty())
     }

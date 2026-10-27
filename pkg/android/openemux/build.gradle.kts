@@ -121,6 +121,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.7.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("androidx.window:window:1.4.0")
+    // Share nearby: the QR code of this device's address (encoding only; Apache-2.0, pure Java).
+    implementation("com.google.zxing:core:3.5.3")
 
     testImplementation("junit:junit:4.13.2")
     // android.jar's org.json is a stub on the JVM: the archive tests need the real one.

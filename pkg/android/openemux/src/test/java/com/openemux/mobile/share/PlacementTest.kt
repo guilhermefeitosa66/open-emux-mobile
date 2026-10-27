@@ -459,8 +459,29 @@ class PlacementTest {
             override fun store(dir: File): Pair<Any, Long> = throw IOException("no store")
         }
         assertFalse(plan(manifest, probe = broken).okToAccept())
+        // Android refuses java.nio's FileStore outright: no room, rather than an exception up to the offer.
+        val refused = object : SpaceProbe {
+            override fun store(dir: File): Pair<Any, Long> = throw SecurityException("getFileStore")
+        }
+        assertEquals(0L, plan(manifest, probe = refused).spaceCheck().single().free)
         // The real probe measures the temp folder.
         assertTrue(planReceive(manifest, paths).spaceCheck().single().free > 0)
+    }
+
+    @Test
+    fun `the device probe groups by the device id and measures the usable space`() {
+        val manifest = manifest {
+            game("g1", "SFC") { item("rom", "A.sfc", ByteArray(1000)); item("cover", "A.png", PNG) }
+        }
+        val asked = mutableListOf<File>()
+        val one = plan(manifest, probe = DeviceSpaceProbe { asked += it; 42L }).spaceCheck()
+        assertEquals(1, one.size)
+        assertEquals(paths.base.usableSpace, one.single().free)
+        assertTrue(asked.isNotEmpty())
+        val split = plan(manifest, probe = DeviceSpaceProbe { if (it.path.startsWith(paths.internal.path)) 2L else 1L }).spaceCheck()
+        assertEquals(2, split.size)
+        val failing = DeviceSpaceProbe { throw IOException("stat") }
+        assertFalse(plan(manifest, probe = failing).okToAccept())
     }
 
     @Test
