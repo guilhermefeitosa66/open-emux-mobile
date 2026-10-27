@@ -182,6 +182,34 @@ class PlacementTest {
     }
 
     @Test
+    fun `keep both on a disc game whose name is taken skips the whole unit, and replace takes it`() {
+        val ps = paths.roms(Console.PS)
+        File(ps, "Disc.cue").put("my own sheet")
+        val unit = manifest {
+            game("g1", "PS", "Disc") {
+                item("rom", "Disc.cue", "cue".toByteArray(), role = "cue")
+                item("rom", "Disc (Track 1).bin", "t1".toByteArray(), role = "bin")
+                item("rom", "Disc (Track 2).bin", "t2".toByteArray(), role = "bin")
+            }
+        }
+        // The default Keep Both cannot rename a unit's tracks: it never lands, under any name.
+        val kept = plan(unit)
+        assertEquals(mapOf("g1i1" to "exists_skip", "g1i2" to "exists_skip", "g1i3" to "exists_skip"), kept.reasons())
+        assertEquals(RomStatus.EXISTING, kept.games.single().romStatus)
+        assertTrue(kept.toSend().isEmpty())
+        assertEquals(kept.reasons(), plan(unit, overrides = mapOf("g1i1" to Policy.SKIP)).reasons())
+        val replaced = plan(unit, overrides = mapOf("g1i1" to Policy.REPLACE))
+        assertEquals(listOf(File(ps, "Disc.cue"), File(ps, "Disc (Track 1).bin"), File(ps, "Disc (Track 2).bin")), replaced.toSend().map { it.target })
+        assertEquals(File(ps, "Disc.cue"), replaced.of("g1i1").replaces)
+        assertEquals(RomStatus.REPLACED, replaced.games.single().romStatus)
+        // A single-file ROM still gets a free name beside the local one.
+        File(sfcRoms, "Game.sfc").put("mine")
+        val single = plan(manifest { game("g1", "SFC") { item("rom", "Game.sfc", "theirs".toByteArray()) } })
+        assertEquals(File(sfcRoms, "Game (2).sfc"), single.of("g1i1").target)
+        assertEquals(RomStatus.KEPT_BOTH, single.games.single().romStatus)
+    }
+
+    @Test
     fun `a track another game owns keeps the whole unit out`() {
         File(paths.roms(Console.PS), "Track 01.bin").put("someone else's")
         val unit = manifest {

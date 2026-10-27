@@ -171,13 +171,34 @@ class ShareCoordinatorTest {
         scheduler.advance(60_000)
         assertEquals(0, layer.stops)
         layer.onSendDone(SendResult(SendResult.DONE, listOf("g1i1"), listOf("g1i2" to SkipReason.EXISTS_SKIP)))
-        assertEquals(TransferState.Finished(ShareResult(ResultKind.SENT, true, "Desk", 1, 1)), share.transfer.value)
+        assertEquals(TransferState.Finished(ShareResult(ResultKind.SENT, true, "Desk", 1)), share.transfer.value)
         scheduler.advance(30_000)
         assertEquals(1, layer.stops)
         share.dismissResult()
         assertEquals(TransferState.Idle, share.transfer.value)
         share.dismissResult()
         assertEquals(TransferState.Idle, share.transfer.value)
+    }
+
+    @Test
+    fun `a send counts the games the receiver took and lists the others, the ones left out of the manifest too`() {
+        val good = lib.rom(Console.SFC, "Game.sfc", "rom".toByteArray())
+        val broken = lib.rom(Console.PS, "Broken.cue", "FILE \"Missing.bin\" BINARY\n".toByteArray())
+        layer.built = ManifestBuilder(lib).build(listOf(good, broken))
+        share.startSend(listOf(good, broken))
+        share.openScreen(send = true)
+        val prep = share.sendPrep.value as SendPrep.Ready
+        val rom = prep.selection.games.single().parts.first { it.part == SendPart.GAME }.itemIds.single()
+        share.send(peer())
+        layer.onSendDone(SendResult(SendResult.DONE, skipped = listOf(rom to SkipReason.USER_UNCHECKED)))
+        val result = (share.transfer.value as TransferState.Finished).result
+        assertEquals(0, result.games)
+        assertEquals(2, result.total)
+        assertEquals(
+            listOf(MissingGame("Game", "SFC", SkipReason.USER_UNCHECKED), MissingGame("Broken", "PS", SkipReason.UNIT_INCOMPLETE)),
+            result.missing,
+        )
+        assertEquals(listOf(result), notifier.finished)
     }
 
     @Test
@@ -390,7 +411,7 @@ class ShareCoordinatorTest {
         assertEquals(TransferState.Running(false, "Phone", 1, p), share.transfer.value)
         layer.onReceiveDone(ReceiveResult(TransferStatus.DONE, skipped = listOf("g1i2" to SkipReason.EXISTS_SKIP)))
         val result = (share.transfer.value as TransferState.Finished).result
-        assertEquals(ShareResult(ResultKind.RECEIVED, false, "Phone", 1, 1, 1, null, "SFC"), result)
+        assertEquals(ShareResult(ResultKind.RECEIVED, false, "Phone", 1, 1, null, "SFC"), result)
         // In front: no notification for the end.
         assertTrue(notifier.finished.isEmpty())
     }
@@ -411,6 +432,23 @@ class ShareCoordinatorTest {
         }
         assertEquals(listOf(ResultKind.CANCELLED, ResultKind.CONNECTION_LOST, ResultKind.FAILED), notifier.finished.map { it.kind })
         assertEquals(ShareMessage.NO_SPACE, notifier.finished.last().error)
+    }
+
+    @Test
+    fun `a receive counts the games that arrived and lists the others`() {
+        val offer = IncomingOffer(
+            "offer1", sender,
+            manifest {
+                game("g1", "SFC", "Game") { item("rom", "Game.sfc", "rom".toByteArray()) }
+                game("g2", "XYZ", "Alien") { item("rom", "Alien.xyz", "x".toByteArray()) }
+            },
+            "482913",
+        )
+        layer.incoming.value = offer
+        share.accept()
+        layer.onReceiveDone(ReceiveResult(TransferStatus.DONE, skipped = listOf("g2i1" to SkipReason.UNSUPPORTED_CONSOLE)))
+        val result = (share.transfer.value as TransferState.Finished).result
+        assertEquals(ShareResult(ResultKind.RECEIVED, false, "Phone", 1, 0, null, "SFC", 2, listOf(MissingGame("Alien", "XYZ", SkipReason.UNSUPPORTED_CONSOLE))), result)
     }
 
     @Test

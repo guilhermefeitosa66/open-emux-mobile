@@ -27,6 +27,12 @@ class Item(
     /** An unknown kind must be answered `skip`. */
     val knownKind: Boolean get() = kind in KINDS
 
+    /** Its role in a multi-file ROM unit (cue, bin, m3u...); null for a single-file ROM or any other kind. */
+    val partRole: String? get() = json.optJSONObject("part")?.optString("role")
+
+    /** The ROM a game is launched from: a single-file ROM, or a unit's cue, m3u or main file. */
+    val isMainRom: Boolean get() = isMainRom(kind, json)
+
     companion object {
         const val ROM = "rom"
         const val BATTERY_SAVE = "battery_save"
@@ -34,6 +40,10 @@ class Item(
         const val COVER = "cover"
         const val LABEL = "label"
         val KINDS = setOf(ROM, BATTERY_SAVE, STATE, COVER, LABEL)
+
+        /** [Item.isMainRom] for a manifest item still in its JSON form. */
+        fun isMainRom(kind: String, json: JSONObject): Boolean =
+            kind == ROM && (json.optJSONObject("part")?.optString("role") ?: Units.ROLE_MAIN) in Units.MAIN_ROLES
     }
 }
 

@@ -70,7 +70,8 @@ enum class RomStatus {
     val placed: Boolean get() = this == NEW || this == KEPT_BOTH
 }
 
-class GamePlan(val gameId: String, val console: Console?, val title: String, val metadata: JSONObject?) {
+/** [consoleId] is the console as the offer names it, kept for one this app does not run ([console] null). */
+class GamePlan(val gameId: String, val console: Console?, val title: String, val metadata: JSONObject?, val consoleId: String = console?.id.orEmpty()) {
     var romStatus = RomStatus.ABSENT
     /** The ROM in the library after the commit (placed, replaced or already there). */
     var romFile: File? = null
@@ -201,7 +202,7 @@ private class Planner(
 
     fun plan(game: Game): GamePlan {
         val console = Console.byId(game.console)
-        val plan = GamePlan(game.id, console, game.title, game.metadata)
+        val plan = GamePlan(game.id, console, game.title, game.metadata, game.console)
         val (items, rejected) = validate(game.items)
         rejected.forEach { skip(plan, it, SkipReason.INVALID_ITEM) }
         if (console == null) {
@@ -252,9 +253,9 @@ private class Planner(
         }
     }
 
-    private fun role(item: Item): String? = item.json.optJSONObject("part")?.optString("role")
+    private fun role(item: Item): String? = item.partRole
 
-    private fun isMain(item: Item) = item.kind == Item.ROM && (role(item) ?: Units.ROLE_MAIN) in Units.MAIN_ROLES
+    private fun isMain(item: Item) = item.isMainRom
 
     private fun slotOf(item: Item): Int? {
         val slot = item.json.optJSONObject("state")?.opt("slot") ?: return null
@@ -305,9 +306,10 @@ private class Planner(
             if (!sendUnit(plan, roms.map { it to File(dir, it.name) }, dir, policy, replacing = true)) return finish(RomStatus.ABSENT, null)
             return finish(if (existing != null) RomStatus.REPLACED else RomStatus.NEW, File(dir, main.name))
         }
+        // The folder is flat: a unit's tracks cannot be renamed without
+        // rewriting its sheet, so only a single-file ROM gets a free name. Keep
+        // Both on a unit is a Skip (the offer sheet never offers it one, #615).
         if (policy == Policy.KEEP_BOTH && !multi) {
-            // The folder is flat: a unit's tracks cannot be renamed without
-            // rewriting its sheet, so only a single-file ROM gets a free name.
             val suffix = main.name.substring(stem.length)
             val finalStem = freeStem(stem) { listOf(File(dir, "$it$suffix")) }
             val target = File(dir, "$finalStem$suffix")

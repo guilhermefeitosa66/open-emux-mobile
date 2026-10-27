@@ -23,6 +23,8 @@ data class Conflict(
     val incoming: Long,
     val policy: Policy,
     val allowed: List<Policy>,
+    /** A multi-file game (cue, m3u): its parts follow this row, and it cannot be kept twice. */
+    val unit: Boolean = false,
 ) {
     val incomingNewer: Boolean get() = incoming > yours
     val yoursNewer: Boolean get() = yours > incoming
@@ -63,8 +65,27 @@ class OfferModel(
 
     private val titles: Map<String, String> = offer.manifest.games.associate { it.id to it.title }
 
-    private val conflictsList: List<Conflict> = probe.decisions.filter { it.replaces != null }.map { probed ->
+    private val items: Map<String, Item> = offer.manifest.items.associateBy { it.id }
+
+    /** The games whose multi-file ROM meets local files: one row each, on its main item. */
+    private val unitConflicts = mutableSetOf<String>()
+
+    private val probeById: Map<String, Decision> = probe.decisions.associateBy { it.itemId }
+
+    private val conflictsList: List<Conflict> = probe.decisions.filter { it.replaces != null }.mapNotNull { probed ->
         val art = probed.kind == Item.COVER || probed.kind == Item.LABEL
+        if (probed.kind == Item.ROM && items[probed.itemId]?.partRole != null) {
+            // Every part that exists here is probed; the unit is replaced or skipped whole, so one row stands for it.
+            if (!unitConflicts.add(probed.gameId)) return@mapNotNull null
+            val main = offer.manifest.games.first { it.id == probed.gameId }.items.first { it.isMainRom }
+            // The local main file's date when it clashes, so both dates are of the same file; else the clashing track's.
+            val yours = (probeById[main.id]?.replaces ?: probed.replaces!!).lastModified()
+            return@mapNotNull Conflict(
+                main.id, Item.ROM, titles[probed.gameId].orEmpty(),
+                yours, (main.mtime * 1000).toLong(),
+                overrides[main.id] ?: Policy.SKIP, UNIT_POLICIES, unit = true,
+            )
+        }
         Conflict(
             probed.itemId, probed.kind, titles[probed.gameId].orEmpty(),
             probed.replaces!!.lastModified(), (probed.mtime * 1000).toLong(),
@@ -76,9 +97,12 @@ class OfferModel(
     /** Every incoming item that would meet a local file, whatever is chosen for it. */
     fun conflicts(): List<Conflict> = conflictsList
 
-    /** What the plan skips, the user's own choices and the conflicts aside. */
-    val skipped: List<SkippedItem> = plan.decisions.filter { d -> !d.send && d.reason != SkipReason.USER_UNCHECKED && conflictsList.none { it.itemId == d.itemId } }
-        .map { SkippedItem(it.itemId, it.kind, titles[it.gameId].orEmpty(), it.reason!!) }
+    /** What the plan skips, the user's own choices and the conflicts aside (a conflicting unit's parts included). */
+    val skipped: List<SkippedItem> = plan.decisions.filter { d ->
+        !d.send && d.reason != SkipReason.USER_UNCHECKED && conflictsList.none { it.itemId == d.itemId } &&
+            // Only the skip the conflict row stands for: a unit kept out for another reason is still listed.
+            !(d.kind == Item.ROM && d.gameId in unitConflicts && d.reason == SkipReason.EXISTS_SKIP)
+    }.map { SkippedItem(it.itemId, it.kind, titles[it.gameId].orEmpty(), it.reason!!) }
 
     /** States that no installed core can load. */
     val incompatibleStates: Int get() = skipped.count { it.reason == SkipReason.INCOMPATIBLE_STATE }
@@ -105,6 +129,8 @@ class OfferModel(
     companion object {
         val ALL_POLICIES = listOf(Policy.NEWEST, Policy.KEEP_BOTH, Policy.REPLACE, Policy.SKIP)
         val ART_POLICIES = listOf(Policy.SKIP, Policy.REPLACE)
+        /** A multi-file game cannot get a free name beside the local one: replaced or skipped whole. */
+        val UNIT_POLICIES = listOf(Policy.REPLACE, Policy.SKIP)
 
         /**
          * The model for [offer]; [planner] plans it under a map of per-item

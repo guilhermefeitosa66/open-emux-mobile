@@ -128,6 +128,20 @@
     <string name="share_result_failed_title">La transferencia falló</string>
     <string name="share_result_lost_title">Conexión perdida</string>
     <string name="share_result_lost_body">%1$s dejó de responder.</string>
+    <string name="share_result_received_partial_body">De %1$s. Estos no se añadieron:</string>
+    <string name="share_result_received_none">No se recibió ningún juego</string>
+    <string name="share_result_received_none_body">De %1$s. No se añadió nada nuevo a tu biblioteca:</string>
+    <string name="share_result_sent_partial_body">%1$s tiene %2$d de ellos. Estos no se enviaron:</string>
+    <string name="share_result_sent_none">No se envió ningún juego</string>
+    <string name="share_result_sent_none_body">%1$s no aceptó ninguno:</string>
+    <string name="share_result_not_received">No recibidos</string>
+    <string name="share_result_not_sent">No enviados</string>
+    <string name="share_reason_sent_exists">Ya está en %1$s</string>
+    <string name="share_reason_sent_not_accepted">No aceptado en %1$s</string>
+    <string name="share_reason_sent_cant_place">%1$s no puede guardarlo</string>
+    <string name="share_reason_sent_unsupported">%1$s no admite esta consola</string>
+    <string name="share_conflicts_unit_note">Un juego con varios archivos no se puede conservar dos veces. Reemplaza el tuyo u omítelo.</string>
+    <string name="share_notif_done_skipped">%1$s, %2$s</string>
     <string name="share_error_busy">%1$s está ocupado con otra transferencia. Inténtalo de nuevo en un momento.</string>
     <string name="share_error_no_space">No hay espacio suficiente para estos juegos.</string>
     <string name="share_error_source_changed">Un archivo cambió mientras se ofrecía. Inténtalo de nuevo.</string>
@@ -205,10 +219,6 @@
         <item quantity="one">%1$d juego enviado</item>
         <item quantity="other">%1$d juegos enviados</item>
     </plurals>
-    <plurals name="share_result_skipped">
-        <item quantity="one">%1$d elemento omitido</item>
-        <item quantity="other">%1$d elementos omitidos</item>
-    </plurals>
     <plurals name="share_result_kept">
         <item quantity="one">%1$d partida conservada (la tuya era más reciente)</item>
         <item quantity="other">%1$d partidas conservadas (las tuyas eran más recientes)</item>
@@ -228,5 +238,17 @@
     <plurals name="library_share_selection">
         <item quantity="one">Compartir %1$d juego cerca</item>
         <item quantity="other">Compartir %1$d juegos cerca</item>
+    </plurals>
+    <plurals name="share_result_received_partial">
+        <item quantity="one">%1$d de %2$d juego recibido</item>
+        <item quantity="other">%1$d de %2$d juegos recibidos</item>
+    </plurals>
+    <plurals name="share_result_sent_partial">
+        <item quantity="one">%1$d de %2$d juego enviado</item>
+        <item quantity="other">%1$d de %2$d juegos enviados</item>
+    </plurals>
+    <plurals name="share_notif_skipped">
+        <item quantity="one">%1$d omitido</item>
+        <item quantity="other">%1$d omitidos</item>
     </plurals>
 </resources>

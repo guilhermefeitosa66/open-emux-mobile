@@ -277,6 +277,9 @@ private fun ConflictsPage(model: OfferModel, share: ShareCoordinator, onBack: ()
                             }
                         }
                     }
+                    if (c.unit) {
+                        Box(Modifier.padding(top = 6.dp)) { NoteLine(Icons.Warn, Oe.Warn, stringResource(R.string.share_conflicts_unit_note)) }
+                    }
                 }
             }
         }

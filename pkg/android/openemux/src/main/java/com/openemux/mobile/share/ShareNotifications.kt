@@ -89,8 +89,8 @@ class ShareNotifications(private val app: Context) : ShareNotifier {
     override fun finished(result: ShareResult) {
         val c = context
         val title = when (result.kind) {
-            ResultKind.RECEIVED -> c.resources.getQuantityString(R.plurals.share_notif_done_received, result.games, result.games)
-            ResultKind.SENT -> c.resources.getQuantityString(R.plurals.share_notif_done_sent, result.games, result.games)
+            ResultKind.RECEIVED -> withSkipped(c.resources.getQuantityString(R.plurals.share_notif_done_received, result.games, result.games), result)
+            ResultKind.SENT -> withSkipped(c.resources.getQuantityString(R.plurals.share_notif_done_sent, result.games, result.games), result)
             ResultKind.CANCELLED -> c.getString(R.string.share_result_cancelled_title)
             ResultKind.DECLINED -> c.getString(R.string.share_result_declined_title)
             ResultKind.EXPIRED -> c.getString(R.string.share_result_expired_title)
@@ -107,6 +107,15 @@ class ShareNotifications(private val app: Context) : ShareNotifier {
                 .setContentIntent(openApp(2))
                 .build(),
         )
+    }
+
+    /** "2 games received, 1 skipped": the games that did not arrive are never left out of the count (#615). */
+    private fun withSkipped(done: String, result: ShareResult): String {
+        val skipped = result.missing.size
+        if (skipped == 0) return done
+        // Nothing arrived: "No Games Received", as the result card says, not "0 games received, 2 skipped".
+        if (result.games == 0) return context.getString(if (result.outgoing) R.string.share_result_sent_none else R.string.share_result_received_none)
+        return context.getString(R.string.share_notif_done_skipped, done, context.resources.getQuantityString(R.plurals.share_notif_skipped, skipped, skipped))
     }
 
     private fun post(id: Int, notification: Notification) {

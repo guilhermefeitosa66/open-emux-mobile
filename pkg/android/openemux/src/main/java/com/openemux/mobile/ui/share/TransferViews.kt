@@ -49,6 +49,8 @@ import com.openemux.mobile.ui.Oe
 import com.openemux.mobile.ui.PrimaryButton
 import com.openemux.mobile.ui.SecondaryButton
 import com.openemux.mobile.ui.Type
+import com.openemux.mobile.ui.Card
+import com.openemux.mobile.ui.ListRow
 import com.openemux.mobile.ui.countString
 import com.openemux.mobile.ui.gamepadFocus
 import com.retroarch.R
@@ -147,13 +149,25 @@ fun CancelTransferDialog(onKeep: () -> Unit, onCancel: () -> Unit) {
 @Composable
 fun ResultView(result: ShareResult, onClose: () -> Unit, onShow: (() -> Unit)?) {
     val ok = result.kind == ResultKind.RECEIVED || result.kind == ResultKind.SENT
+    // Some of the games did not arrive (#615): a warning, and the list of them.
+    val short = ok && result.missing.isNotEmpty()
+    val none = short && result.games == 0
     val peer = result.peer
     val (title, body) = when (result.kind) {
-        ResultKind.RECEIVED -> countString(R.plurals.share_result_received_title, result.games, result.games) to
-            // Everything was skipped or kept: nothing new is in the library.
-            stringResource(if (result.games > 0) R.string.share_result_received_body else R.string.share_result_received_body_none, peer)
-        ResultKind.SENT -> countString(R.plurals.share_result_sent_title, result.games, result.games) to
-            stringResource(R.string.share_result_sent_body, peer)
+        ResultKind.RECEIVED -> when {
+            none -> stringResource(R.string.share_result_received_none) to stringResource(R.string.share_result_received_none_body, peer)
+            short -> countString(R.plurals.share_result_received_partial, result.total, result.games, result.total) to
+                stringResource(R.string.share_result_received_partial_body, peer)
+            else -> countString(R.plurals.share_result_received_title, result.games, result.games) to
+                // Everything was skipped or kept: nothing new is in the library.
+                stringResource(if (result.games > 0) R.string.share_result_received_body else R.string.share_result_received_body_none, peer)
+        }
+        ResultKind.SENT -> when {
+            none -> stringResource(R.string.share_result_sent_none) to stringResource(R.string.share_result_sent_none_body, peer)
+            short -> countString(R.plurals.share_result_sent_partial, result.total, result.games, result.total) to
+                stringResource(R.string.share_result_sent_partial_body, peer, result.games)
+            else -> countString(R.plurals.share_result_sent_title, result.games, result.games) to stringResource(R.string.share_result_sent_body, peer)
+        }
         ResultKind.CANCELLED -> stringResource(R.string.share_result_cancelled_title) to
             if (result.outgoing) stringResource(R.string.share_result_cancelled_body, peer) else stringResource(R.string.share_result_cancelled_body_here)
         ResultKind.DECLINED -> stringResource(R.string.share_result_declined_title) to stringResource(R.string.share_result_declined_body, peer)
@@ -161,22 +175,35 @@ fun ResultView(result: ShareResult, onClose: () -> Unit, onShow: (() -> Unit)?) 
         ResultKind.CONNECTION_LOST -> stringResource(R.string.share_result_lost_title) to stringResource(R.string.share_result_lost_body, peer)
         ResultKind.FAILED -> stringResource(R.string.share_result_failed_title) to messageText(result.error ?: ShareMessage.GENERIC, peer)
     }
+    val (badge, tint, icon) = when {
+        short -> Triple(Oe.WarnBg, Oe.Warn, Icons.Warn)
+        ok -> Triple(Oe.OkBg, Oe.Ok, Icons.Check)
+        else -> Triple(Oe.DangerBg, Oe.Danger, Icons.Close)
+    }
     Column(
         Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
         horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Box(
-            Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(if (ok) Oe.OkBg else Oe.DangerBg),
+            Modifier.size(56.dp).clip(RoundedCornerShape(18.dp)).background(badge),
             contentAlignment = Alignment.Center,
-        ) { Icon(if (ok) Icons.Check else Icons.Close, if (ok) Oe.Ok else Oe.Danger, 28.dp, stroke = 2.4f) }
+        ) { Icon(icon, tint, 28.dp, stroke = 2.4f) }
         Text(title, style = Type.Title.copy(fontSize = 22.sp), textAlign = TextAlign.Center)
         Text(body, style = Type.Small.copy(fontSize = 14.sp), textAlign = TextAlign.Center)
-        if (result.kind == ResultKind.RECEIVED && (result.skipped > 0 || result.keptNewer > 0)) {
-            val parts = listOfNotNull(
-                result.skipped.takeIf { it > 0 }?.let { countString(R.plurals.share_result_skipped, it, it) },
-                result.keptNewer.takeIf { it > 0 }?.let { countString(R.plurals.share_result_kept, it, it) },
+        if (result.kind == ResultKind.RECEIVED && result.keptNewer > 0) {
+            Text(countString(R.plurals.share_result_kept, result.keptNewer, result.keptNewer), style = Type.Small, textAlign = TextAlign.Center)
+        }
+        if (short) {
+            Text(
+                stringResource(if (result.outgoing) R.string.share_result_not_sent else R.string.share_result_not_received).uppercase(),
+                style = Type.SectionCaps, modifier = Modifier.padding(top = 10.dp).fillMaxWidth(),
             )
-            Text(parts.joinToString(" · "), style = Type.Small, textAlign = TextAlign.Center)
+            Card {
+                result.missing.forEachIndexed { i, game ->
+                    val reason = if (result.outgoing) sentSkipText(game.reason, peer) else skipText(game.reason.orEmpty())
+                    ListRow(game.title, subtitle = consoleShort(game.console) + " · " + reason, divider = i > 0, subtitleLines = 2)
+                }
+            }
         }
         Row(Modifier.padding(top = 10.dp).fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             SecondaryButton(stringResource(R.string.share_close), onClose, Modifier.weight(1f))

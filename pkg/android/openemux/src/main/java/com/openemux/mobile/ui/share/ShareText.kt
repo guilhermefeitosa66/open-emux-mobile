@@ -111,6 +111,16 @@ fun skipText(reason: String): String = stringResource(
     },
 )
 
+/** Why [peer] did not take a game this device sent (#615): an unknown or missing answer reads as not accepted. */
+@Composable
+fun sentSkipText(reason: String?, peer: String): String = when (ShareFormat.reasonKey(reason)) {
+    SkipNote.EXISTS_SKIP -> stringResource(R.string.share_reason_sent_exists, peer)
+    SkipNote.INVALID_ITEM, SkipNote.INCOMPATIBLE_STATE -> stringResource(R.string.share_reason_sent_cant_place, peer)
+    SkipNote.UNSUPPORTED_CONSOLE -> stringResource(R.string.share_reason_sent_unsupported, peer)
+    SkipNote.UNIT_INCOMPLETE, SkipNote.TOO_MANY_ITEMS, SkipNote.NO_SPACE -> skipText(reason!!)
+    SkipNote.USER_UNCHECKED, SkipNote.GENERIC -> stringResource(R.string.share_reason_sent_not_accepted, peer)
+}
+
 /** A layer error or an unavailability reason as a sentence; [peer] names the other device where the text does. */
 @Composable
 fun messageText(message: ShareMessage, peer: String = "", peerVersion: Int? = null): String = when (message) {

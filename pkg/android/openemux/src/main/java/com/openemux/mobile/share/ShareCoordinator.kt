@@ -30,13 +30,16 @@ data class ShareResult(
     val kind: ResultKind,
     val outgoing: Boolean,
     val peer: String,
+    /** The games that arrived (#615): not the ones offered. */
     val games: Int = 0,
-    val skipped: Int = 0,
     /** Saves and states kept because the local one was newer. */
     val keptNewer: Int = 0,
     val error: ShareMessage? = null,
     /** The console of the first game received, for "Show in Library". */
     val firstConsole: String? = null,
+    /** The games the transfer was about; [missing] are the ones of them that did not arrive. */
+    val total: Int = games,
+    val missing: List<MissingGame> = emptyList(),
 )
 
 /** The one transfer this device runs at a time. */
@@ -229,6 +232,7 @@ class ShareCoordinator(
         val ready = _sendPrep.value as? SendPrep.Ready ?: return
         if (ready.selection.isEmpty || !peer.compatible || _transfer.value.busy) return
         val built = ready.selection.filter(ready.built)
+        val excluded = ready.selection.excluded
         val games = ready.selection.gameCount
         begin(TransferState.Waiting(peer.name, null))
         scope.launch(io) {
@@ -237,19 +241,19 @@ class ShareCoordinator(
                     peer, built,
                     onCode = { code -> if (_transfer.value is TransferState.Waiting) _transfer.value = TransferState.Waiting(peer.name, code) },
                     onProgress = { progress -> if (_transfer.value.busy) _transfer.value = TransferState.Running(true, peer.name, games, progress) },
-                    onDone = { finish(sendResult(peer.name, games, it)) },
+                    onDone = { finish(sendResult(peer.name, built, excluded, it)) },
                 )
                 holdCancel(cancel)
             } catch (e: ShareError) {
-                finish(sendResult(peer.name, games, SendResult(SendResult.FAILED, error = e.code)))
+                finish(sendResult(peer.name, built, excluded, SendResult(SendResult.FAILED, error = e.code)))
             } catch (e: Exception) {
                 // Anything else would leave the transfer busy for good (and take the app down).
-                finish(sendResult(peer.name, games, SendResult(SendResult.FAILED, error = ErrorCode.INTERNAL)))
+                finish(sendResult(peer.name, built, excluded, SendResult(SendResult.FAILED, error = ErrorCode.INTERNAL)))
             }
         }
     }
 
-    private fun sendResult(peer: String, games: Int, result: SendResult): ShareResult {
+    private fun sendResult(peer: String, built: BuiltManifest, excluded: List<ExcludedGame>, result: SendResult): ShareResult {
         val kind = when (result.status) {
             SendResult.DONE -> ResultKind.SENT
             SendResult.DECLINED -> ResultKind.DECLINED
@@ -261,7 +265,9 @@ class ShareCoordinator(
         if (result.error == ErrorCode.SOURCE_CHANGED) {
             prepare((_sendPrep.value as? SendPrep.Ready)?.selection?.unchecked.orEmpty())
         }
-        return ShareResult(kind, true, peer, games, result.skipped.size, error = errorOf(kind, result.error))
+        if (kind != ResultKind.SENT) return ShareResult(kind, true, peer, error = errorOf(kind, result.error))
+        val report = sendReport(built, excluded, result)
+        return ShareResult(kind, true, peer, report.delivered, total = report.total, missing = report.missing)
     }
 
     // -- receiving -------------------------------------------------------------
@@ -350,7 +356,7 @@ class ShareCoordinator(
                 val cancel = layer.accept(
                     offerId, model.plan,
                     onProgress = { progress -> if (_transfer.value.busy) _transfer.value = TransferState.Running(false, model.sender, games, progress) },
-                    onDone = { finish(receiveResult(model, games, it)) },
+                    onDone = { finish(receiveResult(model, it)) },
                 )
                 answered += offerId
                 dropOffer()
@@ -368,7 +374,7 @@ class ShareCoordinator(
         }
     }
 
-    private fun receiveResult(model: OfferModel, games: Int, result: ReceiveResult): ShareResult {
+    private fun receiveResult(model: OfferModel, result: ReceiveResult): ShareResult {
         val kind = when (result.status) {
             TransferStatus.DONE -> ResultKind.RECEIVED
             TransferStatus.CANCELLED -> ResultKind.CANCELLED
@@ -382,7 +388,9 @@ class ShareCoordinator(
                 (model.overrides[id] ?: DEFAULT_POLICIES[kind]) == Policy.NEWEST
         }
         val first = model.plan.games.firstOrNull { it.romStatus.placed || it.romStatus == RomStatus.REPLACED }?.console?.id
-        return ShareResult(kind, false, model.sender, games, result.skipped.size, keptNewer, errorOf(kind, result.error), first)
+        if (kind != ResultKind.RECEIVED) return ShareResult(kind, false, model.sender, keptNewer = keptNewer, error = errorOf(kind, result.error), firstConsole = first)
+        val report = receiveReport(model.plan, result)
+        return ShareResult(kind, false, model.sender, report.delivered, keptNewer, null, first, report.total, report.missing)
     }
 
     fun decline() {

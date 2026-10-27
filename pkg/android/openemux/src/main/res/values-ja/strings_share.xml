@@ -128,6 +128,20 @@
     <string name="share_result_failed_title">転送に失敗しました</string>
     <string name="share_result_lost_title">接続が切れました</string>
     <string name="share_result_lost_body">%1$s が応答しなくなりました。</string>
+    <string name="share_result_received_partial_body">%1$s から。次のゲームは追加されませんでした:</string>
+    <string name="share_result_received_none">ゲームを受け取れませんでした</string>
+    <string name="share_result_received_none_body">%1$s から。ライブラリに新しく追加されたものはありません:</string>
+    <string name="share_result_sent_partial_body">%1$s に %2$d 本届きました。次のゲームは送られませんでした:</string>
+    <string name="share_result_sent_none">ゲームを送れませんでした</string>
+    <string name="share_result_sent_none_body">%1$s はどのゲームも受け取りませんでした:</string>
+    <string name="share_result_not_received">受け取れなかったゲーム</string>
+    <string name="share_result_not_sent">送れなかったゲーム</string>
+    <string name="share_reason_sent_exists">%1$s にすでにあります</string>
+    <string name="share_reason_sent_not_accepted">%1$s で受け入れられませんでした</string>
+    <string name="share_reason_sent_cant_place">%1$s では配置できません</string>
+    <string name="share_reason_sent_unsupported">%1$s はこのゲーム機に対応していません</string>
+    <string name="share_conflicts_unit_note">複数のファイルからなるゲームは 2 つ残せません。置き換えるか、スキップしてください。</string>
+    <string name="share_notif_done_skipped">%1$s、%2$s</string>
     <string name="share_error_busy">%1$s は別の転送中です。少ししてからもう一度お試しください。</string>
     <string name="share_error_no_space">これらのゲームを入れる空き容量がありません。</string>
     <string name="share_error_source_changed">送信中にファイルが変更されました。もう一度お試しください。</string>
@@ -192,9 +206,6 @@
     <plurals name="share_result_sent_title">
         <item quantity="other">%1$d 本を送りました</item>
     </plurals>
-    <plurals name="share_result_skipped">
-        <item quantity="other">%1$d 項目をスキップ</item>
-    </plurals>
     <plurals name="share_result_kept">
         <item quantity="other">%1$d 個のセーブを保持 (こちらが新しい)</item>
     </plurals>
@@ -209,5 +220,14 @@
     </plurals>
     <plurals name="library_share_selection">
         <item quantity="other">%1$d 本を近くの端末と共有</item>
+    </plurals>
+    <plurals name="share_result_received_partial">
+        <item quantity="other">%2$d 本中 %1$d 本を受け取りました</item>
+    </plurals>
+    <plurals name="share_result_sent_partial">
+        <item quantity="other">%2$d 本中 %1$d 本を送りました</item>
+    </plurals>
+    <plurals name="share_notif_skipped">
+        <item quantity="other">%1$d 本スキップ</item>
     </plurals>
 </resources>
