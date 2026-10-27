@@ -94,4 +94,26 @@
     <string name="update_installed">Tienes la %1$s</string>
     <string name="update_download">Descargar</string>
     <string name="update_not_now">Ahora no</string>
+    <!-- Selection mode (issue #585) -->
+    <plurals name="library_selected_count">
+        <item quantity="one">%1$d seleccionado</item>
+        <item quantity="other">%1$d seleccionados</item>
+    </plurals>
+    <string name="library_select_all">Seleccionar todo</string>
+    <string name="library_selection_close">Cancelar selección</string>
+    <string name="library_remove_selected">Quitar seleccionados</string>
+    <plurals name="library_remove_many_title">
+        <item quantity="one">¿Quitar %1$d juego?</item>
+        <item quantity="other">¿Quitar %1$d juegos?</item>
+    </plurals>
+    <plurals name="library_remove_many_message">
+        <item quantity="one">El archivo de la ROM se borra del dispositivo. Las partidas guardadas y los estados se conservan por si vuelves a importarlo.</item>
+        <item quantity="other">Los archivos de las ROM se borran del dispositivo. Las partidas guardadas y los estados se conservan por si vuelves a importarlos.</item>
+    </plurals>
+    <string name="library_select_tile">Seleccionar</string>
+    <string name="library_deselect_tile">Deseleccionar</string>
+    <string name="library_hint_select">Seleccionar</string>
+    <string name="library_hint_select_all">Seleccionar todo</string>
+    <string name="library_hint_remove">Quitar</string>
+    <string name="library_hint_done">Listo</string>
 </resources>

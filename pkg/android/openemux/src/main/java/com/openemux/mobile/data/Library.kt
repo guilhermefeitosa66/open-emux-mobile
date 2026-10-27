@@ -5,6 +5,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
@@ -66,6 +67,9 @@ data class Meta(
     /** The user's console order, as on the desktop (issue #386): ids, the rest follow in Console order. */
     val consoleOrder: List<String> = emptyList(),
 )
+
+/** The metadata without the games [keys] names; console settings and order stay. */
+fun Meta.withoutRoms(keys: Set<String>): Meta = copy(roms = roms - keys)
 
 /** A cue sheet's FILE line: quoted or bare name. */
 internal val CUE_FILE = Regex("""(?im)^\s*FILE\s+(?:"([^"]+)"|(\S+))""")
@@ -134,9 +138,10 @@ class Library(private val context: Context) {
 
     fun romMeta(key: String): RomMeta = _meta.value.roms[key] ?: RomMeta()
 
-    fun consoleSettings(console: Console): ConsoleSettings =
-        _meta.value.consoles[console.id]
-            ?: ConsoleSettings(core = console.cores[0].id, shader = console.defaultShader)
+    fun consoleSettings(console: Console): ConsoleSettings = _meta.value.settingsFor(console)
+
+    private fun Meta.settingsFor(console: Console): ConsoleSettings =
+        consoles[console.id] ?: ConsoleSettings(core = console.cores[0].id, shader = console.defaultShader)
 
     fun effectiveCore(rom: Rom): CoreDef =
         rom.console.core(romMeta(rom.key).core ?: consoleSettings(rom.console).core)
@@ -148,16 +153,12 @@ class Library(private val context: Context) {
         romMeta(rom.key).color ?: consoleSettings(rom.console).color
 
     fun updateRom(key: String, change: (RomMeta) -> RomMeta) {
-        val current = _meta.value
-        _meta.value = current.copy(roms = current.roms + (key to change(romMeta(key))))
+        _meta.update { it.copy(roms = it.roms + (key to change(it.roms[key] ?: RomMeta()))) }
         saveMeta()
     }
 
     fun updateConsole(console: Console, change: (ConsoleSettings) -> ConsoleSettings) {
-        val current = _meta.value
-        _meta.value = current.copy(
-            consoles = current.consoles + (console.id to change(consoleSettings(console)))
-        )
+        _meta.update { it.copy(consoles = it.consoles + (console.id to change(it.settingsFor(console)))) }
         saveMeta()
     }
 
@@ -185,12 +186,12 @@ class Library(private val context: Context) {
     }
 
     fun setConsoleOrder(order: List<Console>) {
-        _meta.value = _meta.value.copy(consoleOrder = order.map { it.id })
+        _meta.update { it.copy(consoleOrder = order.map { o -> o.id }) }
         saveMeta()
     }
 
     fun resetConsoleOrder() {
-        _meta.value = _meta.value.copy(consoleOrder = emptyList())
+        _meta.update { it.copy(consoleOrder = emptyList()) }
         saveMeta()
     }
 
@@ -225,12 +226,23 @@ class Library(private val context: Context) {
         runCatching { playtimeFile(rom).readText().trim().toLong() }.getOrDefault(0L)
 
     fun delete(rom: Rom) {
-        rom.file.delete()
-        _roms.value = _roms.value.filterNot { it.key == rom.key }
+        deleteAll(listOf(rom))
+    }
+
+    /**
+     * Deletes the games' files and their metadata, saving it once. A game
+     * whose file could not be deleted keeps its place and its metadata.
+     * Returns how many were removed.
+     */
+    fun deleteAll(roms: Collection<Rom>): Int {
+        val gone = roms.filter { it.file.delete() || !it.file.exists() }.map { it.key }.toSet()
+        if (gone.isEmpty()) return 0
+        // Runs off the main thread: update atomically so a favorite toggled or a scan finished meanwhile is kept.
+        _roms.update { list -> list.filterNot { it.key in gone } }
         saveIndex(_roms.value)
-        val current = _meta.value
-        _meta.value = current.copy(roms = current.roms - rom.key)
+        _meta.update { it.withoutRoms(gone) }
         saveMeta()
+        return gone.size
     }
 
     private fun loadIndex() {
@@ -291,6 +303,8 @@ class Library(private val context: Context) {
         }.getOrDefault(Meta())
     }
 
+    // Synchronized: the bulk delete saves from an IO thread while the UI saves from the main one, both through one .tmp file.
+    @Synchronized
     private fun saveMeta() {
         val m = _meta.value
         val json = JSONObject()
