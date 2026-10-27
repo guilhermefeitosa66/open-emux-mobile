@@ -353,7 +353,7 @@ fun ShelfScreen() {
     menuFor?.let { console ->
         val i = present.indexOf(console)
         ModalBottomSheet({ menuFor = null }, containerColor = Oe.Sheet) {
-            ImmersiveWindow()
+            SheetBarIcons()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(console.displayName, style = Type.Title.copy(fontSize = 22.sp))
                 Text(stringResource(R.string.library_shelf_order_tip), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))
@@ -730,7 +730,7 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
         AlertDialog(
             onDismissRequest = { confirmRemove = false },
             containerColor = Oe.Sheet,
-            title = { ImmersiveWindow(); Text(countString(R.plurals.library_remove_many_title, n, n), style = Type.Title.copy(fontSize = 20.sp)) },
+            title = { Text(countString(R.plurals.library_remove_many_title, n, n), style = Type.Title.copy(fontSize = 20.sp)) },
             text = { Text(countString(R.plurals.library_remove_many_message, n), style = Type.Small) },
             confirmButton = {
                 TextButton({

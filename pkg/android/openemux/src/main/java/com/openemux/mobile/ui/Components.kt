@@ -68,13 +68,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.ui.window.DialogWindowProvider
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -566,17 +564,21 @@ fun FitText(text: String, style: TextStyle, modifier: Modifier = Modifier) {
     )
 }
 
-/** In a sheet or dialog, which has a window of its own: keeps the app's full screen there too. */
+/**
+ * In a bottom sheet, which has a window of its own: its bar icons follow the app's theme, as the activity's do.
+ * Material sets them from the system's dark mode, which the theme picked in the app may not match.
+ */
 @Composable
-fun ImmersiveWindow() {
+fun SheetBarIcons() {
     val view = LocalView.current
-    LaunchedEffect(view) {
+    val dark = Oe.dark
+    LaunchedEffect(view, dark) {
         val provider = generateSequence<Any>(view) { (it as? android.view.View)?.parent ?: (it as? android.view.ViewParent)?.parent }
             .firstOrNull { it is DialogWindowProvider } as? DialogWindowProvider
         provider?.window?.let { window ->
             WindowCompat.getInsetsController(window, window.decorView).apply {
-                hide(WindowInsetsCompat.Type.systemBars())
-                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+                isAppearanceLightStatusBars = !dark
+                isAppearanceLightNavigationBars = !dark
             }
         }
     }

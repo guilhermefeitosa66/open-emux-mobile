@@ -19,7 +19,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -151,9 +151,10 @@ fun OpenEmuxRoot() {
     }
 
     OpenEmuxTheme {
-        // The app runs full screen: the bars, when a swipe brings them back, sit over it without moving
-        // anything, so their insets are spent here; only the camera cutout keeps the content away.
-        Box(Modifier.fillMaxSize().background(Oe.Bg).consumeWindowInsets(WindowInsets.systemBars).windowInsetsPadding(WindowInsets.displayCutout)) {
+        // Edge to edge with the system bars kept on screen (only the game hides them): the content is padded away
+        // from them and from the cutout, never drawn under them. Padded here once, so the screens' own bar
+        // paddings read 0.
+        Box(Modifier.fillMaxSize().background(Oe.Bg).windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))) {
             val setup by app.setup.state.collectAsState()
             // Nothing opens until the cores are on the device.
             if (setup !is Setup.State.Done) SetupScreen(setup) { scope.launch { app.setup.run() } }
