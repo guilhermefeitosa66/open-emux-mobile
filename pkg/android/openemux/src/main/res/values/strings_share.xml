@@ -115,6 +115,7 @@
     <string name="share_space_lead">Not enough space.</string>
     <string name="share_space_body">These games need %1$s and %2$s is free. Free up %3$s, or uncheck some items on the other device.</string>
     <string name="share_result_received_body">From %1$s. They’re in your library, ready to play.</string>
+    <string name="share_result_received_body_none">From %1$s. Nothing new was added: your library already had all of it.</string>
     <string name="share_result_sent_body">%1$s has them now.</string>
     <string name="share_result_show">Show in Library</string>
     <string name="share_result_cancelled_title">Transfer Cancelled</string>

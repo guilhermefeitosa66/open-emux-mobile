@@ -115,6 +115,7 @@
     <string name="share_space_lead">Nicht genug Speicher.</string>
     <string name="share_space_body">Diese Spiele brauchen %1$s und %2$s sind frei. Gib %3$s frei oder wähle auf dem anderen Gerät Elemente ab.</string>
     <string name="share_result_received_body">Von %1$s. Sie sind in deiner Bibliothek und spielbereit.</string>
+    <string name="share_result_received_body_none">Von %1$s. Nichts Neues hinzugefügt: Deine Bibliothek hatte schon alles.</string>
     <string name="share_result_sent_body">%1$s hat sie jetzt.</string>
     <string name="share_result_show">In der Bibliothek zeigen</string>
     <string name="share_result_cancelled_title">Übertragung abgebrochen</string>

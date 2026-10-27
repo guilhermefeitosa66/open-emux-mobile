@@ -151,7 +151,8 @@ fun ResultView(result: ShareResult, onClose: () -> Unit, onShow: (() -> Unit)?) 
     val peer = result.peer
     val (title, body) = when (result.kind) {
         ResultKind.RECEIVED -> countString(R.plurals.share_result_received_title, result.games, result.games) to
-            stringResource(R.string.share_result_received_body, peer)
+            // Everything was skipped or kept: nothing new is in the library.
+            stringResource(if (result.games > 0) R.string.share_result_received_body else R.string.share_result_received_body_none, peer)
         ResultKind.SENT -> countString(R.plurals.share_result_sent_title, result.games, result.games) to
             stringResource(R.string.share_result_sent_body, peer)
         ResultKind.CANCELLED -> stringResource(R.string.share_result_cancelled_title) to

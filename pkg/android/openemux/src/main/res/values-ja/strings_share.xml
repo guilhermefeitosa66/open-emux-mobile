@@ -115,6 +115,7 @@
     <string name="share_space_lead">空き容量が足りません。</string>
     <string name="share_space_body">これらのゲームには %1$s 必要ですが、空きは %2$s です。%3$s 空けるか、相手の端末で項目を外してください。</string>
     <string name="share_result_received_body">%1$s から。ライブラリに入り、すぐ遊べます。</string>
+    <string name="share_result_received_body_none">%1$s から。新しく追加されたものはありません。すべてライブラリにありました。</string>
     <string name="share_result_sent_body">%1$s に届きました。</string>
     <string name="share_result_show">ライブラリで見る</string>
     <string name="share_result_cancelled_title">転送をキャンセルしました</string>

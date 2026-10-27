@@ -2,6 +2,7 @@ package com.openemux.mobile.share
 
 import com.openemux.mobile.data.Console
 import com.openemux.mobile.data.Rom
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
+import kotlin.coroutines.CoroutineContext
 
 class ShareCoordinatorTest {
     private val lib = FakeLibrary()
@@ -255,6 +257,31 @@ class ShareCoordinatorTest {
     }
 
     @Test
+    fun `a receiving cancel runs on io, and one that fails is ignored`() {
+        // Cancelling closes sockets: from the notification or the screen it comes on the main thread.
+        val io = QueueDispatcher()
+        val share = ShareCoordinator(layer, scheduler, notifier, { services++ }, CoroutineScope(Dispatchers.Unconfined), io)
+        layer.incoming.value = offer()
+        io.runAll()
+        share.accept()
+        io.runAll()
+        share.cancel()
+        assertEquals(0, layer.cancels)
+        io.runAll()
+        assertEquals(1, layer.cancels)
+        layer.onReceiveDone(ReceiveResult(TransferStatus.CANCELLED))
+        share.dismissResult()
+        layer.cancelError = IllegalStateException("socket")
+        layer.incoming.value = offer("offer2")
+        io.runAll()
+        share.accept()
+        io.runAll()
+        share.cancel()
+        io.runAll()
+        assertTrue(share.transfer.value.busy)
+    }
+
+    @Test
     fun `progress after the end is ignored`() {
         ready()
         share.send(peer())
@@ -307,6 +334,22 @@ class ShareCoordinatorTest {
         layer.incoming.value = null
         assertNull(share.pendingOffer.value)
         scheduler.advance(60_000)
+    }
+
+    @Test
+    fun `an offer that arrives in the grace keeps the layer up for its 60 s`() {
+        share.openScreen(send = false)
+        share.closeScreen()
+        scheduler.advance(15_000)
+        layer.incoming.value = offer()
+        scheduler.advance(30_000)
+        assertEquals(0, layer.stops)
+        assertNotNull(share.pendingOffer.value)
+        share.decline()
+        scheduler.advance(29_999)
+        assertEquals(0, layer.stops)
+        scheduler.advance(1)
+        assertEquals(1, layer.stops)
     }
 
     @Test
@@ -458,6 +501,17 @@ class ShareCoordinatorTest {
         override fun finished(result: ShareResult) { finished += result }
     }
 
+    /** Runs what is dispatched to it only when asked: shows what did not run inline. */
+    private class QueueDispatcher : CoroutineDispatcher() {
+        private val queue = ArrayDeque<Runnable>()
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            queue.addLast(block)
+        }
+        fun runAll() {
+            while (queue.isNotEmpty()) queue.removeFirst().run()
+        }
+    }
+
     private inner class FakeLayer : ShareLayer {
         override val peers = MutableStateFlow<List<Peer>>(emptyList())
         override val incoming = MutableStateFlow<IncomingOffer?>(null)
@@ -477,6 +531,7 @@ class ShareCoordinatorTest {
         var sends = 0
         var sendError: ShareError? = null
         var cancels = 0
+        var cancelError: Exception? = null
         var cancelDuringSend: (() -> Unit)? = null
         var onCode: (String) -> Unit = {}
         var onSendProgress: (TransferProgress) -> Unit = {}
@@ -536,7 +591,10 @@ class ShareCoordinatorTest {
             accepted = offerId
             onReceiveProgress = onProgress
             onReceiveDone = onDone
-            return { cancels++ }
+            return {
+                cancelError?.let { throw it }
+                cancels++
+            }
         }
         override fun decline(offerId: String) {
             declined += offerId

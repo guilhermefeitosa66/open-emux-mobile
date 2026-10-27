@@ -115,6 +115,7 @@
     <string name="share_space_lead">空间不足。</string>
     <string name="share_space_body">这些游戏需要 %1$s，可用空间为 %2$s。请释放 %3$s，或在另一台设备上取消勾选部分项目。</string>
     <string name="share_result_received_body">来自 %1$s。已在你的游戏库中，可以直接游玩。</string>
+    <string name="share_result_received_body_none">来自 %1$s。没有添加新内容：你的游戏库中已经全部都有。</string>
     <string name="share_result_sent_body">%1$s 已收到。</string>
     <string name="share_result_show">在游戏库中查看</string>
     <string name="share_result_cancelled_title">传输已取消</string>

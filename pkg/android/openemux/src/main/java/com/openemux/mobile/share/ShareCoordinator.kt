@@ -283,6 +283,8 @@ class ShareCoordinator(
             return
         }
         incomingId = offer.offerId
+        // Arrived in the grace: the layer stays up for the offer's whole 60 s.
+        discoverability.offerShown()
         val receivedAt = scheduler.now()
         expiry?.cancel()
         expiry = scheduler.schedule(ShareProtocol.OFFER_TTL_MS) { expire(offer.offerId) }
@@ -305,6 +307,7 @@ class ShareCoordinator(
         expiry = null
         _pendingOffer.value = null
         notifier.clearOffer()
+        discoverability.offerEnded()
     }
 
     private fun expire(offerId: String) {
@@ -416,8 +419,14 @@ class ShareCoordinator(
             if (!_transfer.value.busy) return
             cancelRequested = true
             cancelTransfer
+        } ?: return
+        // Called on the main thread: cancelling closes sockets, which Android refuses there.
+        scope.launch(io) {
+            try {
+                cancel()
+            } catch (_: Exception) {
+            }
         }
-        cancel?.invoke()
     }
 
     private fun finish(result: ShareResult) {

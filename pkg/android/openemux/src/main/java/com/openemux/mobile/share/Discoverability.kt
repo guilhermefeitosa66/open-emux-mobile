@@ -14,7 +14,8 @@ interface Scheduler {
 /**
  * When this device is discoverable (spec, assumptions of #591): from the first
  * share screen opened until [graceMs] after the last one closes, and never
- * stopped while a transfer runs (the grace counts again from its end).
+ * stopped while an offer waits for an answer or a transfer runs (the grace
+ * counts again from its end).
  * [onStart] and [onStop] are called with the lock held; they hand the work
  * off rather than doing it there.
  */
@@ -26,6 +27,7 @@ class Discoverability(
 ) {
     private var screens = 0
     private var transferring = false
+    private var offering = false
     private var pendingStop: Cancellable? = null
 
     var running = false
@@ -61,6 +63,20 @@ class Discoverability(
         scheduleStop()
     }
 
+    /** An offer is on screen: its 60 s are not cut short by the grace ending. */
+    @Synchronized
+    fun offerShown() {
+        offering = true
+        cancelStop()
+    }
+
+    @Synchronized
+    fun offerEnded() {
+        if (!offering) return
+        offering = false
+        scheduleStop()
+    }
+
     /** The layer could not start: the next [open] tries again. */
     @Synchronized
     fun failed() {
@@ -68,13 +84,15 @@ class Discoverability(
         cancelStop()
     }
 
+    private fun held() = screens > 0 || transferring || offering || !running
+
     private fun cancelStop() {
         pendingStop?.cancel()
         pendingStop = null
     }
 
     private fun scheduleStop() {
-        if (screens > 0 || transferring || !running) return
+        if (held()) return
         cancelStop()
         pendingStop = scheduler.schedule(graceMs) { stopNow() }
     }
@@ -82,7 +100,7 @@ class Discoverability(
     @Synchronized
     private fun stopNow() {
         pendingStop = null
-        if (screens > 0 || transferring || !running) return
+        if (held()) return
         running = false
         onStop()
     }

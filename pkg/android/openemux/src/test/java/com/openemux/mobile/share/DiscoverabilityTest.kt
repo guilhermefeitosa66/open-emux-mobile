@@ -71,9 +71,39 @@ class DiscoverabilityTest {
     }
 
     @Test
+    fun `an offer that arrives in the grace holds it until 30 s after it ends`() {
+        rules.open()
+        rules.close()
+        scheduler.advance(15_000)
+        rules.offerShown()
+        scheduler.advance(60_000)
+        assertEquals(0, stops)
+        rules.offerEnded()
+        scheduler.advance(29_999)
+        assertEquals(0, stops)
+        scheduler.advance(1)
+        assertEquals(1, stops)
+    }
+
+    @Test
+    fun `an offer accepted into a transfer stays held by the transfer`() {
+        rules.open()
+        rules.close()
+        rules.offerShown()
+        rules.transferStarted()
+        rules.offerEnded()
+        scheduler.advance(120_000)
+        assertEquals(0, stops)
+        rules.transferEnded()
+        scheduler.advance(30_000)
+        assertEquals(1, stops)
+    }
+
+    @Test
     fun `stray calls change nothing`() {
         rules.close()
         rules.transferEnded()
+        rules.offerEnded()
         scheduler.advance(60_000)
         assertEquals(0, starts)
         assertEquals(0, stops)

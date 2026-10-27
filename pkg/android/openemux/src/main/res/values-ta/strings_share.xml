@@ -115,6 +115,7 @@
     <string name="share_space_lead">போதுமான இடம் இல்லை.</string>
     <string name="share_space_body">இந்தக் கேம்களுக்கு %1$s தேவை, %2$s காலியாக உள்ளது. %3$s இடத்தை விடுவிக்கவும், அல்லது மற்ற சாதனத்தில் சில உருப்படிகளின் குறியை நீக்கவும்.</string>
     <string name="share_result_received_body">%1$s-இடமிருந்து. உங்கள் நூலகத்தில் விளையாடத் தயாராக உள்ளன.</string>
+    <string name="share_result_received_body_none">%1$s-இடமிருந்து. புதிதாக எதுவும் சேர்க்கப்படவில்லை: உங்கள் நூலகத்தில் ஏற்கனவே எல்லாம் இருந்தது.</string>
     <string name="share_result_sent_body">இப்போது அவை %1$s-இடம் உள்ளன.</string>
     <string name="share_result_show">நூலகத்தில் காட்டு</string>
     <string name="share_result_cancelled_title">பரிமாற்றம் ரத்துசெய்யப்பட்டது</string>
