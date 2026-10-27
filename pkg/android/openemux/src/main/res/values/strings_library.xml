@@ -92,6 +92,13 @@
     <string name="update_installed">You have %1$s</string>
     <string name="update_download">Download</string>
     <string name="update_not_now">Not now</string>
+    <string name="library_pick_hint">Select a game to see it here</string>
+    <string name="library_open_full">Open full screen</string>
+    <string name="library_col_game">Game</string>
+    <string name="library_col_time">Time</string>
+    <string name="library_col_last">Last played</string>
+    <string name="library_hint_list">List</string>
+    <string name="library_row_description">%1$s, %2$s, last played %3$s</string>
     <!-- Selection mode (issue #585) -->
     <plurals name="library_selected_count">
         <item quantity="one">%1$d selected</item>

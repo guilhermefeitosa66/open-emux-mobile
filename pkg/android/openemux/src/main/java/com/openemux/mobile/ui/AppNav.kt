@@ -209,11 +209,11 @@ fun OpenEmuxRoot() {
                         exitTransition = { fadeOut() },
                     ) {
                         composable(Routes.SHELF) { ShelfScreen() }
-                        composable(Routes.LIBRARY) { LibraryScreen(it.arguments?.getString("filter") ?: "ALL") }
+                        composable(Routes.LIBRARY) { LibraryScreen(it.arguments?.getString("filter") ?: "ALL", it) }
                         composable(Routes.ROM) { DetailScreen(Uri.decode(it.arguments?.getString("key") ?: "")) }
                         composable(Routes.RECENT) { RecentScreen() }
                         composable(Routes.IMPORT) { ImportScreen() }
-                        composable(Routes.SETTINGS) { SettingsScreen() }
+                        composable(Routes.SETTINGS) { SettingsScreen(it) }
                         composable(Routes.CONSOLE) { ConsoleSettingsScreen(it.arguments?.getString("console") ?: "GBA") }
                         composable(Routes.BIOS) { BiosScreen() }
                         composable(Routes.ACHIEVEMENTS) { AchievementsScreen() }

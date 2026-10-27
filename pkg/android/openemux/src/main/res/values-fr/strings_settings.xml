@@ -211,4 +211,10 @@
     <string name="backup_err_write">La sauvegarde n’a pas pu être écrite. %1$s</string>
     <string name="backup_err_read">La sauvegarde n’a pas pu être lue. %1$s Rien n’a été modifié.</string>
     <string name="backup_file_name">Sauvegarde OpenEmux %1$s</string>
+    <string name="settings_pick_hint">Choisissez un réglage à gauche</string>
+    <string name="settings_console_defaults_lead">S’applique à tous les jeux de cette console qui n’ont pas leur propre réglage.</string>
+    <string name="settings_theme_lead">S’applique tout de suite, sans redémarrer. Les cartouches, les étagères, l’écran de jeu et le skin de la manette gardent leur apparence.</string>
+    <string name="settings_language_lead">S’applique aux textes de l’app. Les noms des jeux suivent le fichier.</string>
+    <string name="settings_about_licenses">À propos et licences</string>
+    <string name="settings_licenses_hint">Touchez pour lire le texte complet</string>
 </resources>

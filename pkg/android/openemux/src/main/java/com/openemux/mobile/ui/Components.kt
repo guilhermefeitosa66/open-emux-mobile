@@ -45,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.autofill.ContentType
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -138,6 +139,7 @@ object Icons {
     const val Mute = "M4 9v6h4l5 4V5L8 9zM17 9l4 6M21 9l-4 6"
     const val Reset = "M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"
     const val Trash = "M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"
+    const val Expand = "M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"
     const val Dots = "M5 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2M12 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2M19 11a1 1 0 1 0 0 2a1 1 0 1 0 0-2"
     const val Trophy = "M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4"
     const val Eye = "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6"
@@ -369,13 +371,15 @@ fun ListRow(
     trailing: (@Composable RowScope.() -> Unit)? = null,
     subtitleLines: Int = 1,
     enabled: Boolean = true,
+    selected: Boolean = false,
 ) {
     if (divider) HorizontalDivider(color = Oe.Divider, thickness = 1.dp)
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            .let { if (onClick != null && enabled) it.gamepadFocus(corner = 0.dp, inset = true).clickable(role = Role.Button, onClick = onClick) else it }
+            .let { if (selected) it.background(Oe.AccentTint).semantics { this.selected = true } else it }
+            .let { if (onClick != null && enabled) it.paneOpener(selected).gamepadFocus(corner = 0.dp, inset = true).clickable(role = Role.Button, onClick = onClick) else it }
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -383,7 +387,7 @@ fun ListRow(
     ) {
         leading?.invoke()
         Column(Modifier.weight(1f)) {
-            Text(label, style = Type.Body)
+            Text(label, style = if (selected) Type.Body.copy(fontWeight = FontWeight.SemiBold) else Type.Body)
             if (subtitle != null) Text(subtitle, style = Type.Small, maxLines = subtitleLines, overflow = TextOverflow.Ellipsis)
         }
         trailing?.invoke(this)

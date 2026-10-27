@@ -87,4 +87,6 @@
     <!-- RetroAchievements hardcore -->
     <string name="game_hardcore_tag">HARDCORE</string>
     <string name="game_hardcore_note">Hardcore mode is on: loading a state and fast forward are off for this game. Turn it off in Settings › RetroAchievements.</string>
+    <string name="detail_settings_for_game">Settings for this game</string>
+    <string name="detail_played_last">%1$s · last played %2$s</string>
 </resources>

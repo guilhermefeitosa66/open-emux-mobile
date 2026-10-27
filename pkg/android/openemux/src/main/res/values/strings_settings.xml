@@ -200,4 +200,10 @@
     <string name="backup_err_write">The backup could not be written. %1$s</string>
     <string name="backup_err_read">The backup could not be read. %1$s Nothing was changed.</string>
     <string name="backup_file_name">OpenEmux backup %1$s</string>
+    <string name="settings_pick_hint">Choose a setting on the left</string>
+    <string name="settings_console_defaults_lead">Applies to every game of this console that has no setting of its own.</string>
+    <string name="settings_theme_lead">Changes right away, no restart. Cartridges, shelves, the game screen and the controller skin keep their look.</string>
+    <string name="settings_language_lead">Applies to the app\'s texts. Game names follow the file.</string>
+    <string name="settings_about_licenses">About and licenses</string>
+    <string name="settings_licenses_hint">Tap to read the full text</string>
 </resources>

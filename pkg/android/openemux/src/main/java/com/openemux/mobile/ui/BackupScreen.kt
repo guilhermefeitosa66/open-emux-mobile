@@ -58,11 +58,15 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Settings → Back up and restore (issue #545): one archive out, one archive back in. */
+/** Settings → Back up and restore (issue #545): one archive out, one archive back in; [embedded] in the settings pane. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BackupScreen() {
-    GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
+fun BackupScreen(embedded: Boolean = false) {
+    // In the settings pane the screen around it owns the buttons and Back.
+    if (!embedded) {
+        GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
+        ReturnToSplit(LocalWindowLayout.current.splitSettings, Routes.SETTINGS, SettingsItem.Backup.key)
+    }
     val a = LocalActions.current
     val backup = a.app.backup
     val context = LocalContext.current
@@ -94,7 +98,7 @@ fun BackupScreen() {
 
     MarginFocusScroll(trailing = FocusMargin + hintBarInset) { Column(Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).navigationBarsPadding()) {
         Column(Modifier.padding(horizontal = 20.dp).padding(top = 6.dp)) {
-            BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
+            if (!embedded) BackLink(stringResource(R.string.settings_title)) { a.nav.popBackStack() }
             FitText(stringResource(R.string.settings_backup), Type.Display, Modifier.padding(top = 4.dp))
             Text(
                 stringResource(R.string.backup_intro),

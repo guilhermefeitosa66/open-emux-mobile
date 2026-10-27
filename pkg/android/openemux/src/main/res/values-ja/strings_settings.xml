@@ -187,4 +187,10 @@
     <string name="backup_err_write">バックアップを書き込めませんでした。%1$s</string>
     <string name="backup_err_read">バックアップを読み込めませんでした。%1$s 何も変更されていません。</string>
     <string name="backup_file_name">OpenEmux バックアップ %1$s</string>
+    <string name="settings_pick_hint">左の一覧から設定を選んでください</string>
+    <string name="settings_console_defaults_lead">個別の設定がないこのコンソールのすべてのゲームに適用されます。</string>
+    <string name="settings_theme_lead">再起動なしですぐに切り替わります。カートリッジ、棚、ゲーム画面、コントローラースキンの見た目は変わりません。</string>
+    <string name="settings_language_lead">アプリの表示に適用されます。ゲーム名はファイル名のままです。</string>
+    <string name="settings_about_licenses">このアプリについてとライセンス</string>
+    <string name="settings_licenses_hint">タップして全文を表示</string>
 </resources>

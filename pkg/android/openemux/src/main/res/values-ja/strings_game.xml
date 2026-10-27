@@ -86,4 +86,6 @@
     <!-- RetroAchievements hardcore -->
     <string name="game_hardcore_tag">ハードコア</string>
     <string name="game_hardcore_note">ハードコアモードがオンです：このゲームではステートロードと早送りが使えません。設定 › RetroAchievements でオフにできます。</string>
+    <string name="detail_settings_for_game">このゲームの設定</string>
+    <string name="detail_played_last">%1$s · 最終プレイ %2$s</string>
 </resources>

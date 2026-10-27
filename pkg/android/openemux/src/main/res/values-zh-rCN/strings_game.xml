@@ -86,4 +86,6 @@
     <!-- RetroAchievements hardcore -->
     <string name="game_hardcore_tag">硬核</string>
     <string name="game_hardcore_note">硬核模式已开启：本游戏中读取存档和快进已关闭。可在 设置 › RetroAchievements 中关闭。</string>
+    <string name="detail_settings_for_game">此游戏的设置</string>
+    <string name="detail_played_last">%1$s · 上次游玩 %2$s</string>
 </resources>

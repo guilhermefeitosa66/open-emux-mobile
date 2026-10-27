@@ -94,6 +94,13 @@
     <string name="update_installed">Vous avez la %1$s</string>
     <string name="update_download">Télécharger</string>
     <string name="update_not_now">Plus tard</string>
+    <string name="library_pick_hint">Sélectionnez un jeu pour le voir ici</string>
+    <string name="library_open_full">Ouvrir en plein écran</string>
+    <string name="library_col_game">Jeu</string>
+    <string name="library_col_time">Temps</string>
+    <string name="library_col_last">Dernière partie</string>
+    <string name="library_hint_list">Liste</string>
+    <string name="library_row_description">%1$s, %2$s, dernière partie %3$s</string>
     <!-- Selection mode (issue #585) -->
     <plurals name="library_selected_count">
         <item quantity="one">%1$d sélectionné</item>

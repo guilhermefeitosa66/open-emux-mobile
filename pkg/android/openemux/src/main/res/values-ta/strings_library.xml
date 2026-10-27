@@ -92,6 +92,13 @@
     <string name="update_installed">உங்களிடம் %1$s உள்ளது</string>
     <string name="update_download">பதிவிறக்கு</string>
     <string name="update_not_now">இப்போது வேண்டாம்</string>
+    <string name="library_pick_hint">இங்கே பார்க்க ஒரு விளையாட்டைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="library_open_full">முழுத் திரையில் திற</string>
+    <string name="library_col_game">விளையாட்டு</string>
+    <string name="library_col_time">நேரம்</string>
+    <string name="library_col_last">கடைசியாக</string>
+    <string name="library_hint_list">பட்டியல்</string>
+    <string name="library_row_description">%1$s, %2$s, கடைசியாக %3$s</string>
     <!-- Selection mode (issue #585) -->
     <plurals name="library_selected_count">
         <item quantity="one">%1$d தேர்ந்தெடுக்கப்பட்டது</item>

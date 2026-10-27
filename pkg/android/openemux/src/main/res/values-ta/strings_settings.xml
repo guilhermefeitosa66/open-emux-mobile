@@ -199,4 +199,10 @@
     <string name="backup_err_write">காப்புப்பிரதியை எழுத முடியவில்லை. %1$s</string>
     <string name="backup_err_read">காப்புப்பிரதியைப் படிக்க முடியவில்லை. %1$s எதுவும் மாற்றப்படவில்லை.</string>
     <string name="backup_file_name">OpenEmux காப்புப்பிரதி %1$s</string>
+    <string name="settings_pick_hint">இடப்பக்கத்தில் ஒரு அமைப்பைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="settings_console_defaults_lead">தனி அமைப்பு இல்லாத இந்தக் கன்சோலின் எல்லா விளையாட்டுகளுக்கும் பொருந்தும்.</string>
+    <string name="settings_theme_lead">உடனே மாறும், மறுதொடக்கம் தேவையில்லை. கார்ட்ரிட்ஜ்கள், அலமாரிகள், விளையாட்டுத் திரை, கட்டுப்படுத்தி ஸ்கின் ஆகியவை அப்படியே இருக்கும்.</string>
+    <string name="settings_language_lead">செயலியின் உரைகளுக்குப் பொருந்தும். விளையாட்டுப் பெயர்கள் கோப்பைப் பின்பற்றும்.</string>
+    <string name="settings_about_licenses">பற்றி மற்றும் உரிமங்கள்</string>
+    <string name="settings_licenses_hint">முழு உரையைப் படிக்கத் தட்டவும்</string>
 </resources>

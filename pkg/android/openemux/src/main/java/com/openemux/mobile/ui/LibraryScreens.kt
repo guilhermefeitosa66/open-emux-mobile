@@ -45,6 +45,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
@@ -68,6 +69,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.Dispatchers
+import androidx.navigation.NavBackStackEntry
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.runtime.produceState
+import androidx.compose.runtime.key
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -75,15 +90,8 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.runtime.produceState
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -638,11 +646,28 @@ private enum class SortMode(@StringRes val label: Int) { Az(R.string.library_sor
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun LibraryScreen(filter: String) {
+fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
     val a = LocalActions.current
     val lib = a.app.library
     val roms by lib.roms.collectAsState()
     val meta by lib.meta.collectAsState()
+    val layout = LocalWindowLayout.current
+    // On a wide tablet the picked game's detail sits beside the library; a tap picks, a second one opens it.
+    // In tabletop the halves take the page instead.
+    val pane = libraryPaneShown()
+    var picked by rememberSaveable { mutableStateOf<String?>(null) }
+    // A pick handed over (by a screen of its own, or left here on the way to one) is kept only beside its pane:
+    // back on a phone the game was already shown on its own, so it must not be opened a second time.
+    // Declared before OnSplitChange, so it runs first when this screen comes back.
+    LaunchedEffect(entry) { entry?.savedStateHandle?.remove<String>(PICKED)?.let { picked = if (pane) it else null } }
+    OnSplitChange(pane) { change ->
+        if (change == SplitChange.Parted) picked?.let { picked = null; a.nav.navigate(Routes.rom(it)) }
+    }
+    // Opens a game on its own screen; from the pane, the pick waits in the saved state for the way back.
+    fun openFull(key: String) {
+        if (pane) picked?.let { entry?.savedStateHandle?.set(PICKED, it) }
+        a.nav.navigate(Routes.rom(key))
+    }
     val loaded by lib.loaded.collectAsState()
     // The empty texts wait until the library is known, as on the shelf.
     val known = shelfContent(loaded, roms) != ShelfContent.Loading
@@ -705,7 +730,7 @@ fun LibraryScreen(filter: String) {
         l1 = { chip(-1) },
         r1 = { chip(1) },
         x = { focusedRom.value?.let { key -> lib.updateRom(key) { it.copy(favorite = !it.favorite) } } },
-        y = { focusedRom.value?.let { a.nav.navigate(Routes.rom(it)) } },
+        y = { focusedRom.value?.let { openFull(it) } },
         select = { searching = !searching; if (!searching) query = "" },
         start = { focusedRom.value?.takeIf { it in visibleKeys }?.let { selection = selection.start(it) } },
     )
@@ -731,7 +756,6 @@ fun LibraryScreen(filter: String) {
             start = { selection = selection.clear() },
         )
     }
-    BackHandler(enabled = selection.active) { selection = selection.clear() }
     if (confirmRemove) {
         // The dialog is modal for the gamepad too: X, Start, L1/R1 and Select would otherwise
         // reach the selection (or the filter) behind it and change which games get removed.
@@ -758,6 +782,8 @@ fun LibraryScreen(filter: String) {
         )
     }
     val bar: @Composable BoxScope.() -> Unit = {
+        // Here, so it is composed after the split's own Back: while selecting, Back ends the selection first.
+        BackHandler(enabled = selection.active) { selection = selection.clear() }
         AnimatedVisibility(selection.active, Modifier.align(Alignment.TopCenter), enter = fadeIn(), exit = fadeOut()) {
             SelectionBar(
                 count = selection.count(visibleKeys),
@@ -808,24 +834,36 @@ fun LibraryScreen(filter: String) {
         }
     }
 
+    // The list view as a table of time played and last played, read once per change off the main thread.
+    val table = layout.tableList
+    val revision by lib.revision.collectAsState()
+    // Only while the table shows: the grid modes never read these files.
+    val tableShown = table && mode == ViewMode.List
+    val playtimes by produceState(emptyMap<String, Long>(), tableShown, roms, revision) {
+        if (tableShown) value = withContext(Dispatchers.IO) { roms.associate { it.key to lib.playtimeSeconds(it) } }
+    }
     // One game in the grid, in view mode m.
     val tile: @Composable (Rom, ViewMode) -> Unit = { rom, m ->
             val romMeta = meta.roms[rom.key]
-            val open = { a.nav.navigate(Routes.rom(rom.key)) }
-            val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey)
-            val picked = rom.key in selection
+            val isPicked = pane && picked == rom.key
+            val open = {
+                if (!pane || isPicked) openFull(rom.key)
+                else picked = rom.key
+            }
+            val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey).pickedRing(isPicked, outset = m != ViewMode.List).paneOpener(isPicked)
+            val chosen = rom.key in selection
             when (m) {
                 ViewMode.Carts -> CappedCell(GridSpec.Carts) {
                     Column(
                         it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).pickable(pick, rom.key, open),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Box(Modifier.selectionLook(selection.active, picked)) {
+                        Box(Modifier.selectionLook(selection.active, chosen)) {
                             Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
-                            TileBadges(selection.active, picked, romMeta?.favorite == true)
+                            TileBadges(selection.active, chosen, romMeta?.favorite == true)
                         }
                         Text(
-                            rom.title, style = Type.Caption.copy(color = captionColor(selection.active, picked), fontSize = 13.sp),
+                            rom.title, style = Type.Caption.copy(color = captionColor(selection.active, chosen), fontSize = 13.sp),
                             maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
                         )
@@ -833,20 +871,21 @@ fun LibraryScreen(filter: String) {
                 }
                 ViewMode.Covers -> CappedCell(GridSpec.Covers) {
                     Column(it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).pickable(pick, rom.key, open)) {
-                        Box(Modifier.selectionLook(selection.active, picked)) {
+                        Box(Modifier.selectionLook(selection.active, chosen)) {
                             BoxArt(rom, Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)))
-                            TileBadges(selection.active, picked, romMeta?.favorite == true)
+                            TileBadges(selection.active, chosen, romMeta?.favorite == true)
                         }
-                        Text(rom.title, style = Type.Caption.copy(color = captionColor(selection.active, picked)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
+                        Text(rom.title, style = Type.Caption.copy(color = captionColor(selection.active, chosen)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
                     }
                 }
-                ViewMode.List -> Row(
+                ViewMode.List -> if (table) TableRow(rom, playtimes[rom.key] ?: 0L, romMeta?.lastPlayed ?: 0L, romMeta?.favorite == true, focus, pick, open)
+                else Row(
                     Modifier.fillMaxWidth().gamepadFocus(corner = 12.dp, inset = true).then(focus).pickable(pick, rom.key, open)
-                        .then(if (picked) Modifier.background(Oe.AccentSoft, RoundedCornerShape(12.dp)) else Modifier)
+                        .then(if (chosen) Modifier.background(Oe.AccentSoft, RoundedCornerShape(12.dp)) else Modifier)
                         .padding(vertical = 8.dp, horizontal = if (selection.active) 8.dp else 0.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    if (selection.active) CheckCircle(picked, outline = Oe.Chevron, modifier = Modifier.padding(end = 12.dp))
+                    if (selection.active) CheckCircle(chosen, outline = Oe.Chevron, modifier = Modifier.padding(end = 12.dp))
                     Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
                         BoxArt(rom, Modifier.clip(RoundedCornerShape(6.dp)), maxHeight = 64.dp)
                     }
@@ -865,11 +904,14 @@ fun LibraryScreen(filter: String) {
     // As many columns as the width holds, never fewer than a phone shows.
     val spec = when (shown) { ViewMode.Carts -> GridSpec.Carts; ViewMode.Covers -> GridSpec.Covers; ViewMode.List -> GridSpec.List }
     // Staggered, so each box art keeps its own proportions in the covers mode.
-    Box(Modifier.fillMaxSize()) { MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
+    // Held out here: crossing into or out of the pane moves the grid to another place in the tree, and it keeps its scroll.
+    val gridState = rememberLazyStaggeredGridState()
+    val grid: @Composable () -> Unit = { MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
         // While selecting, the D-pad stays on the games: not off the side onto the tabs or the rail,
         // nor down onto the tabletop deck.
         Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).holdGamepadFocus(selection.active),
+        state = gridState,
         // A tablet's wider margins line the grid up with the shelf.
         contentPadding = contentSideDp(LocalWindowLayout.current).dp.let { side ->
             androidx.compose.foundation.layout.PaddingValues(start = side, end = side, top = FocusOutset, bottom = TabBarHeight + hintBarInset + 24.dp)
@@ -914,6 +956,7 @@ fun LibraryScreen(filter: String) {
                 }
             }
         }
+        if (table && shown == ViewMode.List && list.isNotEmpty()) item(key = "table-header", span = StaggeredGridItemSpan.FullLine) { TableHeader() }
         groups.forEach { (group, groupRoms) ->
             if (group != null) item(key = "group-${group.id}", span = StaggeredGridItemSpan.FullLine) { GroupHeader(group, groupRoms.size) }
             if (perGroup && group != null) {
@@ -925,8 +968,89 @@ fun LibraryScreen(filter: String) {
                 items(groupRoms, key = { it.key }) { rom -> tile(rom, shown) }
             }
         }
-    } }
-        bar()
+    } } }
+
+    // The selection bar sits over the games, beside the pane rather than over it.
+    val games: @Composable () -> Unit = { Box(Modifier.fillMaxSize()) { grid(); bar() } }
+    if (!pane) {
+        games()
+        return
+    }
+    val pickedRom = picked?.takeIf { key -> roms.any { it.key == key } }
+    ListDetailScaffold(
+        listWidth = null, detailWidth = LIBRARY_PANE_DP.dp,
+        // A pick whose game is gone (removed on its own screen) shows the placeholder, and Back must not stop there.
+        selected = pickedRom != null, onClear = { picked = null },
+        list = games,
+        detail = { focusInDetail ->
+            if (pickedRom == null) PanePlaceholder(Icons.Cart, stringResource(R.string.library_pick_hint), Modifier.padding(bottom = TabBarHeight))
+            else key(pickedRom) {
+                RomDetail(
+                    pickedRom, DetailStyle.Pane, active = focusInDetail,
+                    onClose = { picked = null }, onOpenFull = { openFull(pickedRom) },
+                )
+            }
+        },
+        detailBackground = Oe.Surface,
+    )
+}
+
+/** The picked game in the library beside its pane: a tinted card with an accent ring, [outset] around the item or inside a row. */
+private fun Modifier.pickedRing(picked: Boolean, outset: Boolean): Modifier =
+    if (!picked) this else this.semantics { selected = true }.drawWithContent {
+        val off = if (outset) 6.dp.toPx() else 0f
+        val radius = CornerRadius(16.dp.toPx())
+        val topLeft = Offset(-off, -off)
+        val area = Size(size.width + off * 2, size.height + off * 2)
+        drawRoundRect(Oe.AccentTint, topLeft, area, radius)
+        drawContent()
+        val ring = 2.dp.toPx()
+        drawRoundRect(Oe.AccentBright, Offset(-off + ring / 2, -off + ring / 2), Size(area.width - ring, area.height - ring), radius, style = Stroke(ring))
+    }
+
+/** The table's column names over the list view on a tablet; the rows say them to a screen reader. */
+@Composable
+private fun TableHeader() {
+    Row(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp).clearAndSetSemantics {}, verticalAlignment = Alignment.CenterVertically) {
+        val caps = Type.Tag.copy(color = Oe.Muted, fontSize = 12.sp, letterSpacing = 1.sp)
+        Text(stringResource(R.string.library_col_game).uppercase(), style = caps, modifier = Modifier.weight(1f).padding(start = 4.dp))
+        Text(stringResource(R.string.library_col_time).uppercase(), style = caps, modifier = Modifier.width(96.dp))
+        Text(stringResource(R.string.library_col_last).uppercase(), style = caps, modifier = Modifier.width(80.dp))
+        Spacer(Modifier.width(24.dp))
+    }
+}
+
+/** A game as a table row: its art, title and file, time played, when it was last played and its star. */
+@Composable
+private fun TableRow(rom: Rom, playtime: Long, lastPlayed: Long, favorite: Boolean, focus: Modifier, pick: TilePick, open: () -> Unit) {
+    val lib = LocalActions.current.app.library
+    val selecting = pick.selection.active
+    val chosen = rom.key in pick.selection
+    val time = formatPlaytime(playtime)
+    val last = if (lastPlayed > 0) formatAgo(lastPlayed) else ""
+    // Never played: the time already says so, and "last played never played" says it twice.
+    val description = if (last.isEmpty()) "${rom.title}, $time" else stringResource(R.string.library_row_description, rom.title, time, last)
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 64.dp).gamepadFocus(corner = 12.dp, inset = true).then(focus)
+            .semantics { contentDescription = description }.pickable(pick, rom.key, open)
+            .then(if (chosen) Modifier.background(Oe.AccentSoft, RoundedCornerShape(12.dp)) else Modifier)
+            .padding(vertical = 6.dp, horizontal = if (selecting) 8.dp else 0.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (selecting) CheckCircle(chosen, outline = Oe.Chevron, modifier = Modifier.padding(end = 12.dp))
+        Row(Modifier.weight(1f).clearAndSetSemantics {}, verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.width(76.dp), contentAlignment = Alignment.Center) {
+                if (rom.console.frame != null) Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(76.dp), pending = labelPending(rom), cover = LocalActions.current.app.covers.urlFor(rom))
+                else BoxArt(rom, Modifier.clip(RoundedCornerShape(6.dp)), maxHeight = 56.dp)
+            }
+            Column(Modifier.weight(1f).padding(start = 14.dp, end = 10.dp)) {
+                Text(rom.title, style = Type.BodyMedium.copy(fontSize = 15.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(rom.file.name, style = Type.Small.copy(fontSize = 12.sp), maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Text(time, style = Type.Small, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(96.dp))
+            Text(last, style = Type.Small, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(80.dp))
+            Box(Modifier.width(24.dp), contentAlignment = Alignment.Center) { if (favorite) Icon(Icons.Star, Oe.Star, 16.dp, filled = true) }
+        }
     }
 }
 

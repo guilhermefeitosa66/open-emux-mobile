@@ -87,4 +87,6 @@
     <!-- RetroAchievements hardcore -->
     <string name="game_hardcore_tag">HARDCORE</string>
     <string name="game_hardcore_note">Der Hardcore-Modus ist an: Spielstände laden und Vorspulen sind in diesem Spiel deaktiviert. Ausschalten unter Einstellungen › RetroAchievements.</string>
+    <string name="detail_settings_for_game">Einstellungen für dieses Spiel</string>
+    <string name="detail_played_last">%1$s · zuletzt %2$s</string>
 </resources>

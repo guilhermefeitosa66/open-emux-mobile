@@ -199,4 +199,10 @@
     <string name="backup_err_write">Não foi possível gravar o backup. %1$s</string>
     <string name="backup_err_read">Não foi possível ler o backup. %1$s Nada foi alterado.</string>
     <string name="backup_file_name">Backup do OpenEmux %1$s</string>
+    <string name="settings_pick_hint">Escolha um ajuste à esquerda</string>
+    <string name="settings_console_defaults_lead">Vale para todos os jogos deste console que não têm ajuste próprio.</string>
+    <string name="settings_theme_lead">Muda na hora, sem reiniciar. Cartuchos, prateleiras, a tela do jogo e a skin do controle mantêm o visual.</string>
+    <string name="settings_language_lead">Vale para os textos do app. Os nomes dos jogos seguem o arquivo.</string>
+    <string name="settings_about_licenses">Sobre e licenças</string>
+    <string name="settings_licenses_hint">Toque para ler o texto completo</string>
 </resources>

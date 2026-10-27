@@ -211,4 +211,10 @@
     <string name="backup_err_write">No se pudo escribir la copia de seguridad. %1$s</string>
     <string name="backup_err_read">No se pudo leer la copia de seguridad. %1$s No se cambió nada.</string>
     <string name="backup_file_name">Copia de OpenEmux %1$s</string>
+    <string name="settings_pick_hint">Elige un ajuste a la izquierda</string>
+    <string name="settings_console_defaults_lead">Se aplica a todos los juegos de esta consola que no tienen un ajuste propio.</string>
+    <string name="settings_theme_lead">Cambia al instante, sin reiniciar. Los cartuchos, los estantes, la pantalla del juego y la skin del mando conservan su aspecto.</string>
+    <string name="settings_language_lead">Se aplica a los textos de la app. Los nombres de los juegos siguen el archivo.</string>
+    <string name="settings_about_licenses">Acerca de y licencias</string>
+    <string name="settings_licenses_hint">Toca para leer el texto completo</string>
 </resources>

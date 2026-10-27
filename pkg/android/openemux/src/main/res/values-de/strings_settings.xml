@@ -199,4 +199,10 @@
     <string name="backup_err_write">Die Sicherung konnte nicht geschrieben werden. %1$s</string>
     <string name="backup_err_read">Die Sicherung konnte nicht gelesen werden. %1$s Es wurde nichts geändert.</string>
     <string name="backup_file_name">OpenEmux-Sicherung %1$s</string>
+    <string name="settings_pick_hint">Wähle links eine Einstellung</string>
+    <string name="settings_console_defaults_lead">Gilt für alle Spiele dieser Konsole ohne eigene Einstellung.</string>
+    <string name="settings_theme_lead">Wirkt sofort, ohne Neustart. Module, Regale, der Spielbildschirm und der Controller-Skin behalten ihr Aussehen.</string>
+    <string name="settings_language_lead">Gilt für die Texte der App. Spielnamen folgen der Datei.</string>
+    <string name="settings_about_licenses">Über und Lizenzen</string>
+    <string name="settings_licenses_hint">Tippen für den vollen Text</string>
 </resources>
