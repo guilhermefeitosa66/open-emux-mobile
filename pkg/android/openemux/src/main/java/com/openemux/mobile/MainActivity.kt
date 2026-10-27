@@ -33,6 +33,8 @@ class MainActivity : ComponentActivity() {
         Oe.syncSystem(this)
         super.onCreate(savedInstanceState)
         // Before the window is attached, so the first frame is already full screen rather than animating into it.
+        // The theme's windowFullscreen covers the starting window and does not fight the insets controller
+        // (bars still come back on a swipe); the API 31+ system splash ignores it and is the system's to draw.
         enableEdgeToEdge(statusBarStyle = barStyle(Oe.dark), navigationBarStyle = barStyle(Oe.dark))
         immersive()
         setContent {
