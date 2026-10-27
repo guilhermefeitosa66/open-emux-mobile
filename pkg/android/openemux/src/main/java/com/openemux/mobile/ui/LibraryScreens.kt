@@ -1,6 +1,10 @@
 package com.openemux.mobile.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,6 +15,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -45,9 +50,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -55,12 +62,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
@@ -91,7 +100,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -108,6 +120,7 @@ import com.openemux.mobile.data.Rom
 import com.openemux.mobile.data.ShelfContent
 import com.openemux.mobile.data.shelfContent
 import com.retroarch.R
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -645,26 +658,90 @@ fun LibraryScreen(filter: String) {
         else lib.orderedConsoles(meta.consoleOrder).mapNotNull { c -> list.filter { it.console == c }.takeIf { it.isNotEmpty() }?.let { c to it } }
     val firstKey = groups.firstOrNull()?.second?.firstOrNull()?.key
     val focusedRom = rememberSaveable { mutableStateOf<String?>(null) }
+    // A focused game that left the library (a bulk remove, a remove from its page, a rescan) is
+    // forgotten once it is gone, so the first tile that stayed takes the gamepad's focus. Not on
+    // an empty list: that is also the library before its first scan, with the saved focus still good.
+    LaunchedEffect(roms) { if (roms.isNotEmpty()) focusedRom.value = focusAfterRemoval(focusedRom.value, roms.map { it.key }) }
     val chipIds = listOf("ALL", "FAV") + lib.orderedConsoles(meta.consoleOrder).filter { c -> roms.any { it.console == c } }.map { it.id }
     fun chip(step: Int) {
         current = chipIds[(chipIds.indexOf(current).coerceAtLeast(0) + step).coerceIn(0, chipIds.lastIndex)]
         focusedRom.value = null
     }
+    // Selection mode (issue #585): it only ever holds games on screen, so a hidden one is never removed.
+    var selection by remember { mutableStateOf(RomSelection()) }
+    var confirmRemove by remember { mutableStateOf(false) }
+    val visibleKeys = remember(list) { list.map { it.key } }
+    LaunchedEffect(visibleKeys) { selection = selection.retain(visibleKeys) }
+    // Nothing left to remove (the filter changed under the dialog): close it rather than ask about 0 games.
+    LaunchedEffect(selection.active) { if (!selection.active) confirmRemove = false }
+    val haptic = LocalHapticFeedback.current
+    val pick = TilePick(
+        selection = selection,
+        select = stringResource(R.string.library_select_tile),
+        deselect = stringResource(R.string.library_deselect_tile),
+        onStart = { key -> haptic.performHapticFeedback(HapticFeedbackType.LongPress); selection = selection.start(key) },
+        onToggle = { key -> selection = selection.toggle(key) },
+    )
+    val scope = rememberCoroutineScope()
     GamepadButtons(
         hints = listOf(
             "A" to stringResource(R.string.library_hint_detail), "X" to stringResource(R.string.library_hint_favorite),
             "Y" to stringResource(R.string.library_hint_options), "B" to stringResource(R.string.library_shelf_title),
+            "START" to stringResource(R.string.library_hint_select),
         ),
         l1 = { chip(-1) },
         r1 = { chip(1) },
         x = { focusedRom.value?.let { key -> lib.updateRom(key) { it.copy(favorite = !it.favorite) } } },
         y = { focusedRom.value?.let { a.nav.navigate(Routes.rom(it)) } },
         select = { searching = !searching; if (!searching) query = "" },
+        start = { focusedRom.value?.takeIf { it in visibleKeys }?.let { selection = selection.start(it) } },
     )
+    if (selection.active) {
+        // On top of the screen's buttons while selecting; A stays the tile's click, which now toggles.
+        GamepadButtons(
+            hints = listOf(
+                "A" to stringResource(R.string.library_hint_select), "X" to stringResource(R.string.library_hint_select_all),
+                "Y" to stringResource(R.string.library_hint_remove), "B" to stringResource(R.string.library_hint_done),
+            ),
+            x = { selection = selection.selectAll(visibleKeys) },
+            y = { if (selection.count(visibleKeys) > 0) confirmRemove = true },
+            start = { selection = selection.clear() },
+        )
+    }
+    BackHandler(enabled = selection.active) { selection = selection.clear() }
+    if (confirmRemove) {
+        val doomed = list.filter { it.key in selection }
+        val n = doomed.size
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            containerColor = Oe.Sheet,
+            title = { ImmersiveWindow(); Text(countString(R.plurals.library_remove_many_title, n, n), style = Type.Title.copy(fontSize = 20.sp)) },
+            text = { Text(countString(R.plurals.library_remove_many_message, n), style = Type.Small) },
+            confirmButton = {
+                TextButton({
+                    confirmRemove = false
+                    selection = selection.clear()
+                    scope.launch(Dispatchers.IO) { lib.deleteAll(doomed) }
+                }) { Text(stringResource(R.string.detail_remove), style = Type.Section.copy(color = Oe.Danger)) }
+            },
+            dismissButton = { TextButton({ confirmRemove = false }) { Text(stringResource(R.string.detail_cancel), style = Type.Section) } },
+        )
+    }
+    val bar: @Composable BoxScope.() -> Unit = {
+        AnimatedVisibility(selection.active, Modifier.align(Alignment.TopCenter), enter = fadeIn(), exit = fadeOut()) {
+            SelectionBar(
+                count = selection.count(visibleKeys),
+                allSelected = selection.allSelected(visibleKeys),
+                onClose = { selection = selection.clear() },
+                onSelectAll = { selection = selection.selectAll(visibleKeys) },
+                onRemove = { if (selection.count(visibleKeys) > 0) confirmRemove = true },
+            )
+        }
+    }
 
     val tabletop = LocalTabletop.current
     // Tabletop decides first: the top half takes the upright layout, however short it is.
-    if (LocalWindowLayout.current.short && !tabletop && mode != ViewMode.List) {
+    if (LocalWindowLayout.current.short && !tabletop && mode != ViewMode.List) Box(Modifier.fillMaxSize()) {
         LandscapeLibrary(
             title = when (current) { "FAV" -> stringResource(R.string.library_favorites); "ALL" -> stringResource(R.string.library_all_games); else -> console!!.displayName },
             list = list, groups = groups, roms = roms, current = current, onPick = { current = it },
@@ -672,8 +749,9 @@ fun LibraryScreen(filter: String) {
             searching = searching, query = query, onQuery = { query = it },
             onSearch = { searching = !searching; if (!searching) query = "" },
             sort = sort, onSort = { sort = if (sort == SortMode.Az) SortMode.Recent else SortMode.Az },
-            focusedRom = focusedRom, known = known,
+            focusedRom = focusedRom, known = known, pick = pick,
         )
+        bar()
         return
     }
 
@@ -704,36 +782,40 @@ fun LibraryScreen(filter: String) {
             val romMeta = meta.roms[rom.key]
             val open = { a.nav.navigate(Routes.rom(rom.key)) }
             val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey)
+            val picked = rom.key in selection
             when (m) {
                 ViewMode.Carts -> CappedCell(GridSpec.Carts) {
                     Column(
-                        it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).combinedClickable(onClick = open, onLongClick = open),
+                        it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).pickable(pick, rom.key, open),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Box {
+                        Box(Modifier.selectionLook(selection.active, picked)) {
                             Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
-                            if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
+                            TileBadges(selection.active, picked, romMeta?.favorite == true)
                         }
                         Text(
-                            rom.title, style = Type.Caption.copy(color = Oe.Text, fontSize = 13.sp),
+                            rom.title, style = Type.Caption.copy(color = captionColor(selection.active, picked), fontSize = 13.sp),
                             maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
                         )
                     }
                 }
                 ViewMode.Covers -> CappedCell(GridSpec.Covers) {
-                    Column(it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).combinedClickable(onClick = open, onLongClick = open)) {
-                        Box {
+                    Column(it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).pickable(pick, rom.key, open)) {
+                        Box(Modifier.selectionLook(selection.active, picked)) {
                             BoxArt(rom, Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)))
-                            if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
+                            TileBadges(selection.active, picked, romMeta?.favorite == true)
                         }
-                        Text(rom.title, style = Type.Caption.copy(color = Oe.Text), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
+                        Text(rom.title, style = Type.Caption.copy(color = captionColor(selection.active, picked)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
                     }
                 }
                 ViewMode.List -> Row(
-                    Modifier.fillMaxWidth().gamepadFocus(corner = 12.dp, inset = true).then(focus).clickable(onClick = open).padding(vertical = 8.dp),
+                    Modifier.fillMaxWidth().gamepadFocus(corner = 12.dp, inset = true).then(focus).pickable(pick, rom.key, open)
+                        .then(if (picked) Modifier.background(Oe.AccentSoft, RoundedCornerShape(12.dp)) else Modifier)
+                        .padding(vertical = 8.dp, horizontal = if (selection.active) 8.dp else 0.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (selection.active) CheckCircle(picked, outline = Oe.Chevron, modifier = Modifier.padding(end = 12.dp))
                     Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
                         BoxArt(rom, Modifier.clip(RoundedCornerShape(6.dp)), maxHeight = 64.dp)
                     }
@@ -752,9 +834,11 @@ fun LibraryScreen(filter: String) {
     // As many columns as the width holds, never fewer than a phone shows.
     val spec = when (shown) { ViewMode.Carts -> GridSpec.Carts; ViewMode.Covers -> GridSpec.Covers; ViewMode.List -> GridSpec.List }
     // Staggered, so each box art keeps its own proportions in the covers mode.
-    MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
+    Box(Modifier.fillMaxSize()) { MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
-        Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down),
+        // While selecting, the D-pad stays on the games: not off the side onto the tabs or the rail,
+        // nor down onto the tabletop deck.
+        Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).holdGamepadFocus(selection.active),
         // A tablet's wider margins line the grid up with the shelf.
         contentPadding = contentSideDp(LocalWindowLayout.current).dp.let { side ->
             androidx.compose.foundation.layout.PaddingValues(start = side, end = side, top = FocusOutset, bottom = TabBarHeight + hintBarInset + 24.dp)
@@ -763,7 +847,8 @@ fun LibraryScreen(filter: String) {
         verticalItemSpacing = if (shown == ViewMode.List) 0.dp else 18.dp,
     ) {
         item(span = StaggeredGridItemSpan.FullLine) {
-            Column {
+            // While selecting, the D-pad stays on the games: the bar covers the header's top row.
+            Column(Modifier.gamepadFence(selection.active)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { BackLink(stringResource(R.string.library_shelf_title)) { a.nav.popBackStack(Routes.SHELF, false) } }
                     if (!tabletop) searchAndSort()
@@ -810,6 +895,98 @@ fun LibraryScreen(filter: String) {
             }
         }
     } }
+        bar()
+    }
+}
+
+/** What a tap and a long press on a game do: open it and start selecting, or toggle it while selecting. */
+private class TilePick(
+    val selection: RomSelection,
+    val select: String,
+    val deselect: String,
+    val onStart: (String) -> Unit,
+    val onToggle: (String) -> Unit,
+)
+
+@OptIn(ExperimentalFoundationApi::class)
+private fun Modifier.pickable(pick: TilePick, key: String, open: () -> Unit): Modifier =
+    if (pick.selection.active) {
+        val picked = key in pick.selection
+        semantics { selected = picked; toggleableState = ToggleableState(picked) }
+            .combinedClickable(
+                onClickLabel = if (picked) pick.deselect else pick.select, role = Role.Checkbox,
+                onClick = { pick.onToggle(key) }, onLongClick = { pick.onToggle(key) },
+            )
+    } else {
+        combinedClickable(onClick = open, onLongClick = { pick.onStart(key) })
+    }
+
+/** A selected game's ring, and the others dimmed while selecting; nothing outside selection mode. */
+private fun Modifier.selectionLook(selecting: Boolean, picked: Boolean): Modifier = when {
+    picked -> border(3.dp, Oe.AccentBright, RoundedCornerShape(10.dp))
+    selecting -> alpha(0.78f)
+    else -> this
+}
+
+@Composable
+private fun captionColor(selecting: Boolean, picked: Boolean) = if (selecting && !picked) Oe.Muted else Oe.Text
+
+/** The marker at the top start of a tile while selecting; the favorite star moves to the other corner. */
+@Composable
+private fun BoxScope.TileBadges(selecting: Boolean, picked: Boolean, favorite: Boolean) {
+    if (selecting) CheckCircle(picked, outline = Color.White.copy(alpha = 0.85f), hollow = Color.Black.copy(alpha = 0.35f), modifier = Modifier.align(Alignment.TopStart).padding(6.dp))
+    if (favorite) FavBadge(Modifier.align(if (selecting) Alignment.TopEnd else Alignment.TopStart).padding(4.dp))
+}
+
+/** Selected: an accent disc with a check, haloed; not selected: a hollow ring. Never colour alone. */
+@Composable
+private fun CheckCircle(picked: Boolean, outline: Color, modifier: Modifier = Modifier, hollow: Color = Color.Transparent) {
+    Box(modifier.size(24.dp), contentAlignment = Alignment.Center) {
+        if (picked) {
+            Box(
+                Modifier.size(24.dp).clip(CircleShape).background(Oe.Accent).border(2.dp, Oe.Bg, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Check, Color.White, 16.dp, stroke = 2.5f) }
+        } else {
+            Box(Modifier.size(20.dp).clip(CircleShape).background(hollow).border(2.dp, outline, CircleShape))
+        }
+    }
+}
+
+/** The contextual bar over the top of the library while selecting. */
+@Composable
+private fun SelectionBar(count: Int, allSelected: Boolean, onClose: () -> Unit, onSelectAll: () -> Unit, onRemove: () -> Unit) {
+    val short = LocalWindowLayout.current.short
+    Column(
+        Modifier.fillMaxWidth().background(Oe.Surface)
+            // Taps on the bar never reach the header it covers.
+            .pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } }
+            // The gamepad has X, Y and B for these, and the D-pad stays on the games: A means "Select".
+            .gamepadFence(closed = true)
+            .statusBarsPadding().displayCutoutPadding(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().height(if (short) 52.dp else 56.dp).padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            RoundIconButton(Icons.Close, stringResource(R.string.library_selection_close), onClose, background = Color.Transparent)
+            Text(
+                countString(R.plurals.library_selected_count, count, count), style = Type.Section.copy(fontSize = 17.sp),
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+            )
+            Box(
+                Modifier.height(40.dp).alpha(if (allSelected) 0.4f else 1f)
+                    .then(if (allSelected) Modifier else Modifier.gamepadFocus(corner = 20.dp))
+                    .clip(RoundedCornerShape(20.dp)).background(Oe.Control)
+                    .clickable(enabled = !allSelected, role = Role.Button, onClick = onSelectAll)
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(R.string.library_select_all), style = Type.Section.copy(fontSize = 14.sp, color = Oe.AccentText), maxLines = 1) }
+            RoundIconButton(Icons.Trash, stringResource(R.string.library_remove_selected), onRemove, tint = Oe.Danger, background = Oe.DangerBg)
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Oe.Border))
+    }
 }
 
 /** A group's games in as many staggered columns as [spec] fits, filled in turn like the grid's lanes. */
@@ -870,6 +1047,7 @@ private fun LandscapeLibrary(
     onSort: () -> Unit,
     focusedRom: MutableState<String?>,
     known: Boolean,
+    pick: TilePick,
 ) {
     val a = LocalActions.current
     val lib = a.app.library
@@ -905,7 +1083,8 @@ private fun LandscapeLibrary(
             // The last game sits at the row's end, which is the left in a right-to-left layout.
             val rowEnd = if (LocalLayoutDirection.current == LayoutDirection.Rtl) FocusDirection.Left else FocusDirection.Right
             CenteredFocusScroll { LazyRow(
-                Modifier.fillMaxSize().holdFocusAtEnd(rowEnd),
+                // While selecting, the D-pad stays on the games, as in the portrait grid.
+                Modifier.fillMaxSize().holdFocusAtEnd(rowEnd).holdGamepadFocus(pick.selection.active),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = margin),
                 horizontalArrangement = Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.CenterVertically,
@@ -924,22 +1103,24 @@ private fun LandscapeLibrary(
                         Column(
                             Modifier.width(maxOf(third, w ?: third)).gamepadFocus(corner = 10.dp, scale = 1.05f) { lit = it }
                                 .restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey)
-                                .combinedClickable(onClick = open, onLongClick = open),
+                                .pickable(pick, rom.key, open),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Box {
+                            val selecting = pick.selection.active
+                            val picked = rom.key in pick.selection
+                            Box(Modifier.selectionLook(selecting, picked)) {
                                 if (itemMode == ViewMode.Carts) {
                                     Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(w!!), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
                                 } else {
                                     BoxArt(rom, Modifier.clip(RoundedCornerShape(10.dp)), maxHeight = itemH)
                                 }
-                                if (favorite) FavBadge(Modifier.padding(4.dp))
+                                TileBadges(selecting, picked, favorite)
                             }
                             // With the gamepad, the focused game's title stands out from the others.
                             Text(
                                 rom.title,
                                 style = Type.Caption.copy(
-                                    color = if (InputMode.gamepad && !lit) Oe.Muted else Oe.Text, fontSize = 13.sp,
+                                    color = if ((InputMode.gamepad && !lit) || (selecting && !picked)) Oe.Muted else Oe.Text, fontSize = 13.sp,
                                     fontWeight = if (lit) FontWeight.SemiBold else Type.Caption.fontWeight,
                                 ),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,

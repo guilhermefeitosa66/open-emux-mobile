@@ -29,6 +29,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -278,6 +280,44 @@ fun holdsFocusAtEnd(held: FocusDirection, requested: FocusDirection, gamepad: Bo
     gamepad && requested == held && !(tabletop && held == FocusDirection.Down)
 
 /**
+ * While [closed], the gamepad's D-pad never moves focus into this group: it
+ * stays where it was. Touch is unaffected. The library uses it to keep focus
+ * on the games while selecting, off the controls that the face buttons cover.
+ */
+fun Modifier.gamepadFence(closed: Boolean): Modifier =
+    focusProperties {
+        onEnter = { if (blocksGamepadMove(closed, requestedFocusDirection, InputMode.gamepad)) cancelFocusChange() }
+    }.focusGroup()
+
+/** While [held], the gamepad's D-pad never moves focus out of this group. */
+fun Modifier.holdGamepadFocus(held: Boolean): Modifier =
+    focusProperties {
+        onExit = { if (blocksGamepadMove(held, requestedFocusDirection, InputMode.gamepad)) cancelFocusChange() }
+    }.focusGroup()
+
+/**
+ * Whether a fence or a hold that is [on] stops a move in [requested]: only the
+ * D-pad's, so a requestFocus from code (which arrives as Enter) still goes through.
+ */
+fun blocksGamepadMove(on: Boolean, requested: FocusDirection, gamepad: Boolean) =
+    on && gamepad && requested != FocusDirection.Enter && requested != FocusDirection.Exit
+
+/**
+ * Lays its content out at its natural width and, when that is wider than the
+ * room it has, shrinks it to fit rather than pushing the ends off screen.
+ */
+internal fun Modifier.shrinkToFit(): Modifier = layout { measurable, constraints ->
+    val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))
+    val room = if (constraints.hasBoundedWidth) constraints.maxWidth else placeable.width
+    val scale = if (placeable.width > room) room.toFloat() / placeable.width else 1f
+    val width = minOf(placeable.width, room).coerceAtLeast(constraints.minWidth)
+    layout(width, placeable.height) {
+        val x = (width - placeable.width) / 2
+        if (scale < 1f) placeable.placeWithLayer(x, 0) { scaleX = scale; scaleY = scale } else placeable.place(x, 0)
+    }
+}
+
+/**
  * A row that scrolls sideways under the gamepad without cutting the first
  * and last items' ring: it reaches [bleed] into its parent's side padding
  * and pads its content by as much inside the scroll, so the content lines up
@@ -313,12 +353,17 @@ internal fun Modifier.bleed(x: Dp): Modifier = layout { measurable, constraints 
 /**
  * Remembers this item as the screen's focused one in [saved] and, when the
  * screen comes back in gamepad mode, focuses it again; [initial] marks the
- * item that takes focus when nothing was saved.
+ * item that takes focus when nothing was saved, or when the screen sets
+ * [saved] back to null (the focused item is gone).
  */
 fun Modifier.restorableFocus(key: String, saved: MutableState<String?>, initial: Boolean = false): Modifier = composed {
     val requester = remember { FocusRequester() }
-    // Also when the gamepad wakes up with nothing focused, so focus is never missing.
-    LaunchedEffect(InputMode.gamepad) {
+    // Derived, so a focus move (non-null to non-null) recomposes nothing, and read only by
+    // the initial item, so the others do not recompose when it flips.
+    val forgotten = remember(saved) { derivedStateOf { saved.value == null } }
+    // Also when the gamepad wakes up with nothing focused, or when the screen forgets
+    // its focused item (it was removed), so focus is never missing.
+    LaunchedEffect(InputMode.gamepad, initial && forgotten.value) {
         if (!InputMode.gamepad) return@LaunchedEffect
         if (saved.value == key) {
             withFrameNanos { }
@@ -344,10 +389,11 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier) {
     AnimatedVisibility(InputMode.gamepad, modifier, enter = fadeIn(tween(120)), exit = fadeOut(tween(120))) {
         Column(Modifier.fillMaxWidth().background(Oe.Bg.copy(alpha = 0.94f))) {
             HorizontalDivider(color = Oe.Surface2, thickness = 1.dp)
-            Row(
-                Modifier.fillMaxWidth().height(HintBarHeight - 1.dp).padding(horizontal = 16.dp),
+            // A screen with many hints on a narrow phone shrinks them all rather than lose the last one.
+            Box(Modifier.fillMaxWidth().height(HintBarHeight - 1.dp).padding(horizontal = 16.dp), contentAlignment = Alignment.Center) { Row(
+                Modifier.shrinkToFit(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(14.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
                 hints.forEach { (badge, label) ->
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -359,10 +405,10 @@ fun HintBar(hints: List<Pair<String, String>>, modifier: Modifier = Modifier) {
                         ) {
                             Text(badge, style = Type.Tag.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if (badge == "A") Color.White else Oe.Text))
                         }
-                        Text(label, style = Type.Caption.copy(fontSize = 12.sp, color = Oe.Muted))
+                        Text(label, style = Type.Caption.copy(fontSize = 12.sp, color = Oe.Muted), maxLines = 1, softWrap = false)
                     }
                 }
-            }
+            } }
         }
     }
 }

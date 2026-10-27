@@ -90,4 +90,23 @@
     <string name="update_installed">当前版本 %1$s</string>
     <string name="update_download">下载</string>
     <string name="update_not_now">以后再说</string>
+    <!-- Selection mode (issue #585) -->
+    <plurals name="library_selected_count">
+        <item quantity="other">已选择 %1$d 款</item>
+    </plurals>
+    <string name="library_select_all">全选</string>
+    <string name="library_selection_close">取消选择</string>
+    <string name="library_remove_selected">移除所选</string>
+    <plurals name="library_remove_many_title">
+        <item quantity="other">移除 %1$d 款游戏？</item>
+    </plurals>
+    <plurals name="library_remove_many_message">
+        <item quantity="other">ROM 文件将从设备上删除。存档和即时存档会保留，以便你再次导入。</item>
+    </plurals>
+    <string name="library_select_tile">选择</string>
+    <string name="library_deselect_tile">取消选择</string>
+    <string name="library_hint_select">选择</string>
+    <string name="library_hint_select_all">全选</string>
+    <string name="library_hint_remove">移除</string>
+    <string name="library_hint_done">完成</string>
 </resources>
