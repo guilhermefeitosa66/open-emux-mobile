@@ -62,6 +62,7 @@ import com.openemux.mobile.ui.GamepadButtons
 import com.openemux.mobile.ui.Icon
 import com.openemux.mobile.ui.Icons
 import com.openemux.mobile.ui.ListRow
+import com.openemux.mobile.ui.SheetBarIcons
 import com.openemux.mobile.ui.LocalActions
 import com.openemux.mobile.ui.MarginFocusScroll
 import com.openemux.mobile.ui.Oe
@@ -102,6 +103,7 @@ fun IncomingOfferSheet() {
         {}, sheetState = state, containerColor = Oe.Sheet,
         properties = ModalBottomSheetProperties(shouldDismissOnBackPress = false),
     ) {
+        SheetBarIcons()
         BackHandler {
             when {
                 offer != null && page == Page.CONFLICTS -> page = Page.OFFER

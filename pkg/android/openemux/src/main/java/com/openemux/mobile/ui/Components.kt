@@ -37,6 +37,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -66,6 +67,9 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.BasicText
@@ -558,6 +562,26 @@ fun FitText(text: String, style: TextStyle, modifier: Modifier = Modifier) {
         text, modifier, style, maxLines = 1, softWrap = false,
         autoSize = TextAutoSize.StepBased(minFontSize = style.fontSize * 0.6f, maxFontSize = style.fontSize, stepSize = 1.sp),
     )
+}
+
+/**
+ * In a bottom sheet, which has a window of its own: its bar icons follow the app's theme, as the activity's do.
+ * Material sets them from the system's dark mode, which the theme picked in the app may not match.
+ */
+@Composable
+fun SheetBarIcons() {
+    val view = LocalView.current
+    val dark = Oe.dark
+    LaunchedEffect(view, dark) {
+        val provider = generateSequence<Any>(view) { (it as? android.view.View)?.parent ?: (it as? android.view.ViewParent)?.parent }
+            .firstOrNull { it is DialogWindowProvider } as? DialogWindowProvider
+        provider?.window?.let { window ->
+            WindowCompat.getInsetsController(window, window.decorView).apply {
+                isAppearanceLightStatusBars = !dark
+                isAppearanceLightNavigationBars = !dark
+            }
+        }
+    }
 }
 
 /** The console's pixel-art icon, unsmoothed at a whole multiple of its size; the chip when it has none. */

@@ -510,6 +510,7 @@ private fun CoreSheet(rom: Rom, onClose: () -> Unit) {
     val defaultCore = rom.console.core(lib.consoleSettings(rom.console).core)
     val states = remember(rom) { lib.states(rom) }
     ModalBottomSheet(onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = Oe.Sheet) {
+        SheetBarIcons()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(R.string.detail_core_sheet_title), style = Type.Title.copy(fontSize = 22.sp))
             Text(rom.title, style = Type.Small, modifier = Modifier.padding(top = 4.dp))
@@ -560,6 +561,7 @@ private fun ShaderSheet(rom: Rom, onClose: () -> Unit) {
     val choice = meta.roms[rom.key]?.shader
     val default = shaderById(lib.consoleSettings(rom.console).shader)
     ModalBottomSheet(onClose, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true), containerColor = Oe.Sheet) {
+        SheetBarIcons()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(R.string.detail_shader_sheet_title), style = Type.Title.copy(fontSize = 22.sp))
             Text(rom.title, style = Type.Small, modifier = Modifier.padding(top = 4.dp))
@@ -586,6 +588,7 @@ private fun ShaderSheet(rom: Rom, onClose: () -> Unit) {
 @Composable
 private fun StatesSheet(states: List<SaveState>, onPick: (SaveState) -> Unit, onClose: () -> Unit) {
     ModalBottomSheet(onClose, containerColor = Oe.Sheet) {
+        SheetBarIcons()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 24.dp)) {
             Text(stringResource(R.string.detail_save_states), style = Type.Title.copy(fontSize = 22.sp))
             Text(stringResource(R.string.detail_states_sheet_hint), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 14.dp - FocusOutset))

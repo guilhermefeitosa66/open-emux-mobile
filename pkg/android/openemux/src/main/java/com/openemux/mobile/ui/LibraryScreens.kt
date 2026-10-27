@@ -353,6 +353,7 @@ fun ShelfScreen() {
     menuFor?.let { console ->
         val i = present.indexOf(console)
         ModalBottomSheet({ menuFor = null }, containerColor = Oe.Sheet) {
+            SheetBarIcons()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(console.displayName, style = Type.Title.copy(fontSize = 22.sp))
                 Text(stringResource(R.string.library_shelf_order_tip), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 12.dp))

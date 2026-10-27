@@ -148,6 +148,7 @@ fun SettingsScreen(entry: NavBackStackEntry? = null) {
     if (nameSheet) DeviceNameSheet { nameSheet = false }
     if (themeSheet) {
         ModalBottomSheet({ themeSheet = false }, containerColor = Oe.Sheet) {
+            SheetBarIcons()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(stringResource(R.string.settings_theme), style = Type.Title.copy(fontSize = 22.sp), modifier = Modifier.padding(bottom = 6.dp))
                 ThemeOptions()
@@ -156,6 +157,7 @@ fun SettingsScreen(entry: NavBackStackEntry? = null) {
     }
     if (languageSheet) {
         ModalBottomSheet({ languageSheet = false }, containerColor = Oe.Sheet) {
+            SheetBarIcons()
             MarginFocusScroll { Column(
                 Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -527,6 +529,7 @@ fun ConsoleSettingsScreen(id: String, embedded: Boolean = false, onOpenBios: (()
 
     if (colorSheet) {
         ModalBottomSheet({ colorSheet = false }, containerColor = Oe.Sheet) {
+            SheetBarIcons()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(stringResource(R.string.settings_cart_color), style = Type.Title.copy(fontSize = 22.sp))
                 Text(stringResource(R.string.settings_cart_color_desc, console.short), style = Type.Small, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
@@ -540,6 +543,7 @@ fun ConsoleSettingsScreen(id: String, embedded: Boolean = false, onOpenBios: (()
     }
     if (ownSheet) {
         ModalBottomSheet({ ownSheet = false }, containerColor = Oe.Sheet) {
+            SheetBarIcons()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(stringResource(R.string.settings_own_core_title), style = Type.Title.copy(fontSize = 22.sp))
                 Spacer(Modifier.height(12.dp))
@@ -837,6 +841,7 @@ fun ImportScreen() {
 
     asking.firstOrNull()?.let { (ext, candidates) ->
         ModalBottomSheet({ asking = emptyList(); pendingImport = null; working = false }, containerColor = Oe.Sheet) {
+            SheetBarIcons()
             Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(stringResource(R.string.settings_import_ext_title, ext), style = Type.Title.copy(fontSize = 22.sp))
                 Text(
@@ -933,6 +938,7 @@ private fun DeviceNameSheet(onClose: () -> Unit) {
         onClose()
     }
     ModalBottomSheet(onClose, containerColor = Oe.Sheet) {
+        SheetBarIcons()
         Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Text(stringResource(R.string.settings_device_name), style = Type.Title.copy(fontSize = 22.sp))
             OeTextField(

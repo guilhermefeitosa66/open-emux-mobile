@@ -12,7 +12,6 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
-import androidx.core.view.WindowCompat
 import com.openemux.mobile.ui.GamepadActions
 import com.openemux.mobile.ui.GamepadBus
 import com.openemux.mobile.ui.InputMode
@@ -32,11 +31,10 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // The library keeps the system bars, as the splash before it shows them: hiding them would only make them
         // flash in during the launch transition, which the app cannot reach. Only the game runs full screen.
-        val style = barStyle(Oe.dark)
-        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+        systemBars(Oe.dark)
         setContent {
             val dark = Oe.dark
-            LaunchedEffect(dark) { barIcons(dark) }
+            LaunchedEffect(dark) { systemBars(dark) }
             ProvideWindowLayout { OpenEmuxRoot() }
         }
         // A recreated activity, or one relaunched from Recents, carries the link it was opened with: it was handled then.
@@ -60,18 +58,11 @@ class MainActivity : ComponentActivity() {
         (application as OpenEmuxApp).shareCoordinator.link.value = uri.toString()
     }
 
-    /** Status and navigation bar icons follow the theme, not the system. */
-    private fun barStyle(dark: Boolean): SystemBarStyle {
+    /** Edge to edge, with the status and navigation bar icons following the theme, not the system. */
+    private fun systemBars(dark: Boolean) {
         val transparent = android.graphics.Color.TRANSPARENT
-        return if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
-    }
-
-    /** A theme change only turns the icons over: the window itself was set up once, in onCreate. */
-    private fun barIcons(dark: Boolean) {
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = !dark
-            isAppearanceLightNavigationBars = !dark
-        }
+        val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
+        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
     }
 
     override fun onStart() {
