@@ -40,6 +40,8 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -101,6 +103,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import coil.compose.AsyncImage
 import com.openemux.mobile.data.Console
+import com.openemux.mobile.data.Meta
 import com.openemux.mobile.data.Rom
 import com.retroarch.R
 
@@ -141,6 +144,17 @@ fun ShelfScreen() {
 
     // The games to continue, sorted once per library or play-time change rather than on every pass over the grid.
     val playing = remember(roms, meta, spec.continueCount) { continueList(roms, { meta.roms[it.key]?.lastPlayed ?: 0L }, spec.continueCount) }
+
+    // In tabletop the shelves stay on the top half; the games to continue and the way to add more are on the bottom one.
+    val tabletop = LocalTabletop.current
+    if (tabletop) TabletopDeck {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)) {
+            if (spec.tablet && playing.isNotEmpty()) {
+                ContinueRow(playing, spec.continueCount, spec, meta, focusedShelf, Modifier.padding(bottom = 16.dp))
+            }
+            SecondaryButton(stringResource(R.string.library_shelf_empty_action), { a.nav.navigateTab(Routes.IMPORT) }, Modifier.fillMaxWidth(), icon = Icons.Download)
+        }
+    }
 
     // As many cards side by side as the shelf's own width holds: one on a phone in portrait, two in landscape, three on a wide tablet.
     // The focused shelf keeps clear of the top and of the bars over the bottom.
@@ -193,23 +207,9 @@ fun ShelfScreen() {
                 }
             } else {
                 if (spec.tablet) {
-                    if (playing.isNotEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
-                        Column(Modifier.padding(top = 28.dp)) {
-                            SectionHeading(stringResource(R.string.library_continue_playing), stringResource(R.string.library_see_recent)) { a.nav.navigateTab(Routes.RECENT) }
-                            // No more continue cards than the grid below has columns, so the two line up.
-                            val slots = minOf(spec.continueCount, columns)
-                            val shown = playing.take(slots)
-                            Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
-                                shown.forEach { rom ->
-                                    ContinueCard(
-                                        rom, meta.roms[rom.key]?.lastPlayed ?: 0L, if (spec.maxColumns > 2) 104.dp else 100.dp,
-                                        Modifier.weight(1f), Modifier.restorableFocus("continue-${rom.key}", focusedShelf),
-                                    )
-                                }
-                                // Fewer games than slots: the cards keep their width.
-                                repeat(slots - shown.size) { Spacer(Modifier.weight(1f)) }
-                            }
-                        }
+                    // No more continue cards than the grid below has columns, so the two line up.
+                    if (playing.isNotEmpty() && !tabletop) item(span = { GridItemSpan(maxLineSpan) }) {
+                        ContinueRow(playing, minOf(spec.continueCount, columns), spec, meta, focusedShelf, Modifier.padding(top = 28.dp))
                     }
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Row(Modifier.padding(top = 28.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -490,6 +490,26 @@ private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>) {
     }
 }
 
+/** The tablet shelf's "Continue playing": a heading and [slots] cards side by side. */
+@Composable
+private fun ContinueRow(playing: List<Rom>, slots: Int, spec: ShelfSpec, meta: Meta, focusedShelf: MutableState<String?>, modifier: Modifier) {
+    val a = LocalActions.current
+    Column(modifier) {
+        SectionHeading(stringResource(R.string.library_continue_playing), stringResource(R.string.library_see_recent)) { a.nav.navigateTab(Routes.RECENT) }
+        val shown = playing.take(slots)
+        Row(Modifier.padding(top = 12.dp), horizontalArrangement = Arrangement.spacedBy(spec.gap.dp)) {
+            shown.forEach { rom ->
+                ContinueCard(
+                    rom, meta.roms[rom.key]?.lastPlayed ?: 0L, if (spec.maxColumns > 2) 104.dp else 100.dp,
+                    Modifier.weight(1f), Modifier.restorableFocus("continue-${rom.key}", focusedShelf),
+                )
+            }
+            // Fewer games than slots: the cards keep their width.
+            repeat(slots - shown.size) { Spacer(Modifier.weight(1f)) }
+        }
+    }
+}
+
 /** A section's title with its link on the right. */
 @Composable
 private fun SectionHeading(title: String, link: String, onLink: () -> Unit) {
@@ -633,7 +653,9 @@ fun LibraryScreen(filter: String) {
         select = { searching = !searching; if (!searching) query = "" },
     )
 
-    if (LocalWindowLayout.current.short && mode != ViewMode.List) {
+    val tabletop = LocalTabletop.current
+    // Tabletop decides first: the top half takes the upright layout, however short it is.
+    if (LocalWindowLayout.current.short && !tabletop && mode != ViewMode.List) {
         LandscapeLibrary(
             title = when (current) { "FAV" -> stringResource(R.string.library_favorites); "ALL" -> stringResource(R.string.library_all_games); else -> console!!.displayName },
             list = list, groups = groups, roms = roms, current = current, onPick = { current = it },
@@ -644,6 +666,28 @@ fun LibraryScreen(filter: String) {
             focusedRom = focusedRom,
         )
         return
+    }
+
+    val searchAndSort: @Composable () -> Unit = {
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            RoundIconButton(if (searching) Icons.Close else Icons.Search, stringResource(if (searching) R.string.library_close_search else R.string.library_search), {
+                searching = !searching; if (!searching) query = ""
+            })
+            RoundIconButton(Icons.Sort, stringResource(R.string.library_sort_by, stringResource(sort.label)), {
+                sort = if (sort == SortMode.Az) SortMode.Recent else SortMode.Az
+            })
+        }
+    }
+    // In tabletop the page's controls sit on the bottom half and the grid has the top one.
+    if (tabletop) TabletopDeck {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.weight(1f)) { searchAndSort() }
+                ViewToggle(mode) { mode = it }
+            }
+            if (searching) SearchField(query, autoFocus = searchRequested) { query = it }
+            ConsoleChips(roms, current, Modifier.padding(top = 14.dp)) { current = it }
+        }
     }
 
     // One game in the grid, in view mode m.
@@ -713,16 +757,9 @@ fun LibraryScreen(filter: String) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { BackLink(stringResource(R.string.library_shelf_title)) { a.nav.popBackStack(Routes.SHELF, false) } }
-                    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        RoundIconButton(if (searching) Icons.Close else Icons.Search, stringResource(if (searching) R.string.library_close_search else R.string.library_search), {
-                            searching = !searching; if (!searching) query = ""
-                        })
-                        RoundIconButton(Icons.Sort, stringResource(R.string.library_sort_by, stringResource(sort.label)), {
-                            sort = if (sort == SortMode.Az) SortMode.Recent else SortMode.Az
-                        })
-                    }
+                    if (!tabletop) searchAndSort()
                 }
-                if (searching) SearchField(query, autoFocus = searchRequested) { query = it }
+                if (searching && !tabletop) SearchField(query, autoFocus = searchRequested) { query = it }
                 Row(Modifier.padding(top = 14.dp), verticalAlignment = Alignment.Bottom) {
                     Column(Modifier.weight(1f)) {
                         val eyebrow = when (current) {
@@ -739,10 +776,10 @@ fun LibraryScreen(filter: String) {
                     Text(countString(R.plurals.library_games_count, list.size, list.size), style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(bottom = 4.dp))
                 }
                 ArtworkSyncPill(Modifier.padding(top = 16.dp))
-                ConsoleChips(roms, current, Modifier.padding(top = 14.dp)) { current = it }
+                if (!tabletop) ConsoleChips(roms, current, Modifier.padding(top = 14.dp)) { current = it }
                 Row(Modifier.padding(top = 22.dp, bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(if (sort == SortMode.Az) R.string.library_section_carts else R.string.library_section_recent), style = Type.Section.copy(fontSize = 17.sp), modifier = Modifier.weight(1f))
-                    ViewToggle(mode) { mode = it }
+                    if (!tabletop) ViewToggle(mode) { mode = it }
                 }
                 if (list.isEmpty()) {
                     Text(

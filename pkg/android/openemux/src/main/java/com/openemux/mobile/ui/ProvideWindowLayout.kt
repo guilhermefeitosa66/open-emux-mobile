@@ -3,6 +3,7 @@ package com.openemux.mobile.ui
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
@@ -15,9 +16,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import androidx.window.layout.WindowMetricsCalculator
+import com.retroarch.BuildConfig
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 
 /** The window this composition draws in. The default (a phone held upright) only serves previews. */
 val LocalWindowLayout = staticCompositionLocalOf { WindowLayout.of(390f, 844f) }
@@ -39,18 +43,22 @@ fun ProvideWindowLayout(content: @Composable () -> Unit) {
             ?.let { it.width() / density to it.height() / density }
             ?: (configuration.screenWidthDp.toFloat() to configuration.screenHeightDp.toFloat())
     }
-    val postures = remember(activity) {
-        // A device or a window the tracker cannot read is simply flat.
+    val folds = remember(activity) {
+        // A device or a window the tracker cannot read has no fold.
         val info = activity?.let { runCatching { WindowInfoTracker.getOrCreate(it).windowLayoutInfo(it) }.getOrNull() }
         (info ?: emptyFlow()).map { layout ->
             layout.displayFeatures.filterIsInstance<FoldingFeature>().firstOrNull()?.let { fold ->
                 val b = fold.bounds
-                postureOf(fold.state == FoldingFeature.State.HALF_OPENED, fold.orientation == FoldingFeature.Orientation.VERTICAL, b.left, b.top, b.right, b.bottom)
-            } ?: Posture.Flat
-        }.catch { emit(Posture.Flat) }
+                foldOf(fold.state == FoldingFeature.State.HALF_OPENED, fold.orientation == FoldingFeature.Orientation.VERTICAL, b.left, b.top, b.right, b.bottom)
+            }
+        }.catch { emit(null) }
+            // Debug builds say which fold the app saw, once per change, so QA can tell an
+            // emulator without the window extensions from a layout bug.
+            .distinctUntilChanged().onEach { if (BuildConfig.DEBUG) Log.d("OpenEmuxWindow", "window fold: $it") }
     }
-    val posture by postures.collectAsStateWithLifecycle(initialValue = Posture.Flat)
-    CompositionLocalProvider(LocalWindowLayout provides WindowLayout.of(size.first, size.second, posture), content = content)
+    val fold by folds.collectAsStateWithLifecycle(initialValue = null)
+    val posture = fold?.let { postureOf(it.halfOpened, it.vertical, it.leftPx, it.topPx, it.rightPx, it.bottomPx) } ?: Posture.Flat
+    CompositionLocalProvider(LocalWindowLayout provides WindowLayout.of(size.first, size.second, posture, fold, density), content = content)
 }
 
 /** The activity behind a context, through any wrappers (a dialog's themed context included). */
