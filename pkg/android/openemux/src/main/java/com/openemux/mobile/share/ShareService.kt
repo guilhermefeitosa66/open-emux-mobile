@@ -5,9 +5,12 @@ import android.net.nsd.NsdManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Log
+import com.openemux.mobile.data.Rom
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 
 /** Whether Share nearby can run on this install. */
@@ -47,6 +50,7 @@ class ShareService(
     val running: StateFlow<Boolean> = _running.asStateFlow()
 
     private var server: ShareServer? = null
+    private val transfers = mutableMapOf<String, IncomingTransfer>()
 
     /** The port the server listens on while running (the QR code carries it). */
     val port: Int? get() = server?.port
@@ -86,7 +90,13 @@ class ShareService(
 
             override fun onCancelled(offerId: String) {
                 if (_incoming.value?.offerId == offerId) _incoming.value = null
+                synchronized(transfers) { transfers.remove(offerId) }?.onRemoteCancel()
             }
+        }
+        server.fileReceiver = FileReceiver { offer, item, body ->
+            val transfer = synchronized(transfers) { transfers[offer.offerId] }
+                ?: throw ShareError(ErrorCode.NOT_IMPLEMENTED, "no transfer for this offer")
+            transfer.handlePut(item.id, body, item.size)
         }
         val port = server.start()
         val discovery = try {
@@ -104,6 +114,7 @@ class ShareService(
 
     @Synchronized
     fun stop() {
+        synchronized(transfers) { transfers.values.toList().also { transfers.clear() } }.forEach { it.cancel() }
         discovery?.stop()
         server?.stop()
         discovery = null
@@ -118,12 +129,89 @@ class ShareService(
         clearIncoming(offerId)
     }
 
+    /** The receiver's decisions for [offer] in [library]; nothing is answered or written. */
+    fun prepareReceive(
+        offer: IncomingOffer,
+        library: ShareLibrary,
+        policies: Map<String, Policy> = emptyMap(),
+        overrides: Map<String, Policy> = emptyMap(),
+        unchecked: Set<String> = emptySet(),
+    ): ReceivePlan = planReceive(offer.manifest, library.paths, CoreIdentities(library.paths), policies, overrides, unchecked)
+
+    /**
+     * Accepts [offerId] with [plan] and starts receiving into [library]. When a
+     * filesystem lacks the room (with the reserve), it refuses with
+     * `too_large`, its `stores` detail listing `{root, needed, free}`, and the
+     * offer stays unanswered. [onDone] hears how it ended.
+     */
+    fun accept(
+        offerId: String,
+        plan: ReceivePlan,
+        library: ShareLibrary,
+        onProgress: (TransferProgress) -> Unit = {},
+        onDone: (ReceiveResult) -> Unit = {},
+    ): IncomingTransfer {
+        val server = requireServer()
+        val checks = plan.spaceCheck()
+        if (!plan.okToAccept(checks)) {
+            val stores = JSONArray(checks.filter { !it.ok }.map {
+                JSONObject().put("root", it.root.path).put("needed", it.needed).put("free", it.free)
+            })
+            throw ShareError(ErrorCode.TOO_LARGE, "not enough free space", mapOf("stores" to stores))
+        }
+        val transfer = IncomingTransfer(offerId, plan, library, onProgress = onProgress)
+        transfer.onAbort = { id, inUpload ->
+            synchronized(transfers) { transfers.remove(id) }
+            server.cancel(id, closeUploads = !inUpload)
+        }
+        transfer.onDone = { result ->
+            synchronized(transfers) { if (transfers[offerId] === transfer) transfers.remove(offerId) }
+            onDone(result)
+        }
+        synchronized(transfers) { transfers[offerId] = transfer }
+        try {
+            server.accept(offerId, plan.answerItems())
+        } catch (e: ShareError) {
+            synchronized(transfers) { transfers.remove(offerId) }
+            throw e
+        }
+        clearIncoming(offerId)
+        transfer.start()
+        if (transfer.status.value == TransferStatus.RECEIVING) transfer.startWatchdog()
+        return transfer
+    }
+
+    /** The manifest for [roms]; hashes files, so off the main thread. */
+    fun buildManifest(
+        library: ShareLibrary,
+        roms: List<Rom>,
+        onProgress: (done: Long, total: Long) -> Unit = { _, _ -> },
+        cancelled: () -> Boolean = { false },
+    ): BuiltManifest = ManifestBuilder(library, onProgress = onProgress, cancelled = cancelled).build(roms)
+
+    /** Offers [built] to the receiver behind [client] on a worker thread; [OutgoingTransfer.cancel] stops it. */
+    fun send(
+        client: OfferClient,
+        built: BuiltManifest,
+        onCode: (String) -> Unit = {},
+        onProgress: (TransferProgress) -> Unit = {},
+        onDone: (SendResult) -> Unit = {},
+    ): OutgoingTransfer {
+        val identity = availableIdentity()
+        val sender = OfferSender(identity.id, identity.name, identity.platform, identity.fingerprint)
+        return OutgoingTransfer(client, sender, built, onCode, onProgress, onDone).also { it.start() }
+    }
+
+    /** The transfer receiving [offerId], while it runs. */
+    fun transfer(offerId: String): IncomingTransfer? = synchronized(transfers) { transfers[offerId] }
+
     fun decline(offerId: String) {
         requireServer().decline(offerId)
         clearIncoming(offerId)
     }
 
     fun cancel(offerId: String) {
+        synchronized(transfers) { transfers.remove(offerId) }?.cancel()
         requireServer().cancel(offerId)
         clearIncoming(offerId)
     }

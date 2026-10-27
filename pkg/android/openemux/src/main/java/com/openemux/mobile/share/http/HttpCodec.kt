@@ -24,7 +24,7 @@ object HttpCodec {
     private val REASONS = mapOf(
         200 to "OK", 201 to "Created", 204 to "No Content", 400 to "Bad Request", 403 to "Forbidden",
         404 to "Not Found", 409 to "Conflict", 410 to "Gone", 413 to "Content Too Large",
-        500 to "Internal Server Error", 501 to "Not Implemented",
+        500 to "Internal Server Error", 501 to "Not Implemented", 507 to "Insufficient Storage",
     )
 
     /** The next request on [input], or null when the peer closed the connection between requests. */
@@ -43,6 +43,14 @@ object HttpCodec {
         output.write(head.toString().toByteArray(Charsets.ISO_8859_1))
         body?.let(output::write)
         output.flush()
+    }
+
+    /** A request line and headers announcing [length] bytes of body, which the caller writes next. */
+    fun writeHead(output: OutputStream, method: String, path: String, headers: Map<String, String>, length: Long) {
+        val head = StringBuilder("$method $path HTTP/1.1\r\n")
+        for ((name, value) in headers) head.append(name).append(": ").append(value).append("\r\n")
+        head.append("Content-Length: ").append(length).append("\r\n\r\n")
+        output.write(head.toString().toByteArray(Charsets.ISO_8859_1))
     }
 
     /** The response on [input]; its body is read whole, and refused over [maxBody] bytes. */

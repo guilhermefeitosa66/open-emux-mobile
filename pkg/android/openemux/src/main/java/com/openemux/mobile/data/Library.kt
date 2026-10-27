@@ -10,10 +10,13 @@ import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.File
 
-/** Every directory the frontend and the RetroArch engine share. */
-class Paths(context: Context) {
-    val base: File = context.getExternalFilesDir(null) ?: context.filesDir
-    val internal: File = context.filesDir
+/**
+ * Every directory the frontend and the RetroArch engine share. [base] is the
+ * app's external files folder, [internal] its private one; the plain
+ * constructor lets the JVM tests build the same layout in a temp folder.
+ */
+class Paths(val base: File, val internal: File) {
+    constructor(context: Context) : this(context.getExternalFilesDir(null) ?: context.filesDir, context.filesDir)
 
     fun roms(console: Console) = File(base, "roms/${console.id}")
     fun states(console: Console) = File(base, "states/${console.id}")
@@ -29,6 +32,13 @@ class Paths(context: Context) {
     val index = File(internal, "library.index")
     val carts = File(internal, "carts")
     val labels = File(internal, "labels")
+
+    fun labels(console: Console) = File(labels, console.id)
+
+    /** Box art kept on the device (a game received through Share nearby), preferred over the mirror. */
+    fun covers(console: Console) = File(internal, "covers/${console.id}")
+
+    fun playtime(console: Console, stem: String) = File(playtime, "${console.id}_$stem.txt")
 }
 
 data class Rom(
@@ -152,11 +162,15 @@ class Library(private val context: Context) {
     fun effectiveColor(rom: Rom): String =
         romMeta(rom.key).color ?: consoleSettings(rom.console).color
 
+    // Share nearby writes settings from its connection threads while the UI
+    // writes from the main one: every read-modify-write of the meta is serialised.
+    @Synchronized
     fun updateRom(key: String, change: (RomMeta) -> RomMeta) {
         _meta.update { it.copy(roms = it.roms + (key to change(it.roms[key] ?: RomMeta()))) }
         saveMeta()
     }
 
+    @Synchronized
     fun updateConsole(console: Console, change: (ConsoleSettings) -> ConsoleSettings) {
         _meta.update { it.copy(consoles = it.consoles + (console.id to change(it.settingsFor(console)))) }
         saveMeta()
@@ -185,11 +199,13 @@ class Library(private val context: Context) {
         return true
     }
 
+    @Synchronized
     fun setConsoleOrder(order: List<Console>) {
         _meta.update { it.copy(consoleOrder = order.map { o -> o.id }) }
         saveMeta()
     }
 
+    @Synchronized
     fun resetConsoleOrder() {
         _meta.update { it.copy(consoleOrder = emptyList()) }
         saveMeta()
@@ -220,11 +236,12 @@ class Library(private val context: Context) {
 
     fun autoState(rom: Rom): SaveState? = states(rom).firstOrNull { it.isAuto }
 
-    fun playtimeFile(rom: Rom) = File(paths.playtime, "${rom.console.id}_${rom.baseName}.txt")
+    fun playtimeFile(rom: Rom) = paths.playtime(rom.console, rom.baseName)
 
     fun playtimeSeconds(rom: Rom): Long =
         runCatching { playtimeFile(rom).readText().trim().toLong() }.getOrDefault(0L)
 
+    @Synchronized
     fun delete(rom: Rom) {
         deleteAll(listOf(rom))
     }

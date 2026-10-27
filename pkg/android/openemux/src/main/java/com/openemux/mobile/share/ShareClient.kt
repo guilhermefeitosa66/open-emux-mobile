@@ -3,13 +3,24 @@ package com.openemux.mobile.share
 import com.openemux.mobile.share.http.HttpCodec
 import org.json.JSONObject
 import java.io.BufferedInputStream
+import java.io.BufferedOutputStream
+import java.io.File
 import java.io.IOException
+import java.io.OutputStream
 import java.net.InetSocketAddress
 import javax.net.ssl.SSLSocket
 import javax.net.ssl.SSLSocketFactory
 
 /** An offer the receiver took: its capability id and the code this side computed. */
 data class OutgoingOffer(val offerId: String, val code: String)
+
+/** What [OutgoingTransfer] asks of the receiver; [ShareClient] in the app, a fake in tests. */
+interface OfferClient {
+    fun offer(sender: OfferSender, manifest: JSONObject): OutgoingOffer
+    fun poll(offerId: String): JSONObject
+    fun cancel(offerId: String)
+    fun putFile(offerId: String, itemId: String, file: File, size: Long, onChunk: (Int) -> Unit)
+}
 
 /**
  * The sending side, talking to one receiver. Every request opens its own
@@ -27,12 +38,58 @@ class ShareClient(
     private val port: Int = ShareProtocol.SERVER_PORT,
     expectedFingerprint: String? = null,
     private val socketFactory: (PinningTrustManager) -> SSLSocketFactory = { Tls.clientContext(it).socketFactory },
-) {
+) : OfferClient {
     @Volatile var peerFingerprint: String? = expectedFingerprint
         private set
 
     /** `(status, JSON or null)`; an error answer throws its [ShareError]. */
     fun request(method: String, path: String, body: JSONObject? = null): Pair<Int, JSONObject?> {
+        val bytes = body?.toString()?.toByteArray(Charsets.UTF_8)
+        val headers = linkedMapOf<String, String>()
+        if (bytes != null) headers["Content-Type"] = "application/json"
+        return exchange(method, path, headers, bytes?.size?.toLong() ?: 0) { it.write(bytes ?: ByteArray(0)) }
+    }
+
+    /**
+     * Uploads [size] bytes of [file] as item [itemId] (`PUT /file`), in
+     * 256 KiB chunks. [onChunk] hears each one and may throw to stop: the
+     * connection is closed and the exception goes up as it is. A file that
+     * ends before [size] is `source_changed`.
+     */
+    override fun putFile(offerId: String, itemId: String, file: File, size: Long, onChunk: (Int) -> Unit) {
+        val headers = linkedMapOf("Content-Type" to "application/octet-stream")
+        val source = try {
+            file.inputStream()
+        } catch (e: IOException) {
+            throw ShareError(ErrorCode.SOURCE_CHANGED, e.message ?: "unreadable")
+        }
+        source.use { input ->
+            exchange("PUT", "/file/$offerId/$itemId", headers, size) { output ->
+                val buffer = ByteArray(UPLOAD_CHUNK)
+                var left = size
+                while (left > 0) {
+                    val n = try {
+                        input.read(buffer, 0, minOf(left, buffer.size.toLong()).toInt())
+                    } catch (e: IOException) {
+                        throw ShareError(ErrorCode.SOURCE_CHANGED, e.message ?: "unreadable")
+                    }
+                    if (n < 0) throw ShareError(ErrorCode.SOURCE_CHANGED, "${file.name} is shorter than offered")
+                    output.write(buffer, 0, n)
+                    left -= n
+                    onChunk(n)
+                }
+            }
+        }
+    }
+
+    /** One request on its own pinned connection; [writeBody] writes exactly [length] bytes. */
+    private fun exchange(
+        method: String,
+        path: String,
+        extraHeaders: Map<String, String>,
+        length: Long,
+        writeBody: (OutputStream) -> Unit,
+    ): Pair<Int, JSONObject?> {
         val pin = PinningTrustManager(peerFingerprint)
         val socket = socketFactory(pin).createSocket() as SSLSocket
         try {
@@ -51,8 +108,11 @@ class ShareClient(
                 peerFingerprint = pin.observed
                 it.soTimeout = ShareProtocol.IDLE_TIMEOUT_MS
                 val headers = linkedMapOf(ShareProtocol.VERSION_HEADER to ShareProtocol.VERSION.toString(), "Connection" to "close")
-                if (body != null) headers["Content-Type"] = "application/json"
-                HttpCodec.writeRequest(it.outputStream, method, path, headers, body?.toString()?.toByteArray(Charsets.UTF_8))
+                headers.putAll(extraHeaders)
+                val output = BufferedOutputStream(it.outputStream, UPLOAD_CHUNK)
+                HttpCodec.writeHead(output, method, path, headers, length)
+                writeBody(output)
+                output.flush()
                 HttpCodec.readResponse(BufferedInputStream(it.inputStream))
             }
         } catch (e: IOException) {
@@ -71,7 +131,7 @@ class ShareClient(
     }
 
     /** Commit, offer, reveal: the receiver now shows the offer with its code, and so should we. */
-    fun offer(sender: OfferSender, manifest: JSONObject): OutgoingOffer {
+    override fun offer(sender: OfferSender, manifest: JSONObject): OutgoingOffer {
         info()
         val nonceS = Verification.newNonce()
         val body = JSONObject()
@@ -90,13 +150,17 @@ class ShareClient(
     }
 
     /** `GET /offer/<id>`: `status`, and `items` once accepted. */
-    fun poll(offerId: String): JSONObject {
+    override fun poll(offerId: String): JSONObject {
         val data = request("GET", "/offer/$offerId").second
         if (data?.opt("status") !is String) throw ShareError.badRequest("malformed poll answer")
         return data
     }
 
-    fun cancel(offerId: String) {
+    override fun cancel(offerId: String) {
         request("POST", "/cancel/$offerId")
+    }
+
+    private companion object {
+        const val UPLOAD_CHUNK = 256 * 1024
     }
 }
