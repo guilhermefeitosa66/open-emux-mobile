@@ -1144,6 +1144,25 @@ public class RetroActivityCommon extends NativeActivity
   {
   }
 
+  /**
+   * OpenEmux: asked once from the native thread at start-up. True to have
+   * the auto save state written when the activity is paused (the device
+   * closed, the screen off, another app in front), and the content kept
+   * paused on the return, with onResumedIntoPause().
+   */
+  public boolean autoSaveOnPause()
+  {
+    return false;
+  }
+
+  /**
+   * OpenEmux: called from the native thread when the activity has its
+   * focus back after a pause that saved the state. The content is paused.
+   */
+  public void onResumedIntoPause()
+  {
+  }
+
   public int getVolumeCount()
   {
     int ret = 0;

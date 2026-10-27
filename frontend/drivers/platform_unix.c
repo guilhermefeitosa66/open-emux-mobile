@@ -3672,6 +3672,10 @@ static void frontend_unix_init(void *data)
          "onOverlayChanged", "(Ljava/lang/String;)V");
    GET_METHOD_ID(env, android_app->onToggleStates, class,
          "onToggleStates", "(ZZ)V");
+   GET_METHOD_ID(env, android_app->autoSaveOnPause, class,
+         "autoSaveOnPause", "()Z");
+   GET_METHOD_ID(env, android_app->onResumedIntoPause, class,
+         "onResumedIntoPause", "()V");
    GET_METHOD_ID(env, android_app->getUserLanguageString, class,
          "getUserLanguageString", "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->isPlayStoreBuild, class,
@@ -3707,6 +3711,9 @@ static void frontend_unix_init(void *data)
          android_app->activity->clazz, android_app->isPlayStoreBuild);
    CALL_BOOLEAN_METHOD(env, android_app->is_meta_quest_build,
          android_app->activity->clazz, android_app->isMetaQuestBuild);
+   if (android_app->autoSaveOnPause)
+      CALL_BOOLEAN_METHOD(env, android_app->auto_save_on_pause,
+            android_app->activity->clazz, android_app->autoSaveOnPause);
 #ifdef HAVE_SAF
    GET_METHOD_ID(env, android_app->requestOpenDocumentTree, class,
          "requestOpenDocumentTree", "()V");
@@ -4288,6 +4295,21 @@ void android_app_overlay_changed(const char *name)
    CALL_VOID_METHOD_PARAM(env, g_android->activity->clazz,
          g_android->onOverlayChanged, jname);
    (*env)->DeleteLocalRef(env, jname);
+#endif
+}
+
+void android_app_resume_into_menu(void)
+{
+#ifdef ANDROID
+   JNIEnv *env = jni_thread_getenv();
+
+   command_event(CMD_EVENT_PAUSE, NULL);
+
+   if (!env || !g_android || !g_android->onResumedIntoPause)
+      return;
+
+   CALL_VOID_METHOD(env, g_android->activity->clazz,
+         g_android->onResumedIntoPause);
 #endif
 }
 

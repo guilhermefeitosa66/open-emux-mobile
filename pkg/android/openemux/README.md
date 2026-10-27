@@ -21,7 +21,7 @@ mean writing a new menu driver in C. So the split is:
 |---|---|---|
 | Library, settings, import | Kotlin + Jetpack Compose | `src/main/java/com/openemux/mobile/ui`, `data` |
 | Launch | Writes a per-game `retroarch.cfg`, shader preset, core options and the controller skin, then starts the engine | `launch/GameLauncher.kt`, `launch/SkinRenderer.kt` |
-| Engine | RetroArch's `NativeActivity`, unchanged except for two hooks | `game/GameActivity.kt` (extends `RetroActivityFuture`) |
+| Engine | RetroArch's `NativeActivity`, unchanged except for the hooks below | `game/GameActivity.kt` (extends `RetroActivityFuture`) |
 | Pause sheet | Compose, in a dialog over the engine | `game/PauseSheet.kt` |
 
 The engine runs in its own process (`:game`): RetroArch exits the process
@@ -78,10 +78,26 @@ when the content closes, and the library must survive that.
    at the window's edge; the viewport position (a lightgun's offscreen
    test) is unchanged. `android_pointer_set()` in
    `input/drivers/android_input.c`.
+8. **Closing the device.** When the activity is paused (a Flip closed, the
+   screen off, Home), the engine writes the auto save state
+   (`<rom>.state.auto`) before acknowledging `APP_CMD_PAUSE`, so it is on
+   disk before Android can reclaim the process. Not on `APP_CMD_STOP`: by
+   then the window is going away, and the runloop can be held until the
+   app comes back. On the next focus the content stays paused and the
+   activity's `onResumedIntoPause()` opens the pause sheet; a focus never
+   lifts a pause it did not make, so a sheet left open keeps the game
+   paused. Asked once at start-up through `autoSaveOnPause()`; skipped
+   (pause only) in hardcore and for cores without save states.
+   `APP_CMD_PAUSE` / `APP_CMD_GAINED_FOCUS` and
+   `android_input_flush_pending_state()` in `input/drivers/android_input.c`,
+   `retroarch_save_auto_state_for_suspend()` in `retroarch.c`,
+   `android_app_resume_into_menu()` in `frontend/drivers/platform_unix.c`;
+   the handshake is reproduced in `samples/input/android_lifecycle_flush/`.
 
 Upstream behaviour is kept: the base `RetroActivityCommon` returns false
-from the first two and ignores the overlay change and the toggles, so the stock RetroArch
-app still opens and drives its own menu.
+from the first two and from `autoSaveOnPause()`, and ignores the overlay
+change and the toggles, so the stock RetroArch app still opens and drives
+its own menu.
 
 Two config-only keys (not in the menu; their defaults keep upstream
 behaviour) are set by the generated `retroarch.cfg`:

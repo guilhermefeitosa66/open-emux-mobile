@@ -5203,13 +5203,30 @@ uint32_t runloop_get_flags(void)
 }
 
 /* The platform has taken the application away, or given it back:
- * paused and idle while it is away. */
+ * paused and idle while it is away. Giving it back lifts only the pause
+ * taking it away made: content the user had paused before - a menu of
+ * the frontend's own over it - stays paused. */
 void runloop_set_platform_paused(bool paused)
 {
+   static bool paused_before = false;
+
    if (paused)
+   {
+      /* A second loss while away is not the content's pause. */
+      if (!(runloop_state.flags & RUNLOOP_FLAG_IDLE))
+         paused_before = (runloop_state.flags & RUNLOOP_FLAG_PAUSED) != 0;
       runloop_state.flags |=  (RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_IDLE);
+   }
    else
-      runloop_state.flags &= ~(RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_IDLE);
+   {
+      /* No IDLE left: the state was freed while away (content
+       * closed), so the pause remembered belonged to other content. */
+      if (     !paused_before
+            || !(runloop_state.flags & RUNLOOP_FLAG_IDLE))
+         runloop_state.flags &= ~RUNLOOP_FLAG_PAUSED;
+      runloop_state.flags &= ~RUNLOOP_FLAG_IDLE;
+      paused_before        = false;
+   }
 }
 
 /* Whether the keyboard callback in place is the frontend's own, which
@@ -7577,6 +7594,16 @@ static void runloop_pause_toggle(
       bool pause_pressed, bool old_pause_pressed,
       bool focused, bool old_focus)
 {
+#ifdef ANDROID
+   /* OpenEmux: whether the focus loss is what paused the content: the
+    * focus coming back lifts that pause and no other, so content paused
+    * before - by the user, or by the platform as it took the focus
+    * away - is left as it is. Android only: elsewhere a focus return
+    * lifts any pause, as upstream does. */
+   static bool paused_by_focus         = false;
+#else
+   static const bool paused_by_focus   = true;
+#endif
    runloop_state_t *runloop_st         = &runloop_state;
 
    if (focused)
@@ -7588,11 +7615,20 @@ static void runloop_pause_toggle(
          runloop_st->paused_hotkey = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
          command_event(CMD_EVENT_PAUSE_TOGGLE, NULL);
       }
-      else if (!old_focus)
+      else if (!old_focus && paused_by_focus)
          command_event(CMD_EVENT_UNPAUSE, NULL);
+#ifdef ANDROID
+      if (!old_focus)
+         paused_by_focus = false;
+#endif
    }
    else if (old_focus)
+   {
+#ifdef ANDROID
+      paused_by_focus = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+#endif
       command_event(CMD_EVENT_PAUSE, NULL);
+   }
 }
 
 static INLINE bool runloop_is_libretro_running(runloop_state_t* runloop_st, bool menu_pause_libretro)
