@@ -167,7 +167,6 @@ fun BackupScreen(embedded: Boolean = false) {
     (state as? BackupState.Confirm)?.let { confirm ->
         val m = confirm.manifest
         ModalBottomSheet({ backup.dismiss() }, containerColor = Oe.Sheet) {
-            ImmersiveWindow()
             MarginFocusScroll { Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 20.dp).padding(bottom = 28.dp)) {
                 Text(stringResource(R.string.backup_confirm_title), style = Type.Title.copy(fontSize = 22.sp))
                 val day = DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()).format(Date(m.created))

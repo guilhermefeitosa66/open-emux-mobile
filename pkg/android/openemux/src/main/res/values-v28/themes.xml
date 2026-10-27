@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- A full-screen window draws into the camera cutout instead of leaving a black band by it. -->
+    <!-- Into the camera cutout, as enableEdgeToEdge sets it, so the starting window lines up with the app. -->
     <style name="Theme.OpenEmux" parent="Theme.OpenEmux.Base">
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>

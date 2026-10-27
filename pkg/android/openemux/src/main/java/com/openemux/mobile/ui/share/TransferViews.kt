@@ -45,7 +45,6 @@ import com.openemux.mobile.share.TransferState
 import com.openemux.mobile.ui.GamepadButtons
 import com.openemux.mobile.ui.Icon
 import com.openemux.mobile.ui.Icons
-import com.openemux.mobile.ui.ImmersiveWindow
 import com.openemux.mobile.ui.Oe
 import com.openemux.mobile.ui.PrimaryButton
 import com.openemux.mobile.ui.SecondaryButton
@@ -135,7 +134,7 @@ fun CancelTransferDialog(onKeep: () -> Unit, onCancel: () -> Unit) {
     AlertDialog(
         onDismissRequest = onKeep,
         containerColor = Oe.Sheet,
-        title = { ImmersiveWindow(); Text(stringResource(R.string.share_cancel_confirm_title), style = Type.Title.copy(fontSize = 20.sp)) },
+        title = { Text(stringResource(R.string.share_cancel_confirm_title), style = Type.Title.copy(fontSize = 20.sp)) },
         text = { Text(stringResource(R.string.share_cancel_confirm_body), style = Type.Small) },
         confirmButton = {
             TextButton(onCancel) { Text(stringResource(R.string.share_progress_cancel), style = Type.Section.copy(color = Oe.Danger)) }

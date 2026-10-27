@@ -11,12 +11,6 @@
         <item name="android:windowLightStatusBar">false</item>
     </style>
     <style name="Theme.OpenEmux" parent="Theme.OpenEmux.Base" />
-    <!-- MainActivity's starting window only: full screen from the first frame, so the bars never show before
-         the activity hides them. onCreate swaps back to Theme.OpenEmux, since a FLAG_FULLSCREEN window has its
-         adjustResize ignored below API 30 and the keyboard would cover the text fields. -->
-    <style name="Theme.OpenEmux.Launch" parent="Theme.OpenEmux">
-        <item name="android:windowFullscreen">true</item>
-    </style>
     <style name="Theme.OpenEmux.Game" parent="android:Theme.NoTitleBar.Fullscreen">
         <item name="android:windowBackground">@android:color/black</item>
     </style>

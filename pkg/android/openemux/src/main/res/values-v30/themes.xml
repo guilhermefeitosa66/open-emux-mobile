@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- On every edge, as enableEdgeToEdge asks for once the activity is up. -->
+    <!-- On every edge, as enableEdgeToEdge asks for once the activity is up, so the starting window lines up with it. -->
     <style name="Theme.OpenEmux" parent="Theme.OpenEmux.Base">
         <item name="android:windowLayoutInDisplayCutoutMode">always</item>
     </style>

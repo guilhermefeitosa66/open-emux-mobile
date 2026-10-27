@@ -13,8 +13,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.LaunchedEffect
 import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import com.openemux.mobile.ui.GamepadActions
 import com.openemux.mobile.ui.GamepadBus
 import com.openemux.mobile.ui.InputMode
@@ -22,7 +20,6 @@ import com.openemux.mobile.ui.Oe
 import com.openemux.mobile.ui.OpenEmuxRoot
 import com.openemux.mobile.ui.ProvideWindowLayout
 import com.openemux.mobile.ui.ThemePref
-import com.retroarch.R
 
 class MainActivity : ComponentActivity() {
     override fun attachBaseContext(newBase: Context) {
@@ -32,15 +29,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemePref.load(this)
         Oe.syncSystem(this)
-        // The manifest's Theme.OpenEmux.Launch keeps the starting window full screen; the activity's own window
-        // must not carry its FLAG_FULLSCREEN, which makes adjustResize a no-op below API 30 (the keyboard would
-        // cover the text fields). The API 31+ system splash ignores the theme and is the system's to draw.
-        setTheme(R.style.Theme_OpenEmux)
         super.onCreate(savedInstanceState)
-        // Before the window is attached, so the first frame is already full screen rather than animating into it.
+        // The library keeps the system bars, as the splash before it shows them: hiding them would only make them
+        // flash in during the launch transition, which the app cannot reach. Only the game runs full screen.
         val style = barStyle(Oe.dark)
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
-        immersive()
         setContent {
             val dark = Oe.dark
             LaunchedEffect(dark) { barIcons(dark) }
@@ -79,26 +72,6 @@ class MainActivity : ComponentActivity() {
             isAppearanceLightStatusBars = !dark
             isAppearanceLightNavigationBars = !dark
         }
-    }
-
-    /** Full screen, like the game: the bars come back over the app on a swipe and leave on their own. */
-    private fun immersive() {
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            hide(WindowInsetsCompat.Type.systemBars())
-            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
-    }
-
-    override fun onWindowFocusChanged(hasFocus: Boolean) {
-        super.onWindowFocusChanged(hasFocus)
-        // Back from the game, a dialog or the shade, the bars may be showing again.
-        if (hasFocus) immersive()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        // A warm start or the way back from the game resumes before focus arrives: hide them already.
-        immersive()
     }
 
     override fun onStart() {

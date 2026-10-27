@@ -151,9 +151,9 @@ fun OpenEmuxRoot() {
     }
 
     OpenEmuxTheme {
-        // The app runs full screen: hidden bars, and the ones a swipe brings back for a moment, report no
-        // insets, so nothing moves; bars the system keeps shown (split screen, a free-form window) push the
-        // content away instead of covering it. Padded here once, so the screens' own bar paddings read 0.
+        // Edge to edge with the system bars kept on screen (only the game hides them): the content is padded away
+        // from them and from the cutout, never drawn under them. Padded here once, so the screens' own bar
+        // paddings read 0.
         Box(Modifier.fillMaxSize().background(Oe.Bg).windowInsetsPadding(WindowInsets.systemBars.union(WindowInsets.displayCutout))) {
             val setup by app.setup.state.collectAsState()
             // Nothing opens until the cores are on the device.
