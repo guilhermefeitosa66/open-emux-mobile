@@ -21,13 +21,27 @@ import com.openemux.mobile.data.NDS_LAYOUTS
 import com.openemux.mobile.data.NdsLayouts
 import com.openemux.mobile.data.ScreenLayout
 import com.openemux.mobile.launch.GameSkin
+import com.openemux.mobile.launch.SkinRenderer
 import com.openemux.mobile.launch.SkinSize
+import com.openemux.mobile.launch.TABLETOP
+import com.openemux.mobile.ui.Fold
 import com.openemux.mobile.ui.InputMode
 import com.openemux.mobile.ui.Oe
 import com.openemux.mobile.ui.ProvideWindowLayout
 import com.openemux.mobile.ui.ThemePref
+import com.openemux.mobile.ui.WindowLayout
+import com.openemux.mobile.ui.folds
+import com.retroarch.BuildConfig
 import com.retroarch.R
 import com.retroarch.browser.retroactivity.RetroActivityFuture
+import androidx.window.layout.WindowMetricsCalculator
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.launch
 import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicReference
@@ -74,6 +88,20 @@ class GameActivity : RetroActivityFuture() {
     private val handler = Handler(Looper.getMainLooper())
     private val skinCheck = Runnable { checkSkinSize() }
 
+    // The overlay shown, the last flat one (to go back to), and whether the posture asks for tabletop (under ndsLayouts' lock).
+    private val tabletopSkin by lazy {
+        intent.getStringExtra("CONFIGFILE")?.let { File(File(it).parentFile, "skin/${SkinRenderer.TABLETOP_FILE}") }
+            ?.let { runCatching { TabletopSkin.parse(it.readText()) }.getOrNull() }
+    }
+    private var overlay: String? = null
+    private var flatOverlay: String? = null
+    private var wantTabletop = false
+    private var postureSeq = 0
+
+    // NativeActivity is no LifecycleOwner: the posture is followed from start to stop.
+    private val scope = MainScope()
+    private var postureJob: Job? = null
+
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(AppLocale.wrap(newBase))
     }
@@ -101,6 +129,7 @@ class GameActivity : RetroActivityFuture() {
     override fun onDestroy() {
         handler.removeCallbacks(skinCheck)
         skinThread.shutdownNow()
+        scope.cancel()
         super.onDestroy()
     }
 
@@ -160,11 +189,11 @@ class GameActivity : RetroActivityFuture() {
         }.getOrNull()
         val ok = reply?.startsWith("OK") == true
         if (ok) {
-            Log.i(TAG, "OVERLAY_LOAD skin for $size: ${dir.name}")
+            Log.i(SKIN_TAG, "OVERLAY_LOAD skin for $size: ${dir.name}")
             skinSize = size
             launchDir.listFiles { f -> f.isDirectory && f.name.startsWith("skin") && f != dir }?.forEach { it.deleteRecursively() }
         } else {
-            Log.w(TAG, "Skin for $size not loaded, keeping the one shown")
+            Log.w(SKIN_TAG, "Skin for $size not loaded, keeping the one shown")
             // No answer is not a refusal: the engine may be loading this skin right now, so it stays on disk.
             if (reply != null) dir.deleteRecursively()
         }
@@ -210,6 +239,68 @@ class GameActivity : RetroActivityFuture() {
         }.start()
     }
 
+    @OptIn(FlowPreview::class)
+    override fun onStart() {
+        super.onStart()
+        if (tabletopSkin == null) return
+        postureJob?.cancel()
+        // Postures flicker while the device is being folded: act once it settles.
+        postureJob = scope.launch { folds().distinctUntilChanged().debounce(250).collect(::onFold) }
+    }
+
+    override fun onStop() {
+        postureJob?.cancel()
+        postureJob = null
+        super.onStop()
+    }
+
+
+    /** The posture changed: switch to the tabletop skin, or back to the flat one, by name; the core keeps running. */
+    private fun onFold(fold: Fold?) {
+        val bounds = WindowMetricsCalculator.getOrCreate().computeCurrentWindowMetrics(this).bounds
+        val density = resources.displayMetrics.density
+        val window = WindowLayout.of(bounds.width() / density, bounds.height() / density, fold = fold, density = density)
+        val want = wantsTabletop(window, tabletopSkin)
+        if (BuildConfig.DEBUG) Log.d(TAG, "fold $fold in ${bounds.width()}x${bounds.height()}: tabletop $want")
+        synchronized(ndsLayouts) {
+            wantTabletop = want
+            switchPosture()
+        }
+    }
+
+    /**
+     * Under ndsLayouts' lock: sends the overlay the posture asks for, if it is not the one shown. True when it sent
+     * one: the overlay shown is about to change.
+     */
+    private fun switchPosture(): Boolean {
+        val skin = tabletopSkin ?: return false
+        val current = overlay ?: skin.overlays.first()
+        // The engine reports no overlay until the first switch: the one it opened on is the flat one to come back to.
+        if (flatOverlay == null && TABLETOP !in current) flatOverlay = current
+        if (ndsScreens) loadNdsLayouts()
+        // A newer switch supersedes one still waiting for the engine.
+        val seq = ++postureSeq
+        // On NDS, back to the portrait layout in use: the pause sheet may have changed it under the hidden overlay,
+        // and landing on another would step the overlays on from there, past the portrait ones.
+        val flat = flatOverlay?.let { f -> if (ndsScreens && f.startsWith("portrait@")) "portrait@${ndsLayouts["portrait"]}" else f }
+        val target = tabletopTarget(current, wantTabletop, skin.overlays, flat, ndsLayouts[TABLETOP]) ?: return false
+        Thread { selectOverlay(target, seq) }.start()
+        return true
+    }
+
+    /**
+     * Sends OVERLAY_SELECT until the engine answers it: a game opened half open sees its posture before the engine's
+     * command interface and overlay are up, and a datagram sent then is lost. Gives up when a newer switch [seq] comes.
+     */
+    private fun selectOverlay(target: String, seq: Int) {
+        val deadline = System.currentTimeMillis() + 30_000
+        while (System.currentTimeMillis() < deadline && synchronized(ndsLayouts) { seq == postureSeq }) {
+            val reply = RaCommand.ask("OVERLAY_SELECT $target", 300)
+            if (reply != null && "no overlay is loaded" !in reply) return
+            Thread.sleep(250)
+        }
+    }
+
     override fun onResume() {
         super.onResume()
         resumedAt = System.currentTimeMillis()
@@ -237,7 +328,23 @@ class GameActivity : RetroActivityFuture() {
      */
     override fun onOverlayChanged(name: String): Unit = synchronized(ndsLayouts) {
         currentOverlay = name
+        val previous = overlay
+        overlay = name
+        if (TABLETOP !in name) flatOverlay = name
+        // The overlay shown is not the one the posture asks for: turned back upright while half open (auto-rotate
+        // picked the flat overlay), or a switch that reached the engine after the posture changed again. The overlay
+        // switched to sets the core; stepping this one to its saved layout would race the switch.
+        if ((TABLETOP in name) != wantTabletop && switchPosture()) return
         if (!ndsScreens) return
+        // Back from tabletop to a package skin, whose overlays name no layout: the screens one over the other, no gap.
+        val flatLayout = tabletopSkin?.flatLayout
+        if (flatLayout != null && TABLETOP !in name && previous != null && TABLETOP in previous) {
+            Thread {
+                RaCommand.send("SET_CORE_OPTION desmume_screens_gap 0")
+                RaCommand.send("SET_CORE_OPTION desmume_screens_layout $flatLayout")
+            }.start()
+            return
+        }
         val orientation = name.substringBefore('@')
         val layout = NDS_LAYOUTS[orientation]?.firstOrNull { it.id == name.substringAfter('@', "") } ?: return
         loadNdsLayouts()
@@ -250,8 +357,11 @@ class GameActivity : RetroActivityFuture() {
         }
         ndsRestoring = null
         ndsLayouts[orientation] = layout.id
+        // One per half puts the fold in the gap between the screens; every other layout has none.
+        val gap = tabletopSkin?.let { it.gaps[name] ?: 0 }
         Thread {
             NdsLayouts.save(filesDir, orientation, layout)
+            gap?.let { RaCommand.send("SET_CORE_OPTION desmume_screens_gap $it") }
             RaCommand.send("SET_CORE_OPTION desmume_screens_layout ${layout.value}")
         }.start()
     }
@@ -262,19 +372,32 @@ class GameActivity : RetroActivityFuture() {
     }
 
     private fun loadNdsLayouts() {
-        if (ndsLayouts.isEmpty()) NdsLayouts.load(filesDir).let { (p, l) -> ndsLayouts["portrait"] = p.id; ndsLayouts["landscape"] = l.id }
+        if (ndsLayouts.isEmpty()) {
+            NdsLayouts.load(filesDir).let { (p, l) -> ndsLayouts["portrait"] = p.id; ndsLayouts["landscape"] = l.id }
+            ndsLayouts[TABLETOP] = NdsLayouts.loadTabletop(filesDir).id
+        }
     }
 
     /**
      * From the pause sheet, for a gamepad (the skin and its layout key are
      * hidden then): sets the core to the orientation's next layout. The
      * hidden overlay stays as it was; turning the phone puts it back in step.
+     * In tabletop the overlay itself steps on: its screens sit around the fold.
      */
     private fun nextNdsLayout(): ScreenLayout = synchronized(ndsLayouts) {
         loadNdsLayouts()
-        val orientation = if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) "landscape" else "portrait"
+        val shown = overlay?.substringBefore('@')
+        val orientation = when {
+            shown == TABLETOP -> TABLETOP
+            resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE -> "landscape"
+            else -> "portrait"
+        }
         val layout = NdsLayouts.next(orientation, ndsLayouts[orientation])
         ndsLayouts[orientation] = layout.id
+        if (orientation == TABLETOP) {
+            Thread { RaCommand.send("OVERLAY_SELECT $TABLETOP@${layout.id}") }.start()
+            return layout
+        }
         Thread {
             NdsLayouts.save(filesDir, orientation, layout)
             RaCommand.send("SET_CORE_OPTION desmume_screens_layout ${layout.value}")
@@ -439,6 +562,7 @@ class GameActivity : RetroActivityFuture() {
         /** AINPUT_EVENT_TYPE_KEY, as the engine passes it. */
         const val INPUT_KEY = 1
         const val SKIN_DEBOUNCE_MS = 300L
-        const val TAG = "OpenEmuxSkin"
+        const val TAG = "OpenEmuxGame"
+        const val SKIN_TAG = "OpenEmuxSkin"
     }
 }

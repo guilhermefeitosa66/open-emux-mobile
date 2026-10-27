@@ -82,6 +82,7 @@
     <string name="game_screens_top">Écran du haut seul</string>
     <string name="game_screens_bottom">Écran du bas seul</string>
     <string name="game_screens_stacked">L’un au-dessus de l’autre</string>
+    <string name="game_screens_halves">Un par moitié</string>
     <string name="game_screens_side">Côte à côte</string>
 
     <!-- RetroAchievements hardcore -->

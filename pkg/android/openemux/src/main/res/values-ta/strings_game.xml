@@ -81,6 +81,7 @@
     <string name="game_screens_top">மேல் திரை மட்டும்</string>
     <string name="game_screens_bottom">கீழ் திரை மட்டும்</string>
     <string name="game_screens_stacked">ஒன்றன் மேல் ஒன்று</string>
+    <string name="game_screens_halves">ஒவ்வொரு பாதியிலும் ஒன்று</string>
     <string name="game_screens_side">அருகருகே</string>
 
     <!-- RetroAchievements hardcore -->

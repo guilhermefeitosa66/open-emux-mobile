@@ -80,6 +80,7 @@
     <string name="game_screens_top">上画面のみ</string>
     <string name="game_screens_bottom">下画面のみ</string>
     <string name="game_screens_stacked">上下に並べる</string>
+    <string name="game_screens_halves">半分ずつに1画面</string>
     <string name="game_screens_side">左右に並べる</string>
 
     <!-- RetroAchievements hardcore -->

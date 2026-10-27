@@ -455,25 +455,39 @@ private val NDS_BOTTOM = ScreenLayout("bottom", "bottom only", 256f / 192f, R.st
 val NDS_LAYOUTS = mapOf(
     "portrait" to listOf(NDS_TOP, NDS_BOTTOM, ScreenLayout("stacked", "top/bottom", 256f / 384f, R.string.game_screens_stacked)),
     "landscape" to listOf(NDS_TOP, NDS_BOTTOM, ScreenLayout("side", "left/right", 512f / 192f, R.string.game_screens_side)),
+    // Half open with the fold across: the stacked layout with a gap over the fold, one screen per half.
+    "portrait-tabletop" to listOf(NDS_TOP, NDS_BOTTOM, ScreenLayout("halves", "top/bottom", 256f / 384f, R.string.game_screens_halves)),
 )
 
-/** The layout each orientation opens in, remembered across games (the file holds "portrait=id" and "landscape=id" lines). */
+/** The screen gaps DeSmuME takes (desmume_screens_gap), in core pixels: one per half puts the fold in the gap. */
+val NDS_SCREEN_GAPS = (0..100).toList()
+
+/**
+ * The layout each orientation opens in, remembered across games (the file holds "portrait=id", "landscape=id" and
+ * "portrait-tabletop=id" lines; a file from before tabletop has no third and opens it on its default).
+ */
 object NdsLayouts {
     private fun file(filesDir: java.io.File) = java.io.File(filesDir, "nds-layout")
 
+    private fun saved(filesDir: java.io.File) = runCatching { file(filesDir).readLines() }.getOrDefault(emptyList())
+        .mapNotNull { line -> line.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
+
     /** A saved layout the orientation no longer has falls back to its default. */
+    private fun pick(saved: Map<String, String>, orientation: String) =
+        NDS_LAYOUTS.getValue(orientation).let { list -> list.firstOrNull { it.id == saved[orientation] } ?: list.last() }
+
     fun load(filesDir: java.io.File): Pair<ScreenLayout, ScreenLayout> {
-        val saved = runCatching { file(filesDir).readLines() }.getOrDefault(emptyList())
-            .mapNotNull { line -> line.split('=', limit = 2).takeIf { it.size == 2 }?.let { it[0] to it[1] } }.toMap()
-        fun pick(orientation: String) = NDS_LAYOUTS.getValue(orientation).let { list -> list.firstOrNull { it.id == saved[orientation] } ?: list.last() }
-        return pick("portrait") to pick("landscape")
+        val saved = saved(filesDir)
+        return pick(saved, "portrait") to pick(saved, "landscape")
     }
 
+    /** The layout the tabletop posture opens in. */
+    fun loadTabletop(filesDir: java.io.File): ScreenLayout = pick(saved(filesDir), "portrait-tabletop")
+
     fun save(filesDir: java.io.File, orientation: String, layout: ScreenLayout) {
-        val (portrait, landscape) = load(filesDir)
-        val p = if (orientation == "portrait") layout else portrait
-        val l = if (orientation == "landscape") layout else landscape
-        runCatching { file(filesDir).writeText("portrait=${p.id}\nlandscape=${l.id}\n") }
+        val saved = saved(filesDir)
+        val text = NDS_LAYOUTS.keys.joinToString("") { o -> "$o=${if (o == orientation) layout.id else pick(saved, o).id}\n" }
+        runCatching { file(filesDir).writeText(text) }
     }
 
     /** The layout after [current] in [orientation]'s cycle. */

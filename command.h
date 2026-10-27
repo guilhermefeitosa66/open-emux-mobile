@@ -677,6 +677,9 @@ void command_watch_clear(void);
 bool command_get_core_option(command_t *cmd, const char *arg);
 bool command_set_core_option(command_t *cmd, const char *arg);
 
+/* OVERLAY_SELECT <name>: shows the loaded pack's overlay of that name. */
+bool command_overlay_select(command_t *cmd, const char *arg);
+
 /* Replies with a failure and why, and marks the reply as one. The text
  * opens with @name and ERROR, as a deferred reply's does. */
 void command_reply_error(command_t *cmd, const char *name,
@@ -876,6 +879,11 @@ static const struct cmd_param cmd_params_core_option_set[] = {
    { "option", "A core option key, as GET_CORE_OPTION with no argument "
       "lists it.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { "value", "One of the values GET_CORE_OPTION with the key lists.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_overlay_select[] = {
+   { "name", "An overlay's name, as its pack names it.",
       CMD_PARAM_STRING, true, NULL, NULL, NULL },
    { NULL }
 };
@@ -1174,6 +1182,7 @@ static const struct cmd_action_map action_map[] = {
    { "GET_INPUT",        command_get_input,        "[player]", "Report what a player holds, without changing it: SET_INPUT has to set something to answer and RELEASE_INPUT lets go before it does.", CMD_INFO_READ_ONLY, cmd_params_input_get, &cmd_rows_input },
    { "GET_CORE_OPTION",  command_get_core_option,  "[key]", "List the running core's options: key, value and description; with a key, that option with the values it takes.", CMD_INFO_READ_ONLY, cmd_params_core_option, &cmd_rows_core_option },
    { "SET_CORE_OPTION",  command_set_core_option,  "<key> <value>", "Set a core option to one of its values. Asking for the value it already has changes nothing.", 0, cmd_params_core_option_set },
+   { "OVERLAY_SELECT",   command_overlay_select,   "<name>", "Show the loaded overlay pack's overlay of that name, as OVERLAY_NEXT does on reaching it. Asking for the one shown changes nothing.", CMD_INFO_NO_TOOL, cmd_params_overlay_select },
    { "LIST_CORES",       command_list_cores,       "[content path]", "List the installed cores: name and the path LOAD_CONTENT takes. With a content path, only the cores that support it.", CMD_INFO_READ_ONLY, cmd_params_cores, &cmd_rows_cores },
    { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL, &cmd_rows_playlists },
    { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, 200 at a time, and where to go on from when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist, &cmd_rows_entries },

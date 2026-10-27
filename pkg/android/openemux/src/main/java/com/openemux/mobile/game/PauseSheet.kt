@@ -12,6 +12,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -55,7 +56,9 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -78,9 +81,11 @@ import com.openemux.mobile.ui.OpenEmuxTheme
 import com.openemux.mobile.ui.RadioCard
 import com.openemux.mobile.ui.Tag
 import com.openemux.mobile.ui.Type
+import com.openemux.mobile.ui.forbiddenBand
 import com.openemux.mobile.ui.formatAgo
 import com.openemux.mobile.ui.gamepadFocus
 import com.openemux.mobile.ui.restorableFocus
+import com.openemux.mobile.ui.tabletop
 import com.retroarch.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -179,8 +184,11 @@ fun PauseSheet(
         val states = remember(refresh) { session.states() }
         val cart = remember { session.cartPath?.let { BitmapFactory.decodeFile(it)?.asImageBitmap() } }
         val window = LocalWindowLayout.current
+        // Half open with the fold across, the menu takes the bottom half and the game shows on the top one (DobFoldPausa).
+        val band = forbiddenBand(window)?.takeIf { window.tabletop }
+        val tabletop = band != null
         // A tablet gets a side panel on the right, the game still showing on the left (TabPausa).
-        val panel = window.tablet
+        val panel = window.tablet && !tabletop
         val panelWidth = min(440.dp, (window.widthDp * 0.55f).dp)
         // A wide window (a phone on its side) is short: the main page goes in two columns when they fit, and whatever still overflows scrolls.
         val landscape = window.wide && !panel
@@ -211,10 +219,15 @@ fun PauseSheet(
         BackHandler { if (page != Page.Main) page = Page.Main else onResume() }
 
         Box(Modifier.fillMaxSize()) {
+            // In tabletop the band takes no tap: only the top half's card resumes.
             Box(
-                Modifier.fillMaxSize().background(Color(0x8C08080A))
-                    .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onResume)
+                Modifier.fillMaxSize().background(Color(0x8C08080A)).let {
+                    if (tabletop) it else it.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onResume)
+                }
             )
+            if (band != null) {
+                PausedCard(session, cart, Modifier.align(Alignment.TopCenter).fillMaxWidth().height(band.startDp.dp), onResume)
+            }
             if (panel) {
                 PausedArea(
                     if (session.hardcore) emptyList() else states.take(4),
@@ -224,7 +237,19 @@ fun PauseSheet(
             }
             val shape = if (panel) RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp) else RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
             Column(
-                if (panel) {
+                if (band != null) {
+                    // Nothing in the band: the panel starts under it.
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .height((window.heightDp - band.endDp).dp)
+                        .clip(shape)
+                        .background(Oe.Sheet)
+                        .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {}
+                        .windowInsetsPadding(WindowInsets.displayCutout)
+                        .navigationBarsPadding()
+                        .padding(start = 28.dp, end = 28.dp, top = 18.dp, bottom = 12.dp)
+                } else if (panel) {
                     Modifier
                         .align(Alignment.CenterEnd)
                         .fillMaxHeight()
@@ -249,11 +274,12 @@ fun PauseSheet(
                         .padding(start = 20.dp, end = 20.dp, top = 10.dp, bottom = 20.dp)
                 },
             ) {
-                if (!panel) {
+                if (!panel && !tabletop) {
                     Box(Modifier.align(Alignment.CenterHorizontally).size(40.dp, 5.dp).clip(CircleShape).background(Oe.Chevron))
                     Spacer(Modifier.height(14.dp))
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                // In tabletop the top half's card names the game: the main page needs no header.
+                if (!tabletop || page != Page.Main) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     if (page != Page.Main) {
                         SheetIconButton(Icons.Back, stringResource(R.string.game_back)) { page = Page.Main }
                     } else if (cart != null) {
@@ -282,7 +308,7 @@ fun PauseSheet(
                 }
 
                 // On the panel the page fills the height, so Quit stays at its foot.
-                MarginFocusScroll { Column(Modifier.weight(1f, fill = panel).verticalScroll(rememberScrollState())) {
+                MarginFocusScroll { Column(Modifier.weight(1f, fill = panel || tabletop).verticalScroll(rememberScrollState())) {
                 if (toast != null) {
                     Row(
                         Modifier.padding(top = 12.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Oe.OkBg).padding(12.dp),
@@ -301,6 +327,8 @@ fun PauseSheet(
                     when (current) {
                         Page.Main -> MainPage(
                             landscape = landscape,
+                            tabletop = tabletop,
+                            onResume = onResume,
                             hardcore = session.hardcore,
                             fastForward = fastForward,
                             stateCount = states.count { !it.isAutoSlot() },
@@ -356,6 +384,9 @@ private fun SheetIconButton(path: String, label: String, onClick: () -> Unit) {
 @Composable
 private fun MainPage(
     landscape: Boolean,
+    /** The bottom half of a half-open fold (DobFoldPausa): three rows, Back to game and Quit in them. */
+    tabletop: Boolean,
+    onResume: () -> Unit,
     hardcore: Boolean,
     fastForward: Boolean,
     stateCount: Int,
@@ -370,9 +401,8 @@ private fun MainPage(
     /** Null on the tablet panel, which pins Quit at its foot. */
     onQuit: (() -> Unit)?,
 ) {
-    val actions = @Composable { modifier: Modifier ->
-        Column(modifier) {
-            if (hardcore) {
+    val note = @Composable {
+        if (hardcore) {
                 Row(
                     Modifier.padding(top = 14.dp).fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Oe.WarnBg).padding(12.dp),
                     verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -380,18 +410,48 @@ private fun MainPage(
                     Icon(Icons.Warn, Oe.WarnText, 18.dp, stroke = 2.2f)
                     Text(stringResource(R.string.game_hardcore_note), style = Type.Body.copy(color = Oe.WarnText, fontSize = 13.sp, lineHeight = 18.sp))
                 }
+        }
+    }
+    val save = @Composable { modifier: Modifier ->
+        BigButton(stringResource(R.string.game_save_state), Icons.SaveState, Oe.Accent, Color.White, modifier.restorableFocus("save", remember { mutableStateOf<String?>(null) }, initial = true), onSave)
+    }
+    val load = @Composable { modifier: Modifier ->
+        BigButton(stringResource(R.string.game_load), Icons.LoadState, Oe.Raised, Oe.Text, modifier, onLoad, enabled = !hardcore)
+    }
+    val tiles = @Composable { modifier: Modifier ->
+        Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            ActionTile(stringResource(R.string.game_fast_forward), Icons.FastForward, fastForward, filled = true, enabled = !hardcore, onClick = onFastForward)
+            ActionTile(stringResource(R.string.game_screenshot), Icons.Camera, false, onClick = onScreenshot)
+            ActionTile(stringResource(R.string.game_shader), Icons.Shader, false, onClick = onShader)
+            if (onScreens != null) ActionTile(stringResource(R.string.game_screens), Icons.Screens, false, onClick = onScreens)
+            ActionTile(stringResource(if (SessionToggles.muted) R.string.game_muted else R.string.game_audio), if (SessionToggles.muted) Icons.Mute else Icons.Audio, SessionToggles.muted, onClick = onAudio)
+        }
+    }
+    if (tabletop) {
+        Column {
+            note()
+            Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                save(Modifier.weight(1f))
+                load(Modifier.weight(1f))
+                BigButton(stringResource(R.string.game_back_to_game), Icons.Play, Oe.Raised, Oe.Text, Modifier.width(168.dp), onResume)
             }
+            tiles(Modifier.padding(top = 16.dp))
             Row(Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                BigButton(stringResource(R.string.game_save_state), Icons.SaveState, Oe.Accent, Color.White, Modifier.weight(1f).restorableFocus("save", remember { mutableStateOf<String?>(null) }, initial = true), onSave)
-                BigButton(stringResource(R.string.game_load), Icons.LoadState, Oe.Raised, Oe.Text, Modifier.weight(1f), onLoad, enabled = !hardcore)
+                BigButton("${stringResource(R.string.game_save_states)} · $stateCount", Icons.Chevron, Oe.Raised, Oe.Text, Modifier.weight(1f), onLoad, enabled = !hardcore)
+                BigButton(stringResource(R.string.game_restart), Icons.Reset, Oe.Raised, Oe.Text, Modifier.weight(1f), onReset)
+                if (onQuit != null) QuitButton(Modifier.width(168.dp).height(56.dp), onQuit)
             }
-            Row(Modifier.padding(top = 18.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                ActionTile(stringResource(R.string.game_fast_forward), Icons.FastForward, fastForward, filled = true, enabled = !hardcore, onClick = onFastForward)
-                ActionTile(stringResource(R.string.game_screenshot), Icons.Camera, false, onClick = onScreenshot)
-                ActionTile(stringResource(R.string.game_shader), Icons.Shader, false, onClick = onShader)
-                if (onScreens != null) ActionTile(stringResource(R.string.game_screens), Icons.Screens, false, onClick = onScreens)
-                ActionTile(stringResource(if (SessionToggles.muted) R.string.game_muted else R.string.game_audio), if (SessionToggles.muted) Icons.Mute else Icons.Audio, SessionToggles.muted, onClick = onAudio)
+        }
+        return
+    }
+    val actions = @Composable { modifier: Modifier ->
+        Column(modifier) {
+            note()
+            Row(Modifier.padding(top = 16.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                save(Modifier.weight(1f))
+                load(Modifier.weight(1f))
             }
+            tiles(Modifier.padding(top = 18.dp))
         }
     }
     val rest = @Composable { modifier: Modifier ->
@@ -423,6 +483,35 @@ private fun QuitButton(modifier: Modifier, onQuit: () -> Unit) {
             .clickable(role = Role.Button, onClick = onQuit),
         contentAlignment = Alignment.Center,
     ) { Text(stringResource(R.string.game_quit), style = Type.Button.copy(color = Oe.Danger, fontSize = 15.sp)) }
+}
+
+/**
+ * The top half of a half-open fold, over the dimmed game: the "Paused" chip and the game's card. A tap anywhere
+ * resumes; nothing here takes the gamepad's focus, which stays in the bottom half.
+ */
+@Composable
+private fun PausedCard(session: PauseSession, cart: ImageBitmap?, modifier: Modifier, onResume: () -> Unit) {
+    Box(modifier.windowInsetsPadding(WindowInsets.displayCutout).pointerInput(Unit) { detectTapGestures { onResume() } }.padding(24.dp)) {
+        Text(
+            stringResource(R.string.game_paused).uppercase(),
+            style = Type.Tag.copy(color = Color.White),
+            modifier = Modifier.align(Alignment.TopStart).clip(CircleShape).background(Color(0x99000000)).padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+        Row(
+            Modifier.align(Alignment.Center).widthIn(max = 520.dp).clip(RoundedCornerShape(20.dp)).background(Color(0x99000000)).padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            if (cart != null) Image(cart, null, Modifier.width(72.dp), contentScale = ContentScale.FillWidth)
+            Column {
+                Text(session.title, style = Type.Title.copy(color = Color.White, fontSize = 17.sp, lineHeight = 21.sp), maxLines = 2)
+                val minutes = ((System.currentTimeMillis() - session.startedAt) / 60000).coerceAtLeast(0)
+                Text(
+                    if (minutes < 1) stringResource(R.string.game_playing_now, session.coreName) else stringResource(R.string.game_playing_for, minutes.toInt(), session.coreName),
+                    style = Type.Small.copy(color = Color(0xB3FFFFFF)), modifier = Modifier.padding(top = 3.dp),
+                )
+            }
+        }
+    }
 }
 
 /** Left of the tablet panel, over the dimmed game: the "Paused" chip and the latest saved states, a tap loads one. */

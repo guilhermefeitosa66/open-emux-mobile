@@ -78,28 +78,16 @@ internal object OverlayWriter {
      * orientation. Touch areas are [grow] times what is drawn, except a stick's range, a lit image and a D-pad's
      * circle, which RetroArch stretches over its desc's range (a D-pad's touch area grows through its reach). A
      * stick's zone reaches past its travel up to the other controls and the [clear] areas, [gap] short of them.
+     * [hidden] is where the auto-rotate switch sits, as a fraction of the height: off the fold on a tabletop overlay.
      */
     fun write(
         cfg: StringBuilder, index: Int, name: String, other: String, image: String,
         descs: List<OverlayDesc>, w: Int, h: Int, picture: RectF, grow: Float, clear: List<RectF>, gap: Float,
+        hidden: Float = 0.5f,
     ) {
-        fun touch(d: OverlayDesc): RectF {
-            val g = if (d.radial || d.lit != null || d.dpad != null) 1f else grow
-            val hw = d.rect.width() / 2f * g
-            val hh = d.rect.height() / 2f * g
-            return RectF(d.rect.centerX() - hw, d.rect.centerY() - hh, d.rect.centerX() + hw, d.rect.centerY() + hh)
-        }
-        // Where a touch on a D-pad starts: its rect, [OverlayDesc.reach] times its half-size on each side.
-        fun reached(d: OverlayDesc): RectF {
-            val hw = d.rect.width() / 2f
-            val hh = d.rect.height() / 2f
-            return RectF(
-                d.rect.centerX() - hw * d.reach[0], d.rect.centerY() - hh * d.reach[1],
-                d.rect.centerX() + hw * d.reach[2], d.rect.centerY() + hh * d.reach[3],
-            )
-        }
+        fun touch(d: OverlayDesc) = touchArea(d, grow)
         // What a stick's touch zone must stay clear of: every other control, as touched, and the [clear] areas.
-        val taken = descs.map { d -> d.well ?: if (d.dpad != null) reached(d) else touch(d) } + clear
+        val taken = descs.map { footprint(it, grow) } + clear
         val p = "overlay$index"
         cfg.append("${p}_name = \"$name\"\n")
         // Where the engine draws the game, keeping its aspect inside this box; GL counts y from the bottom.
@@ -141,8 +129,32 @@ internal object OverlayWriter {
         }
         // Unreachable switch that lets auto-rotate find the other orientation.
         val n = descs.size
-        cfg.append("${p}_desc$n = \"overlay_next,0.5,0.5,rect,0.00001,0.00001\"\n")
+        val y = if (hidden == 0.5f) "0.5" else "%.5f".format(Locale.US, hidden)
+        cfg.append("${p}_desc$n = \"overlay_next,0.5,$y,rect,0.00001,0.00001\"\n")
         cfg.append("${p}_desc${n}_next_target = \"$other\"\n")
+    }
+
+    /** Where a touch on [d] registers: its rect [grow] times, except a stick's range, a lit image and a D-pad's circle. */
+    internal fun touchArea(d: OverlayDesc, grow: Float): RectF {
+        val g = if (d.radial || d.lit != null || d.dpad != null) 1f else grow
+        val hw = d.rect.width() / 2f * g
+        val hh = d.rect.height() / 2f * g
+        return RectF(d.rect.centerX() - hw, d.rect.centerY() - hh, d.rect.centerX() + hw, d.rect.centerY() + hh)
+    }
+
+    /**
+     * All [d] takes of the screen, as touched: a stick's well, a D-pad's rect [OverlayDesc.reach] times its half-size
+     * on each side (where a touch on it starts), anything else its [touchArea].
+     */
+    internal fun footprint(d: OverlayDesc, grow: Float): RectF {
+        d.well?.let { return it }
+        if (d.dpad == null) return touchArea(d, grow)
+        val hw = d.rect.width() / 2f
+        val hh = d.rect.height() / 2f
+        return RectF(
+            d.rect.centerX() - hw * d.reach[0], d.rect.centerY() - hh * d.reach[1],
+            d.rect.centerX() + hw * d.reach[2], d.rect.centerY() + hh * d.reach[3],
+        )
     }
 
     /**

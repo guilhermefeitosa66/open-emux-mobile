@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.util.Log
 import android.view.WindowInsets
 import android.view.WindowMetrics
 import androidx.annotation.RequiresApi
@@ -15,8 +16,7 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.PathParser
 import com.openemux.mobile.data.Console
 import com.openemux.mobile.data.KEYPAD_BIND
-import com.openemux.mobile.data.NDS_LAYOUTS
-import com.openemux.mobile.data.NdsLayouts
+import com.openemux.mobile.data.NDS_SCREEN_GAPS
 import com.openemux.mobile.data.ScreenLayout
 import com.openemux.mobile.data.Skin
 import com.openemux.mobile.data.SkinCluster
@@ -27,9 +27,11 @@ import com.openemux.mobile.data.SkinRow
 import com.openemux.mobile.data.SkinSide
 import com.openemux.mobile.data.forCore
 import com.openemux.mobile.data.skin
+import com.openemux.mobile.ui.Fold
 import com.openemux.mobile.ui.Icons
 import com.retroarch.R
 import java.io.File
+import java.util.Locale
 import kotlin.math.abs
 
 /**
@@ -71,11 +73,10 @@ data class SkinSize(val short: Int, val long: Int, val cutout: Int) {
  */
 class SkinRenderer(private val context: Context) {
 
-    /** One overlay: [rotate] is the one turning the screen switches to, [layoutNext] the NDS layout key's target. */
-    private class Spec(
-        val name: String, val portrait: Boolean, val aspect: Float, val rotate: String,
-        val keypadOpen: Boolean = false, val layoutNext: String? = null, val layout: ScreenLayout? = null,
-    )
+    companion object {
+        /** Beside skin.cfg when the skin has tabletop overlays: their band, their names and the NDS screen gaps. */
+        const val TABLETOP_FILE = "tabletop.properties"
+    }
 
     private val inter: Typeface = ResourcesCompat.getFont(context, R.font.inter_bold) ?: Typeface.DEFAULT_BOLD
     private val grotesk: Typeface = ResourcesCompat.getFont(context, R.font.grotesk_bold) ?: Typeface.DEFAULT_BOLD
@@ -88,11 +89,15 @@ class SkinRenderer(private val context: Context) {
      * [density] picks the shape: a window 600dp or more across its short side draws the tablet skin (SkinGeometry).
      * [first] is the overlay RetroArch opens on, when the skin has one of that name:
      * a skin redrawn in game keeps the one that was shown.
+     * [fold] (seen at launch, in a [width] x [height] window) adds the tabletop overlays when it runs across the long
+     * side, opening on [ndsTabletop] for NDS; the activity switches to them by name, and reads their band and the NDS
+     * screen gaps from [TABLETOP_FILE]. With [under], a package skin's skin.cfg (ImportedSkinRenderer), only those
+     * tabletop overlays are drawn, after the package's own: it has no tabletop art, and opening flat brings it back.
      */
     fun render(
         console: Console, width: Int, height: Int, outDir: File, cutout: Int = 0,
         ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false, coreId: String? = null,
-        density: Float, first: String? = null,
+        density: Float, first: String? = null, fold: Fold? = null, ndsTabletop: ScreenLayout? = null, under: File? = null,
     ): File {
         outDir.mkdirs()
         val skin = console.skin.forCore(coreId)
@@ -101,40 +106,29 @@ class SkinRenderer(private val context: Context) {
         val tablet = SkinGeometry.tablet(width, height, density)
         val unit = SkinGeometry.unit(portraitW, density, tablet)
 
-        val specs = mutableListOf<Spec>()
-        if (ndsLayouts != null) {
-            // One overlay per NDS layout and orientation, the saved ones first: the layout key steps to the next,
-            // turning switches to the other orientation's saved one, and the activity sets the core to match.
-            val (port, land) = ndsLayouts
-            for (orient in listOf("portrait", "landscape")) {
-                val layouts = NDS_LAYOUTS.getValue(orient)
-                val saved = layouts.indexOfFirst { it.id == (if (orient == "portrait") port else land).id }
-                val other = if (orient == "portrait") "landscape@${land.id}" else "portrait@${port.id}"
-                (layouts.drop(saved) + layouts.take(saved)).forEach { l ->
-                    specs += Spec("$orient@${l.id}", orient == "portrait", l.aspect, other, layoutNext = "$orient@${NdsLayouts.next(orient, l.id).id}", layout = l)
-                }
-            }
-            // RetroArch opens the first overlay: the saved portrait layout.
-            specs.sortBy { if (it.name == "portrait@${port.id}") 0 else 1 }
-        } else {
-            specs += Spec("portrait", true, console.gameAspect, "landscape")
-            specs += Spec("landscape", false, console.gameAspect, "portrait")
-            // The keypad is an overlay of its own per orientation, switched to by the keypad key.
-            if (skin.keypad.isNotEmpty()) {
-                specs += Spec("keypad-portrait", true, console.gameAspect, "keypad-landscape", keypadOpen = true)
-                specs += Spec("keypad-landscape", false, console.gameAspect, "keypad-portrait", keypadOpen = true)
-            }
+        val band = SkinGeometry.tabletopBandFor(fold, width, height, density, cutout)
+        val wide = portraitW / density >= SkinGeometry.TABLETOP_WIDE
+        val base = under?.readText()
+        val flat = base?.let(::overlayNames).orEmpty()
+        val specs = when {
+            base == null -> overlaySpecs(console.gameAspect, skin.keypad.isNotEmpty(), ndsLayouts, band != null, ndsTabletop)
+            band != null -> packageTabletopSpecs(console.gameAspect, console == Console.NDS, ndsTabletop)
+            else -> emptyList()
+        }.let { all ->
+            // A package skin opened on its own [first] already (ImportedSkinRenderer): its tabletop overlays go after.
+            if (base == null && first != null && all.any { it.name == first }) all.sortedBy { if (it.name == first) 0 else 1 } else all
         }
-        if (first != null && specs.any { it.name == first }) specs.sortBy { if (it.name == first) 0 else 1 }
+        val gaps = mutableMapOf<String, Int>()
         val cfg = StringBuilder()
-        cfg.append("overlays = ${specs.size}\n")
-        specs.forEachIndexed { i, spec ->
+        specs.forEachIndexed { n, spec ->
+            val i = flat.size + n
             val w = if (spec.portrait) portraitW else portraitH
             val h = if (spec.portrait) portraitH else portraitW
             val bitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
             val toggle = if (spec.keypadOpen) spec.name.removePrefix("keypad-") else "keypad-${spec.name}"
             val layout = Layout(Canvas(bitmap), skin, unit, spec.aspect, spec.keypadOpen, toggle, spec.layoutNext, hardcore, spec.layout)
             val descs = when {
+                spec.tabletop && band != null -> layout.tabletop(w, h, band.startPx / unit, band.endPx / unit, wide)
                 tablet && spec.portrait -> layout.tabletPortrait(w, h)
                 tablet -> layout.tabletLandscape(w, h)
                 spec.portrait -> layout.portrait(h)
@@ -143,14 +137,31 @@ class SkinRenderer(private val context: Context) {
             val image = spec.name.replace('@', '-') + ".png"
             OverlayWriter.saveImages(outDir, image, bitmap, descs)
             bitmap.recycle()
-            // Touch areas a little larger than what is drawn: thumbs are wide. A stick's zone keeps clear of the game.
+            // Touch areas a little larger than what is drawn: thumbs are wide. A stick's zone keeps clear of the game
+            // and, on a tabletop overlay, of the fold's band.
+            val clear = if (spec.tabletop && band != null) {
+                listOf(layout.picture, RectF(0f, band.startPx, w.toFloat(), band.endPx))
+            } else {
+                listOf(layout.picture)
+            }
             OverlayWriter.write(
                 cfg, i, spec.name, spec.rotate, image, descs, w, h, layout.picture, grow = TOUCH_GROW,
-                clear = listOf(layout.picture), gap = 2f * unit,
+                clear = clear, gap = 2f * unit, hidden = if (spec.tabletop) 0.002f else 0.5f,
             )
+            if (spec.layout != null && spec.tabletop) gaps[spec.name] = layout.gap
+        }
+        File(outDir, TABLETOP_FILE).delete()
+        if (band != null) {
+            // In the launch window's dp, as the activity measures the fold it sees.
+            val props = StringBuilder()
+            props.append(String.format(Locale.US, "band_start_dp=%.2f\nband_end_dp=%.2f\n", (band.startPx + cutout) / density, (band.endPx + cutout) / density))
+            props.append("overlays=${(flat + specs.map { it.name }).joinToString(",")}\n")
+            gaps.forEach { (name, gap) -> props.append("gap.$name=$gap\n") }
+            if (base != null && console == Console.NDS) props.append("flat_layout=$PACKAGE_NDS_LAYOUT\n")
+            File(outDir, TABLETOP_FILE).writeText(props.toString())
         }
         val file = File(outDir, "skin.cfg")
-        file.writeText(cfg.toString())
+        file.writeText(base?.let { withOverlays(it, specs.size, cfg.toString()) } ?: "overlays = ${specs.size}\n$cfg")
         return file
     }
 
@@ -158,8 +169,8 @@ class SkinRenderer(private val context: Context) {
     fun render(
         console: Console, size: SkinSize, outDir: File,
         ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false, coreId: String? = null,
-        density: Float, first: String? = null,
-    ): File = render(console, size.short, size.long, outDir, size.cutout, ndsLayouts, hardcore, coreId, density, first)
+        density: Float, first: String? = null, fold: Fold? = null, ndsTabletop: ScreenLayout? = null, under: File? = null,
+    ): File = render(console, size.short, size.long, outDir, size.cutout, ndsLayouts, hardcore, coreId, density, first, fold, ndsTabletop, under)
 
     /**
      * One orientation, drawn in the design's units (its phone frame is 390
@@ -184,6 +195,10 @@ class SkinRenderer(private val context: Context) {
 
         /** The game's box, in pixels, as the overlay's viewport. */
         var picture = RectF()
+            private set
+
+        /** The NDS screen gap (desmume_screens_gap) a tabletop overlay's layout asks of the core. */
+        var gap = 0
             private set
 
         /** Maps design units to pixels; the portrait panel squeezes through it when short. */
@@ -328,6 +343,56 @@ class SkinRenderer(private val context: Context) {
             }
             label(skin.name, g.name.x, g.name.y, g.name.w, 10f, 0.16f)
             return descs
+        }
+
+        /**
+         * Tabletop (DobFoldJogo, DobFlipJogo, DobFoldNDS), the band from [start] to [end] units down: the picture in the
+         * top half, the controls in the bottom one, and the band background only, its colour a shade under the body's.
+         */
+        fun tabletop(width: Int, height: Int, start: Float, end: Float, wide: Boolean): List<OverlayDesc> {
+            val wd = width / unit
+            val hd = height / unit
+            val nds = screenLayout != null
+            val g = if (nds) SkinGeometry.tabletopNds(wd, hd, end, footprint()) else SkinGeometry.tabletop(wd, hd, start, end, aspect, wide)
+            val top = Box(0f, 0f, wd, start)
+            val view = when (screenLayout?.id) {
+                null -> g.picture
+                "top" -> SkinGeometry.fitIn(top, aspect, 14f)
+                "bottom" -> SkinGeometry.fitIn(g.picture, aspect)
+                else -> SkinGeometry.ndsHalvesFit(start, end, g.picture, NDS_SCREEN_GAPS)?.also { gap = it.gap }?.viewport
+                    // No gap covers the band: both screens in the top half rather than one on the fold.
+                    ?: SkinGeometry.fitIn(top, 256f / 384f, 14f)
+            }
+            picture = px(view)
+            fill(RectF(0f, 0f, width.toFloat(), height.toFloat()), colors.body)
+            c.drawRect(picture, Paint().apply { xfermode = android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.CLEAR) })
+            strip(px(g.strip), 22f, opaque = true)
+            frame(g)
+            if (keypadOpen) keypad(g.rx, g.rows.center, if (nds) g.lx * 2f - 16f else 180f, minOf(280f, g.pillsTop - g.menu.bottom - 24f))
+            val pills = skin.pills.filter { it.bind != null }
+            if (nds) {
+                val half = (pills.size + 1) / 2
+                pills.take(half).forEachIndexed { i, key -> pill(key, g.lx + i * 72f, g.pillsTop, 60f, 24f, 0f) }
+                pills.drop(half).forEachIndexed { i, key -> pill(key, g.rx - i * 72f, g.pillsTop, 60f, 24f, 0f) }
+            } else {
+                pills.forEachIndexed { i, key -> pill(key, wd / 2f + (i - (pills.size - 1) / 2f) * 96f, g.pillsTop, 60f, 24f, 11f) }
+            }
+            label(skin.name, g.name.x, g.name.y, g.name.w, if (nds) 10f else 11f, 0.16f)
+            // Last, over anything that ran into it: the band is background only.
+            fill(RectF(0f, start * unit, width.toFloat(), end * unit), shade(colors.body))
+            // As touched: a D-pad through its reach, a stick over its well.
+            val grown = descs.partition { d ->
+                val area = OverlayWriter.footprint(d, TOUCH_GROW)
+                area.top < end * unit && area.bottom > start * unit
+            }
+            if (grown.first.isNotEmpty()) Log.w("SkinRenderer", "tabletop: ${grown.first.map { it.name }} reach the fold, left out")
+            return grown.second
+        }
+
+        /** [color] a little darker: the fold's band (#4F4296 → #3E3479 on the boards). */
+        private fun shade(color: Int): Int {
+            fun ch(shift: Int) = (((color shr shift) and 0xFF) * 0.785f).toInt() shl shift
+            return (color and 0xFF000000.toInt()) or ch(16) or ch(8) or ch(0)
         }
 
         /** The shoulders, the menu key and the clusters, where [g] puts them. */
@@ -618,7 +683,7 @@ class SkinRenderer(private val context: Context) {
 
     private companion object {
         /** How much larger than what is drawn a control's touch area is: thumbs are wide. */
-        const val TOUCH_GROW = 1.12f
+        const val TOUCH_GROW = SkinGeometry.TOUCH_GROW
 
         /** How far the D-pad's circle travels from the centre, in the D-pad's 120-unit grid. */
         const val DPAD_TRAVEL_UNITS = OverlayLines.DPAD_TRAVEL * 60f
