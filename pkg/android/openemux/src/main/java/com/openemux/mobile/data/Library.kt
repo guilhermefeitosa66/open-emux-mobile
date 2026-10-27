@@ -139,12 +139,16 @@ class Library(private val context: Context) {
     fun effectiveColor(rom: Rom): String =
         romMeta(rom.key).color ?: consoleSettings(rom.console).color
 
+    // Share nearby writes settings from its connection threads while the UI
+    // writes from the main one: every read-modify-write of the meta is serialised.
+    @Synchronized
     fun updateRom(key: String, change: (RomMeta) -> RomMeta) {
         val current = _meta.value
         _meta.value = current.copy(roms = current.roms + (key to change(romMeta(key))))
         saveMeta()
     }
 
+    @Synchronized
     fun updateConsole(console: Console, change: (ConsoleSettings) -> ConsoleSettings) {
         val current = _meta.value
         _meta.value = current.copy(
@@ -176,11 +180,13 @@ class Library(private val context: Context) {
         return true
     }
 
+    @Synchronized
     fun setConsoleOrder(order: List<Console>) {
         _meta.value = _meta.value.copy(consoleOrder = order.map { it.id })
         saveMeta()
     }
 
+    @Synchronized
     fun resetConsoleOrder() {
         _meta.value = _meta.value.copy(consoleOrder = emptyList())
         saveMeta()
@@ -216,6 +222,7 @@ class Library(private val context: Context) {
     fun playtimeSeconds(rom: Rom): Long =
         runCatching { playtimeFile(rom).readText().trim().toLong() }.getOrDefault(0L)
 
+    @Synchronized
     fun delete(rom: Rom) {
         rom.file.delete()
         _roms.value = _roms.value.filterNot { it.key == rom.key }

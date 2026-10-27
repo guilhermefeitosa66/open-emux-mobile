@@ -77,6 +77,8 @@ class GamePlan(val gameId: String, val console: Console?, val title: String, val
     var finalStem = ""
     /** Why the game's other files are skipped when its ROM is [RomStatus.ABSENT]. */
     var absentReason = SkipReason.USER_UNCHECKED
+    /** The user deselected the game's ROM: none of its settings are applied. */
+    var userUnchecked = false
     val decisions = mutableListOf<Decision>()
 }
 
@@ -179,6 +181,9 @@ private class Planner(
 
     private fun send(plan: GamePlan, item: Item, target: File, base: File, policy: Policy? = null, replaces: File? = null) {
         if (!fits(target.name) || !inside(target, base)) return skip(plan, item, SkipReason.INVALID_ITEM)
+        // Another item of this offer already goes there (a REPLACE or NEWEST over
+        // the same file): a second placement would fail the whole commit.
+        if (isTaken(target)) return skip(plan, item, SkipReason.EXISTS_SKIP)
         taken += target.absoluteFile
         plan.decisions += Decision(
             item.id, item.kind, true, null, target, policy, replaces, item.size, item.mtime, item.sha256, item.name, plan.gameId,
@@ -273,6 +278,7 @@ private class Planner(
             plan.finalStem = finalStem
         }
         if (main.id in unchecked) {
+            plan.userUnchecked = true
             roms.forEach { skip(plan, it, SkipReason.USER_UNCHECKED) }
             return finish(if (existing != null) RomStatus.EXISTING else RomStatus.ABSENT, existing)
         }
@@ -312,6 +318,11 @@ private class Planner(
         if (!pairs.all { (_, target) -> fits(target.name) && inside(target, base) }) {
             pairs.forEach { (item, _) -> skip(plan, item, SkipReason.INVALID_ITEM) }
             plan.absentReason = SkipReason.INVALID_ITEM
+            return false
+        }
+        if (pairs.any { (_, target) -> isTaken(target) }) {
+            pairs.forEach { (item, _) -> skip(plan, item, SkipReason.EXISTS_SKIP) }
+            plan.absentReason = SkipReason.EXISTS_SKIP
             return false
         }
         for ((item, target) in pairs) send(plan, item, target, base, policy, target.takeIf { replacing && it.exists() })

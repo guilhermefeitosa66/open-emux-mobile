@@ -10,6 +10,7 @@ import com.openemux.mobile.data.RomMeta
 import com.openemux.mobile.data.SaveState
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import kotlin.concurrent.thread
 
 /**
  * The library as Share nearby needs it. [Library] needs a `Context`; this
@@ -23,7 +24,11 @@ interface ShareLibrary {
     fun states(rom: Rom): List<SaveState>
     fun playtimeSeconds(rom: Rom): Long
     fun updateRom(key: String, change: (RomMeta) -> RomMeta)
-    /** A transfer placed [placed]: rescan, so the games show. Called off the main thread. */
+    /**
+     * A transfer placed [placed]: rescan, so the games show. Called off the
+     * main thread, on the connection that answers the last upload: it must not
+     * hold that answer back (the sender waits for it under a read timeout).
+     */
     fun onReceived(placed: List<File>)
 }
 
@@ -43,6 +48,8 @@ class LibraryShareAdapter(private val library: Library, private val covers: Cove
         covers.forget(Console.entries.flatMap { console ->
             placed.filter { it.parentFile == paths.roms(console) }.map { romKey(console, it) }
         })
-        runBlocking { library.scan() }
+        // The scan walks every console's folder: it runs on its own thread so
+        // the sender gets its answer now, not after the scan.
+        thread(isDaemon = true, name = "share-rescan") { runBlocking { library.scan() } }
     }
 }

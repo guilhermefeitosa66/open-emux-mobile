@@ -273,7 +273,9 @@ class IncomingTransfer(
     fun sweep(now: Long): Boolean {
         val idle = synchronized(lock) {
             if (_status.value != TransferStatus.RECEIVING) return true
-            now - lastActivity > ShareProtocol.IDLE_TIMEOUT_MS
+            // An upload in flight may be flushing a large file to slow storage
+            // with no byte arriving; a stalled one ends on its socket's read timeout.
+            uploading.isEmpty() && now - lastActivity > ShareProtocol.IDLE_TIMEOUT_MS
         }
         if (idle) end(TransferStatus.FAILED, ErrorCode.IDLE_TIMEOUT, notify = true)
         return idle
@@ -420,7 +422,7 @@ class IncomingTransfer(
         for (game in plan.games) {
             val console = game.console ?: continue
             val rom = game.romFile ?: continue
-            if (!game.romStatus.placed && game.romStatus != RomStatus.EXISTING) continue
+            if (game.romStatus == RomStatus.ABSENT || game.userUnchecked) continue
             val metadata = game.metadata ?: JSONObject()
             val key = romKey(console, rom)
             try {

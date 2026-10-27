@@ -126,6 +126,27 @@ class PlacementTest {
     }
 
     @Test
+    fun `two incoming items never share a target, whatever the policy`() {
+        lib.installCore(snes9x, "Snes9x", "1.62.3")
+        File(sfcStates, "Game.state1").put("local", mtime = 1_600_000_000)
+        val manifest = manifest {
+            game("g1", "SFC", "Game") {
+                item("rom", "Game.sfc", "a".toByteArray())
+                item("state", "Game.state1", "s1".toByteArray(), state = stateInfo("Snes9x", "1.62.3", 1))
+                item("state", "Game.state1", "s2".toByteArray(), state = stateInfo("Snes9x", "1.62.3", 1))
+            }
+            game("g2", "SFC", "Game") { item("rom", "Game.sfc", "b".toByteArray()) }
+        }
+        val plan = plan(manifest, policies = mapOf("rom" to Policy.REPLACE, "state" to Policy.REPLACE))
+        assertEquals(File(sfcStates, "Game.state1"), plan.of("g1i2").target)
+        assertEquals("exists_skip", plan.of("g1i3").reason)
+        // The second Game.sfc would land where the first one goes.
+        assertEquals("exists_skip", plan.of("g2i1").reason)
+        assertEquals(RomStatus.ABSENT, plan.games[1].romStatus)
+        assertEquals(1, plan.toSend().count { it.target == File(sfcRoms, "Game.sfc") })
+    }
+
+    @Test
     fun `a disc unit lands flat, all of it or none of it`() {
         val unit = manifest {
             game("g1", "PS", "Disc", JSONObject().put("favorite", true)) {

@@ -117,6 +117,29 @@ class IncomingTransferTest {
     }
 
     @Test
+    fun `a replaced ROM takes the favorite and keeps its own settings`() {
+        sfc(paths::roms, "Game.sfc").put("old rom")
+        sfc(paths::roms, "Game.sfc").setLastModified(1_600_000_000_000L)
+        lib.meta["SFC/Game.sfc"] = RomMeta(color = "blue")
+        val manifest = manifest { game("g1", "SFC", "Game", metadata) { item("rom", "Game.sfc", romBytes) } }
+        val transfer = transfer(manifest, policies = mapOf("rom" to Policy.NEWEST))
+        assertEquals(RomStatus.REPLACED, transfer.plan.games.single().romStatus)
+        putAll(transfer)
+        assertEquals(RomMeta(favorite = true, color = "blue"), lib.meta["SFC/Game.sfc"])
+    }
+
+    @Test
+    fun `a game the user unchecked takes no settings, even one the library has`() {
+        sfc(paths::roms, "Game.sfc").put("local")
+        val manifest = manifest { game("g1", "SFC", "Game", JSONObject().put("favorite", true)) { item("rom", "Game.sfc", romBytes) } }
+        val plan = planReceive(manifest, paths, CoreIdentities(paths), unchecked = setOf("g1"), probe = FakeSpace())
+        val transfer = IncomingTransfer("offer1", plan, lib, CoreIdentities(paths), clock)
+        transfer.start()
+        assertEquals(TransferStatus.DONE, transfer.status.value)
+        assertNull(lib.meta["SFC/Game.sfc"])
+    }
+
+    @Test
     fun `a transfer with nothing to receive finishes at start`() {
         sfc(paths::roms, "Game.sfc").put(romBytes)
         val manifest = manifest { game("g1", "SFC", "Game", JSONObject().put("favorite", true)) { item("rom", "Game.sfc", romBytes) } }
@@ -398,6 +421,32 @@ class IncomingTransferTest {
         assertEquals(listOf("offer1" to false), aborts)
         assertTrue(transfer.sweep(clock.now))
         assertTrue(temps().isEmpty())
+    }
+
+    @Test
+    fun `an upload in flight is not idleness`() {
+        val transfer = transfer()
+        var sweptMidUpload: Boolean? = null
+        val body = object : InputStream() {
+            private var sent = false
+            override fun read(): Int = throw UnsupportedOperationException()
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                if (sent) {
+                    // The file is in, still being written out: no byte arrives for a while.
+                    clock.now += ShareProtocol.IDLE_TIMEOUT_MS + 1
+                    sweptMidUpload = transfer.sweep(clock.now)
+                    return -1
+                }
+                sent = true
+                saveBytes.copyInto(b, off)
+                return saveBytes.size
+            }
+        }
+        transfer.handlePut("g1i2", body, saveBytes.size.toLong())
+        assertEquals(false, sweptMidUpload)
+        assertEquals(TransferStatus.RECEIVING, transfer.status.value)
+        clock.now += ShareProtocol.IDLE_TIMEOUT_MS + 1
+        assertTrue(transfer.sweep(clock.now))
     }
 
     @Test
