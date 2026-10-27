@@ -54,7 +54,7 @@ private const val GITHUB = "https://github.com/guilhermefeitosa66/OpenEmux"
 private const val REDDIT = "https://www.reddit.com/r/OpenEmux/"
 
 /** Where this fork's source is published, as the GPLv3 asks of the APK. */
-private val FORK_SOURCE: String? = "https://github.com/guilhermefeitosa66/open-emux-mobile"
+private val FORK_SOURCE: String? = "https://github.com/guilhermefeitosa66/openemux-android"
 
 @Composable
 private fun openUrl(): (String) -> Unit {
