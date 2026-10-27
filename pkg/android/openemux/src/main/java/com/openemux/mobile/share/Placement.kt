@@ -389,8 +389,9 @@ private class Planner(
 
     private fun fits(name: String) = name.toByteArray(Charsets.UTF_8).size + NAME_HEADROOM <= ShareProtocol.MAX_FILE_NAME_BYTES
 
+    /** [target] sits right in [base]: not through a link, not anywhere else. */
     private fun inside(target: File, base: File): Boolean = try {
-        target.canonicalFile.parentFile == base.canonicalFile
+        !Files.isSymbolicLink(target.toPath()) && target.canonicalFile.parentFile == base.canonicalFile
     } catch (_: IOException) {
         false
     }

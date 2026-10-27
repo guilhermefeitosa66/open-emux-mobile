@@ -9,7 +9,8 @@ import org.junit.Test
 
 /**
  * share_vectors.json is OpenEmux's tests/data/share_vectors.json, copied from
- * commit f11994d (issue 587's merge): both apps must reproduce it.
+ * commit c46bec0 (issue 588's merge, which added the manifest sample): both
+ * apps must reproduce it.
  */
 class VerificationTest {
     private val vectors = JSONObject(javaClass.getResource("/share_vectors.json")!!.readText()).getJSONArray("vectors")

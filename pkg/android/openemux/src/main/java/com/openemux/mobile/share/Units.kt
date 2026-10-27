@@ -92,7 +92,7 @@ object Units {
      */
     fun isBatterySave(name: String, stem: String, console: Console): Boolean {
         if (name.startsWith(".") || !name.startsWith("$stem.")) return false
-        val suffix = name.substring(stem.length + 1).substringAfterLast('.', "").lowercase()
+        val suffix = name.substring(stem.length).substringAfterLast('.').lowercase()
         if (suffix.isEmpty()) return false
         return suffix !in ART_SUFFIXES && suffix !in UNIT_SUFFIXES && suffix !in console.extensions
     }
