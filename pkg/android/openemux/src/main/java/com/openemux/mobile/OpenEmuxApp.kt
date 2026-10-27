@@ -14,6 +14,7 @@ import com.openemux.mobile.data.Paths
 import com.openemux.mobile.data.Setup
 import com.openemux.mobile.data.UpdateStore
 import com.openemux.mobile.launch.GameLauncher
+import com.openemux.mobile.share.ShareService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -43,6 +44,9 @@ class OpenEmuxApp : Application() {
         private set
     lateinit var backup: BackupManager
         private set
+
+    /** Share nearby. Created on first use; nothing listens until a screen starts it. */
+    val share: ShareService by lazy { ShareService.create(this) }
 
     override fun onCreate() {
         super.onCreate()
