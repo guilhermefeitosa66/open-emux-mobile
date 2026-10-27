@@ -37,10 +37,10 @@ class MainActivity : ComponentActivity() {
         // cover the text fields). The API 31+ system splash ignores the theme and is the system's to draw.
         setTheme(R.style.Theme_OpenEmux)
         super.onCreate(savedInstanceState)
-        // Before the window is attached, so the first frame is already full screen rather than animating into it;
-        // onResume hides the bars again, still before that first frame.
+        // Before the window is attached, so the first frame is already full screen rather than animating into it.
         val style = barStyle(Oe.dark)
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+        immersive()
         setContent {
             val dark = Oe.dark
             LaunchedEffect(dark) { barIcons(dark) }
@@ -97,7 +97,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // The first frame, a warm start or the way back from the game: all resume before focus arrives.
+        // A warm start or the way back from the game resumes before focus arrives: hide them already.
         immersive()
     }
 
