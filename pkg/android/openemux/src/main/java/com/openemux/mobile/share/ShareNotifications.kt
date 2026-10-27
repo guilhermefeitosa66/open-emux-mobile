@@ -113,6 +113,8 @@ class ShareNotifications(private val app: Context) : ShareNotifier {
     private fun withSkipped(done: String, result: ShareResult): String {
         val skipped = result.missing.size
         if (skipped == 0) return done
+        // Nothing arrived: "No Games Received", as the result card says, not "0 games received, 2 skipped".
+        if (result.games == 0) return context.getString(if (result.outgoing) R.string.share_result_sent_none else R.string.share_result_received_none)
         return context.getString(R.string.share_notif_done_skipped, done, context.resources.getQuantityString(R.plurals.share_notif_skipped, skipped, skipped))
     }
 

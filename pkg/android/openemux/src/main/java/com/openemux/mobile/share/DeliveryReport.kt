@@ -1,7 +1,5 @@
 package com.openemux.mobile.share
 
-import org.json.JSONObject
-
 /** A game that did not make it, as the result card lists it; [reason] is a [SkipReason], null when the peer gave none. */
 data class MissingGame(val title: String, val console: String, val reason: String?)
 
@@ -64,7 +62,7 @@ fun sendReport(built: BuiltManifest, excluded: List<ExcludedGame>, result: SendR
         val items = (0 until list.length()).map { list.getJSONObject(it) }
         // The main file first, so its answer is the reason shown.
         val (roms, others) = items.partition { it.getString("kind") == Item.ROM }
-        val romIds = roms.sortedByDescending(::isMainJson).map { it.getString("id") }
+        val romIds = roms.sortedByDescending { Item.isMainRom(Item.ROM, it) }.map { it.getString("id") }
         val otherIds = others.map { it.getString("id") }
         val romsSent = romIds.isNotEmpty() && romIds.all { it in sent }
         val romsThere = romIds.all { skipped[it] == SkipReason.EXISTS_SKIP }
@@ -78,5 +76,3 @@ fun sendReport(built: BuiltManifest, excluded: List<ExcludedGame>, result: SendR
     excluded.forEach { missing += MissingGame(it.title, it.console, it.reason) }
     return DeliveryReport(delivered, games.length() + excluded.size, missing)
 }
-
-private fun isMainJson(item: JSONObject) = (item.optJSONObject("part")?.optString("role") ?: Units.ROLE_MAIN) in Units.MAIN_ROLES

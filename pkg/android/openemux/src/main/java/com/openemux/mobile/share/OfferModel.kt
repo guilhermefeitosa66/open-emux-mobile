@@ -70,15 +70,19 @@ class OfferModel(
     /** The games whose multi-file ROM meets local files: one row each, on its main item. */
     private val unitConflicts = mutableSetOf<String>()
 
+    private val probeById: Map<String, Decision> = probe.decisions.associateBy { it.itemId }
+
     private val conflictsList: List<Conflict> = probe.decisions.filter { it.replaces != null }.mapNotNull { probed ->
         val art = probed.kind == Item.COVER || probed.kind == Item.LABEL
         if (probed.kind == Item.ROM && items[probed.itemId]?.partRole != null) {
             // Every part that exists here is probed; the unit is replaced or skipped whole, so one row stands for it.
             if (!unitConflicts.add(probed.gameId)) return@mapNotNull null
             val main = offer.manifest.games.first { it.id == probed.gameId }.items.first { it.isMainRom }
+            // The local main file's date when it clashes, so both dates are of the same file; else the clashing track's.
+            val yours = (probeById[main.id]?.replaces ?: probed.replaces!!).lastModified()
             return@mapNotNull Conflict(
                 main.id, Item.ROM, titles[probed.gameId].orEmpty(),
-                probed.replaces!!.lastModified(), (main.mtime * 1000).toLong(),
+                yours, (main.mtime * 1000).toLong(),
                 overrides[main.id] ?: Policy.SKIP, UNIT_POLICIES, unit = true,
             )
         }
@@ -96,7 +100,8 @@ class OfferModel(
     /** What the plan skips, the user's own choices and the conflicts aside (a conflicting unit's parts included). */
     val skipped: List<SkippedItem> = plan.decisions.filter { d ->
         !d.send && d.reason != SkipReason.USER_UNCHECKED && conflictsList.none { it.itemId == d.itemId } &&
-            !(d.kind == Item.ROM && d.gameId in unitConflicts)
+            // Only the skip the conflict row stands for: a unit kept out for another reason is still listed.
+            !(d.kind == Item.ROM && d.gameId in unitConflicts && d.reason == SkipReason.EXISTS_SKIP)
     }.map { SkippedItem(it.itemId, it.kind, titles[it.gameId].orEmpty(), it.reason!!) }
 
     /** States that no installed core can load. */

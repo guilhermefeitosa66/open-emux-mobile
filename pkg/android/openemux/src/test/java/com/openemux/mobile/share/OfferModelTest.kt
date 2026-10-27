@@ -118,6 +118,36 @@ class OfferModelTest {
     }
 
     @Test
+    fun `a disc game's date is its sheet file's when both clash, whatever the manifest order`() {
+        val ps = paths.roms(Console.PS)
+        File(ps, "Disc (Track 1).bin").put("my track", mtime = 1_500_000_000)
+        File(ps, "Disc.cue").put("my sheet", mtime = 1_600_000_000)
+        val (m, _) = model(manifest {
+            game("g1", "PS", "Disc") {
+                item("rom", "Disc (Track 1).bin", "t1".toByteArray(), role = "bin")
+                item("rom", "Disc.cue", "cue".toByteArray(), 1_700_000_100, role = "cue")
+            }
+        })
+        val unit = m.conflicts().single()
+        assertEquals("g1i2", unit.itemId)
+        assertEquals(1_600_000_000_000L, unit.yours)
+    }
+
+    @Test
+    fun `a disc game kept out for another reason is still listed as skipped`() {
+        File(paths.roms(Console.PS), "Disc.cue").put("my sheet")
+        val (m, planner) = model(discGame())
+        // A Replace the plan then cannot carry out is not hidden behind the conflict row.
+        val invalid = planner(mapOf("g1i1" to Policy.REPLACE)).also { p ->
+            p.games.single().decisions.replaceAll { it.copy(send = false, reason = SkipReason.INVALID_ITEM, replaces = null) }
+        }
+        val replaced = OfferModel(m.offer, invalid, planner(m.offer.manifest.items.associate { it.id to Policy.REPLACE }), mapOf("g1i1" to Policy.REPLACE), 0)
+        assertTrue(replaced.conflicts().single().unit)
+        // The sheet file is the row itself; its two tracks are listed with the reason.
+        assertEquals(setOf("g1i2", "g1i3"), replaced.skipped.filter { it.reason == SkipReason.INVALID_ITEM }.map { it.itemId }.toSet())
+    }
+
+    @Test
     fun `a single-file ROM conflict keeps every choice, keep both first`() {
         File(paths.roms(Console.SFC), "Game.sfc").put("mine")
         val (m, _) = model(manifest { game("g1", "SFC", "Game") { item("rom", "Game.sfc", "theirs".toByteArray()) } })

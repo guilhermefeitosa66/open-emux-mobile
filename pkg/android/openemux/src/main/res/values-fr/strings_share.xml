@@ -240,12 +240,12 @@
         <item quantity="other">Partager %1$d jeux à proximité</item>
     </plurals>
     <plurals name="share_result_received_partial">
-        <item quantity="one">%1$d jeu sur %2$d reçu</item>
-        <item quantity="other">%1$d jeux sur %2$d reçus</item>
+        <item quantity="one">%1$d sur %2$d jeu reçu</item>
+        <item quantity="other">%1$d sur %2$d jeux reçus</item>
     </plurals>
     <plurals name="share_result_sent_partial">
-        <item quantity="one">%1$d jeu sur %2$d envoyé</item>
-        <item quantity="other">%1$d jeux sur %2$d envoyés</item>
+        <item quantity="one">%1$d sur %2$d jeu envoyé</item>
+        <item quantity="other">%1$d sur %2$d jeux envoyés</item>
     </plurals>
     <plurals name="share_notif_skipped">
         <item quantity="one">%1$d ignoré</item>

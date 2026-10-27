@@ -31,7 +31,7 @@ class Item(
     val partRole: String? get() = json.optJSONObject("part")?.optString("role")
 
     /** The ROM a game is launched from: a single-file ROM, or a unit's cue, m3u or main file. */
-    val isMainRom: Boolean get() = kind == ROM && (partRole ?: Units.ROLE_MAIN) in Units.MAIN_ROLES
+    val isMainRom: Boolean get() = isMainRom(kind, json)
 
     companion object {
         const val ROM = "rom"
@@ -40,6 +40,10 @@ class Item(
         const val COVER = "cover"
         const val LABEL = "label"
         val KINDS = setOf(ROM, BATTERY_SAVE, STATE, COVER, LABEL)
+
+        /** [Item.isMainRom] for a manifest item still in its JSON form. */
+        fun isMainRom(kind: String, json: JSONObject): Boolean =
+            kind == ROM && (json.optJSONObject("part")?.optString("role") ?: Units.ROLE_MAIN) in Units.MAIN_ROLES
     }
 }
 
