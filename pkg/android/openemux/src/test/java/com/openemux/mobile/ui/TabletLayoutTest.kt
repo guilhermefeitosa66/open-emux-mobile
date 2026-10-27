@@ -56,7 +56,7 @@ class TabletLayoutTest {
         assertEquals(0, portrait.continueCount)
         assertEquals(SHELF_SIDE_DP, portrait.sidePadding)
         assertEquals(SHELF_GAP_DP, portrait.gap)
-        assertEquals(108f, portrait.cardHeight)
+        assertEquals(104f, portrait.cardHeight)
         assertFalse(portrait.recentlyAdded)
         // A phone on its side is Expanded wide but short: still the phone's shelf.
         assertEquals(portrait, shelfSpecOf(w(914f, 411f)))
@@ -65,7 +65,7 @@ class TabletLayoutTest {
     @Test
     fun expandedShelf() {
         val s = shelfSpecOf(w(1280f, 800f))
-        assertEquals(ShelfSpec(true, 3, 3, 168f, 16f, 40f, 32f, false), s)
+        assertEquals(ShelfSpec(true, 3, 3, 148f, 16f, 40f, 32f, false), s)
         // A tall Expanded window has no recently added row either: the boards do not draw one there.
         assertFalse(shelfSpecOf(w(1280f, 1000f)).recentlyAdded)
     }
@@ -73,7 +73,7 @@ class TabletLayoutTest {
     @Test
     fun mediumShelfAddsRecentlyAddedOnlyWhenTall() {
         val tall = shelfSpecOf(w(800f, 1280f))
-        assertEquals(ShelfSpec(true, 2, 2, 160f, 14f, 32f, 40f, true), tall)
+        assertEquals(ShelfSpec(true, 2, 2, 148f, 14f, 32f, 40f, true), tall)
         assertTrue(shelfSpecOf(w(744f, 1133f)).recentlyAdded)
         assertTrue(shelfSpecOf(w(744f, 900f)).recentlyAdded)
         assertFalse(shelfSpecOf(w(744f, 899f)).recentlyAdded)
@@ -90,7 +90,6 @@ class TabletLayoutTest {
         assertEquals(2, shelfColumns(664f, 2, 32f, 14f))
         // A narrow freeform window falls back to one.
         assertEquals(1, shelfColumns(520f, 2, 32f, 14f))
-        assertEquals(360f, cardWidthDp(1192f, 3, 40f, 16f), 0.01f)
     }
 
     @Test

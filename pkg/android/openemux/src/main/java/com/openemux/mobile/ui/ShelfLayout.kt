@@ -6,28 +6,22 @@ package com.openemux.mobile.ui
 const val SHELF_SIDE_DP = 20f
 const val SHELF_GAP_DP = 12f
 
-/** Below this a card cannot hold the icon, the name and the fan side by side. */
+/** Below this two cards side by side would squeeze the icon and the name. */
 const val SHELF_MIN_CARD_DP = 250f
 
-/** Below this the card uses the compact layout: the icon goes inline with the tag. */
-const val COMPACT_CARD_DP = 300f
+/**
+ * A shelf card's insides: the [box] the icon sits in (no fill of its own, only room), the console
+ * [icon] and the Favorites [star] in it, the name's size [nameSp] and the [startPadding] before the box.
+ */
+data class ShelfCardSpec(val box: Float, val icon: Float, val star: Float, val nameSp: Float, val startPadding: Float)
 
-/** The widest the fan of cartridges gets, which is how today's placements were drawn. */
-const val FAN_MAX_DP = 210f
-const val FAN_MIN_DP = 110f
+/** The icon is the card's hero: 64dp on a phone (a whole multiple of the 32 px bitmaps on 2x and 3x screens), 96dp on a tablet. */
+fun shelfCardSpec(tablet: Boolean): ShelfCardSpec =
+    if (tablet) ShelfCardSpec(112f, 96f, 62f, 24f, 20f) else ShelfCardSpec(76f, 64f, 42f, 20f, 16f)
 
 /** How many cards fit side by side in [widthDp], each at least [SHELF_MIN_CARD_DP] wide. */
 fun shelfColumns(widthDp: Float, maxColumns: Int = 2, side: Float = SHELF_SIDE_DP, gap: Float = SHELF_GAP_DP): Int =
     gridColumns(widthDp - 2 * side, SHELF_MIN_CARD_DP, gap, floor = 1).coerceAtMost(maxOf(1, maxColumns))
-
-/** The width of each card when [widthDp] holds [columns] of them. */
-fun cardWidthDp(widthDp: Float, columns: Int, side: Float = SHELF_SIDE_DP, gap: Float = SHELF_GAP_DP): Float =
-    (widthDp - 2 * side - gap * (columns - 1)) / columns
-
-/** The fan grows with the card, so a wide card has no empty middle. */
-fun fanWidthDp(cardWidthDp: Float): Float = (cardWidthDp * 0.42f).coerceIn(FAN_MIN_DP, FAN_MAX_DP)
-
-fun isCompactCard(cardWidthDp: Float): Boolean = cardWidthDp < COMPACT_CARD_DP
 
 /** A card on screen, in any unit, as the grid laid it out. */
 data class Slot<K>(val key: K, val x: Float, val y: Float, val width: Float, val height: Float)

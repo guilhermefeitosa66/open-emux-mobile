@@ -1,9 +1,7 @@
 package com.openemux.mobile.ui
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ShelfLayoutTest {
@@ -29,22 +27,13 @@ class ShelfLayoutTest {
     }
 
     @Test
-    fun cardWidthSharesTheRowAfterPaddingAndGaps() {
-        assertEquals(372f, cardWidthDp(412f, 1), 0.001f)
-        assertEquals(255f, cardWidthDp(562f, 2), 0.001f)
+    fun phoneCardIconIsTheHero() {
+        assertEquals(ShelfCardSpec(box = 76f, icon = 64f, star = 42f, nameSp = 20f, startPadding = 16f), shelfCardSpec(false))
     }
 
     @Test
-    fun fanIsClamped() {
-        assertEquals(FAN_MIN_DP, fanWidthDp(200f), 0.001f)
-        assertEquals(168f, fanWidthDp(400f), 0.001f)
-        assertEquals(FAN_MAX_DP, fanWidthDp(900f), 0.001f)
-    }
-
-    @Test
-    fun compactBelowThreshold() {
-        assertTrue(isCompactCard(299f))
-        assertFalse(isCompactCard(300f))
+    fun tabletCardIconIsLarger() {
+        assertEquals(ShelfCardSpec(box = 112f, icon = 96f, star = 62f, nameSp = 24f, startPadding = 20f), shelfCardSpec(true))
     }
 
     private val slots = listOf(

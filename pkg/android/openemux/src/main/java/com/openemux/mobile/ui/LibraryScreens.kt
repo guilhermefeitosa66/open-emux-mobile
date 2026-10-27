@@ -86,7 +86,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -185,7 +184,6 @@ fun ShelfScreen() {
     // The focused shelf keeps clear of the top and of the bars over the bottom.
     MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { BoxWithConstraints(Modifier.fillMaxSize().statusBarsPadding()) {
         val columns = shelfColumns(maxWidth.value, spec.maxColumns, spec.sidePadding, spec.gap)
-        val cardWidth = cardWidthDp(maxWidth.value, columns, spec.sidePadding, spec.gap).dp
         LazyVerticalGrid(
             GridCells.Fixed(columns),
             Modifier.fillMaxSize().holdFocusAtEnd(FocusDirection.Down),
@@ -264,8 +262,8 @@ fun ShelfScreen() {
                     val moveUp = stringResource(R.string.library_shelf_move_up)
                     val moveDown = stringResource(R.string.library_shelf_move_down)
                     ShelfCard(
-                        console, short, name, countString(R.plurals.library_games_count, list.size, list.size), list, background, ink, cardWidth,
-                        spec.cardHeight.dp, (spec.gap / 2).dp, if (spec.tablet) 24.dp else 22.dp,
+                        console, short, name, countString(R.plurals.library_games_count, list.size, list.size), background, ink,
+                        shelfCardSpec(spec.tablet), spec.cardHeight.dp, (spec.gap / 2).dp, if (spec.tablet) 24.dp else 22.dp,
                         Modifier
                             .then(if (isDragged) Modifier.zIndex(2f).graphicsLayer { translationX = dragOffset.x; translationY = dragOffset.y; scaleX = 1.03f; scaleY = 1.03f } else Modifier.animateItem())
                             .restorableFocus(filter, focusedShelf, initial = shelves.first().second == filter)
@@ -428,17 +426,12 @@ private fun Modifier.reorderGestures(onStart: () -> Unit, onDrag: (Offset) -> Un
     }
 }
 
-/** A console's shelf ([console] null: Favorites): icon, tag, name and count, then its three latest cartridges. */
+/** A console's shelf ([console] null: Favorites): its icon, large and straight on the card's colour, then tag, name and count. */
 @Composable
 private fun ShelfCard(
-    console: Console?, short: String, name: String, count: String, roms: List<Rom>, background: Brush, ink: Color, cardWidth: Dp,
+    console: Console?, short: String, name: String, count: String, background: Brush, ink: Color, card: ShelfCardSpec,
     height: Dp, spacing: Dp, corner: Dp, focus: Modifier, onClick: () -> Unit,
 ) {
-    val a = LocalActions.current
-    val fanWidth = fanWidthDp(cardWidth.value)
-    val compact = isCompactCard(cardWidth.value)
-    // The fan was placed on a 108dp card; a taller one keeps it in the middle.
-    val lift = ((height - 108.dp) / 2).coerceAtLeast(0.dp)
     Box(
         Modifier
             .padding(vertical = spacing)
@@ -450,45 +443,13 @@ private fun ShelfCard(
             .background(background)
             .clickable(role = Role.Button, onClick = onClick),
     ) {
-        val fan = roms.sortedByDescending { a.app.library.romMeta(it.key).lastPlayed }.take(3)
-        // Drawn for a 210dp fan; a narrower card scales its widths and end offsets (heights follow each cartridge's aspect), top offsets stay.
-        val scale = fanWidth / FAN_MAX_DP
-        val placements = listOf(Triple(92.dp, 26.dp, -9f), Triple(52.dp, 16.dp, -2f), Triple(8.dp, 30.dp, 7f))
-        // How far in from the end the cartridges actually reach: a shelf with one or two leaves the text more room.
-        var fanExtent = 0.dp
-        fan.forEachIndexed { i, rom ->
-            val (right, top, angle) = placements[i + (3 - fan.size)]
-            val w = when {
-                // Tall shells and boxes are sized by height, to stay inside the card.
-                rom.console.cartAspect < 1.2f -> 84.dp * rom.console.cartAspect
-                rom.console.cartAspect < 1.65f -> 100.dp
-                else -> 118.dp
-            }
-            fanExtent = maxOf(fanExtent, (right + w) * scale)
-            Box(Modifier.align(Alignment.TopEnd).padding(end = right * scale, top = top + lift).width(w * scale).rotate(angle)) {
-                Cartridge(rom.console, labelFor(rom), rom.title, a.app.library.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
-            }
-        }
         val tag = Type.Tag.copy(color = ink.copy(alpha = 0.72f), fontSize = 12.sp, letterSpacing = 1.sp)
-        // The text ends where the fan begins, so it never runs under the cartridges.
-        val textEnd = fanExtent + 8.dp
-        if (compact) {
-            Column(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(start = 14.dp, end = textEnd)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    ShelfIconTile(console, 24.dp, 8.dp, 18.dp, 14.dp)
-                    Text(short, style = tag, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.dp))
-                }
-                Text(name, style = Type.Title.copy(fontSize = 17.sp, lineHeight = 20.sp, color = ink), maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 2.dp))
+        Row(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(start = card.startPadding.dp, end = card.startPadding.dp), verticalAlignment = Alignment.CenterVertically) {
+            ShelfIconTile(console, card.box.dp, card.icon.dp, card.star.dp)
+            Column(Modifier.padding(start = 16.dp)) {
+                Text(short, style = tag, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(name, style = Type.Title.copy(fontSize = card.nameSp.sp, lineHeight = (card.nameSp + 3).sp, color = ink), maxLines = 2, overflow = TextOverflow.Ellipsis)
                 Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
-            }
-        } else {
-            Row(Modifier.align(Alignment.CenterStart).fillMaxWidth().padding(start = 16.dp, end = textEnd), verticalAlignment = Alignment.CenterVertically) {
-                ShelfIconTile(console, 40.dp, 12.dp, 28.dp, 20.dp)
-                Column(Modifier.padding(start = 12.dp)) {
-                    Text(short, style = tag, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Text(name, style = Type.Title.copy(fontSize = 19.sp, lineHeight = 22.sp, color = ink), maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text(count, style = Type.Small.copy(color = ink.copy(alpha = 0.78f)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 4.dp))
-                }
             }
         }
     }
@@ -630,13 +591,10 @@ private fun AddedCartridge(rom: Rom, modifier: Modifier, focus: Modifier) {
     }
 }
 
-/** The console's pixel icon (the star for Favorites) on a soft tile that reads on every shelf colour. */
+/** The console's pixel icon (the star for Favorites) in a [box] of room: no fill, the card's colour shows behind it. */
 @Composable
-private fun ShelfIconTile(console: Console?, size: Dp, corner: Dp, icon: Dp, star: Dp) {
-    Box(
-        Modifier.size(size).clip(RoundedCornerShape(corner)).background(Color.White.copy(alpha = if (Oe.dark) 0.16f else 0.62f)),
-        contentAlignment = Alignment.Center,
-    ) {
+private fun ShelfIconTile(console: Console?, box: Dp, icon: Dp, star: Dp) {
+    Box(Modifier.size(box), contentAlignment = Alignment.Center) {
         if (console == null) Icon(Icons.Star, Oe.Star, star, filled = true) else ConsoleIcon(console, icon)
     }
 }
