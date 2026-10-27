@@ -128,6 +128,20 @@
     <string name="share_result_failed_title">传输失败</string>
     <string name="share_result_lost_title">连接中断</string>
     <string name="share_result_lost_body">%1$s 停止了应答。</string>
+    <string name="share_result_received_partial_body">来自 %1$s。以下游戏没有添加：</string>
+    <string name="share_result_received_none">未接收任何游戏</string>
+    <string name="share_result_received_none_body">来自 %1$s。你的游戏库中没有添加新内容：</string>
+    <string name="share_result_sent_partial_body">%1$s 收到了其中 %2$d 个。以下游戏没有发送：</string>
+    <string name="share_result_sent_none">未发送任何游戏</string>
+    <string name="share_result_sent_none_body">%1$s 没有接收其中任何一个：</string>
+    <string name="share_result_not_received">未接收</string>
+    <string name="share_result_not_sent">未发送</string>
+    <string name="share_reason_sent_exists">%1$s 上已存在</string>
+    <string name="share_reason_sent_not_accepted">%1$s 未接受</string>
+    <string name="share_reason_sent_cant_place">%1$s 无法放置它</string>
+    <string name="share_reason_sent_unsupported">%1$s 不支持此主机</string>
+    <string name="share_conflicts_unit_note">由多个文件组成的游戏无法同时保留两份。请替换你的副本或跳过它。</string>
+    <string name="share_notif_done_skipped">%1$s，%2$s</string>
     <string name="share_error_busy">%1$s 正在进行另一项传输。请稍后再试。</string>
     <string name="share_error_no_space">没有足够的空间存放这些游戏。</string>
     <string name="share_error_source_changed">有文件在发送过程中发生了变化。请重试。</string>
@@ -192,9 +206,6 @@
     <plurals name="share_result_sent_title">
         <item quantity="other">已发送 %1$d 个游戏</item>
     </plurals>
-    <plurals name="share_result_skipped">
-        <item quantity="other">已跳过 %1$d 项</item>
-    </plurals>
     <plurals name="share_result_kept">
         <item quantity="other">保留了 %1$d 个存档（本机的较新）</item>
     </plurals>
@@ -209,5 +220,14 @@
     </plurals>
     <plurals name="library_share_selection">
         <item quantity="other">附近共享 %1$d 个游戏</item>
+    </plurals>
+    <plurals name="share_result_received_partial">
+        <item quantity="other">已接收 %1$d / %2$d 个游戏</item>
+    </plurals>
+    <plurals name="share_result_sent_partial">
+        <item quantity="other">已发送 %1$d / %2$d 个游戏</item>
+    </plurals>
+    <plurals name="share_notif_skipped">
+        <item quantity="other">跳过 %1$d 个</item>
     </plurals>
 </resources>

@@ -81,6 +81,52 @@ class OfferModelTest {
         assertEquals(5L, next.receivedAt)
     }
 
+    private fun discGame() = manifest {
+        game("g1", "PS", "Disc") {
+            item("rom", "Disc.cue", "cue".toByteArray(), 1_700_000_100, role = "cue")
+            item("rom", "Disc (Track 1).bin", "t1".toByteArray(), role = "bin")
+            item("rom", "Disc (Track 2).bin", "t2".toByteArray(), role = "bin")
+        }
+    }
+
+    @Test
+    fun `a disc game that meets local files is one conflict, replace or skip, skip first`() {
+        val ps = paths.roms(Console.PS)
+        File(ps, "Disc.cue").put("my sheet", mtime = 1_600_000_000)
+        File(ps, "Disc (Track 1).bin").put("my track")
+        val (m, planner) = model(discGame())
+        val unit = m.conflicts().single()
+        assertEquals(Conflict("g1i1", Item.ROM, "Disc", 1_600_000_000_000L, 1_700_000_100_000L, Policy.SKIP, OfferModel.UNIT_POLICIES, unit = true), unit)
+        // Its parts are neither rows of their own nor listed as skipped: the conflict row says it.
+        assertTrue(m.skipped.isEmpty())
+        assertTrue(m.plan.toSend().isEmpty())
+        val replaced = m.replan(planner, mapOf("g1i1" to Policy.REPLACE))
+        assertEquals(Policy.REPLACE, replaced.conflicts().single().policy)
+        assertEquals(3, replaced.plan.toSend().count { it.kind == Item.ROM })
+        assertEquals(File(ps, "Disc.cue"), replaced.plan.decisions.first().replaces)
+    }
+
+    @Test
+    fun `a disc game whose only clash is a track still shows on its sheet file`() {
+        File(paths.roms(Console.PS), "Disc (Track 2).bin").put("someone else's", mtime = 1_650_000_000)
+        val (m, _) = model(discGame())
+        val unit = m.conflicts().single()
+        assertEquals("g1i1", unit.itemId)
+        assertEquals(1_650_000_000_000L, unit.yours)
+        assertTrue(unit.unit)
+        assertTrue(m.skipped.isEmpty())
+    }
+
+    @Test
+    fun `a single-file ROM conflict keeps every choice, keep both first`() {
+        File(paths.roms(Console.SFC), "Game.sfc").put("mine")
+        val (m, _) = model(manifest { game("g1", "SFC", "Game") { item("rom", "Game.sfc", "theirs".toByteArray()) } })
+        val rom = m.conflicts().single()
+        assertEquals(Policy.KEEP_BOTH, rom.policy)
+        assertEquals(OfferModel.ALL_POLICIES, rom.allowed)
+        assertFalse(rom.unit)
+    }
+
     @Test
     fun `what is skipped is grouped by reason`() {
         File(paths.roms(Console.SFC), "Game.sfc").put("rom")

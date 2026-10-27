@@ -27,6 +27,12 @@ class Item(
     /** An unknown kind must be answered `skip`. */
     val knownKind: Boolean get() = kind in KINDS
 
+    /** Its role in a multi-file ROM unit (cue, bin, m3u...); null for a single-file ROM or any other kind. */
+    val partRole: String? get() = json.optJSONObject("part")?.optString("role")
+
+    /** The ROM a game is launched from: a single-file ROM, or a unit's cue, m3u or main file. */
+    val isMainRom: Boolean get() = kind == ROM && (partRole ?: Units.ROLE_MAIN) in Units.MAIN_ROLES
+
     companion object {
         const val ROM = "rom"
         const val BATTERY_SAVE = "battery_save"

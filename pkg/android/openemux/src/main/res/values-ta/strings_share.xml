@@ -128,6 +128,20 @@
     <string name="share_result_failed_title">பரிமாற்றம் தோல்வியடைந்தது</string>
     <string name="share_result_lost_title">இணைப்பு துண்டிக்கப்பட்டது</string>
     <string name="share_result_lost_body">%1$s பதிலளிப்பதை நிறுத்தியது.</string>
+    <string name="share_result_received_partial_body">%1$s-இடமிருந்து. இவை சேர்க்கப்படவில்லை:</string>
+    <string name="share_result_received_none">கேம்கள் எதுவும் பெறப்படவில்லை</string>
+    <string name="share_result_received_none_body">%1$s-இடமிருந்து. உங்கள் நூலகத்தில் புதிதாக எதுவும் சேர்க்கப்படவில்லை:</string>
+    <string name="share_result_sent_partial_body">%1$s-இடம் அவற்றில் %2$d உள்ளன. இவை அனுப்பப்படவில்லை:</string>
+    <string name="share_result_sent_none">கேம்கள் எதுவும் அனுப்பப்படவில்லை</string>
+    <string name="share_result_sent_none_body">%1$s இவற்றில் எதையும் ஏற்கவில்லை:</string>
+    <string name="share_result_not_received">பெறப்படாதவை</string>
+    <string name="share_result_not_sent">அனுப்பப்படாதவை</string>
+    <string name="share_reason_sent_exists">%1$s-இல் ஏற்கனவே உள்ளது</string>
+    <string name="share_reason_sent_not_accepted">%1$s-இல் ஏற்கப்படவில்லை</string>
+    <string name="share_reason_sent_cant_place">%1$s-ஆல் இதை வைக்க முடியவில்லை</string>
+    <string name="share_reason_sent_unsupported">%1$s இந்த கன்சோலை ஆதரிக்கவில்லை</string>
+    <string name="share_conflicts_unit_note">பல கோப்புகள் கொண்ட கேமை இரண்டு முறை வைத்திருக்க முடியாது. உங்களுடையதை மாற்றுங்கள் அல்லது தவிருங்கள்.</string>
+    <string name="share_notif_done_skipped">%1$s, %2$s</string>
     <string name="share_error_busy">%1$s வேறொரு பரிமாற்றத்தில் உள்ளது. சிறிது நேரத்தில் மீண்டும் முயலவும்.</string>
     <string name="share_error_no_space">இந்தக் கேம்களுக்குப் போதுமான இடம் இல்லை.</string>
     <string name="share_error_source_changed">வழங்கும்போது ஒரு கோப்பு மாறியது. மீண்டும் முயலவும்.</string>
@@ -205,10 +219,6 @@
         <item quantity="one">%1$d கேம் அனுப்பப்பட்டது</item>
         <item quantity="other">%1$d கேம்கள் அனுப்பப்பட்டன</item>
     </plurals>
-    <plurals name="share_result_skipped">
-        <item quantity="one">%1$d உருப்படி தவிர்க்கப்பட்டது</item>
-        <item quantity="other">%1$d உருப்படிகள் தவிர்க்கப்பட்டன</item>
-    </plurals>
     <plurals name="share_result_kept">
         <item quantity="one">%1$d சேமிப்பு வைக்கப்பட்டது (உங்களுடையது புதியது)</item>
         <item quantity="other">%1$d சேமிப்புகள் வைக்கப்பட்டன (உங்களுடையவை புதியவை)</item>
@@ -228,5 +238,17 @@
     <plurals name="library_share_selection">
         <item quantity="one">%1$d கேமை அருகில் பகிர்</item>
         <item quantity="other">%1$d கேம்களை அருகில் பகிர்</item>
+    </plurals>
+    <plurals name="share_result_received_partial">
+        <item quantity="one">%2$d-இல் %1$d கேம் பெறப்பட்டது</item>
+        <item quantity="other">%2$d-இல் %1$d கேம்கள் பெறப்பட்டன</item>
+    </plurals>
+    <plurals name="share_result_sent_partial">
+        <item quantity="one">%2$d-இல் %1$d கேம் அனுப்பப்பட்டது</item>
+        <item quantity="other">%2$d-இல் %1$d கேம்கள் அனுப்பப்பட்டன</item>
+    </plurals>
+    <plurals name="share_notif_skipped">
+        <item quantity="one">%1$d தவிர்க்கப்பட்டது</item>
+        <item quantity="other">%1$d தவிர்க்கப்பட்டன</item>
     </plurals>
 </resources>
