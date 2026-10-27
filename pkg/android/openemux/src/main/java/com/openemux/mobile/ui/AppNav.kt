@@ -73,6 +73,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
 import com.openemux.mobile.share.ShareEvent
@@ -261,11 +264,17 @@ private fun ShareLinks() {
     val a = LocalActions.current
     val context = LocalContext.current
     val share = a.app.shareCoordinator
-    val link by share.link.collectAsState()
-    LaunchedEffect(link) {
-        val uri = link ?: return@LaunchedEffect
-        share.link.value = null
-        a.nav.navigate(Routes.shareAddress(uri)) { launchSingleTop = true }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    // Only the activity in front takes a link: one stopped behind it would navigate where nobody sees.
+    LaunchedEffect(share) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            share.link.collect { uri ->
+                if (uri != null) {
+                    share.link.value = null
+                    a.nav.navigate(Routes.shareAddress(uri)) { launchSingleTop = true }
+                }
+            }
+        }
     }
     LaunchedEffect(share) {
         share.events.collect { event ->

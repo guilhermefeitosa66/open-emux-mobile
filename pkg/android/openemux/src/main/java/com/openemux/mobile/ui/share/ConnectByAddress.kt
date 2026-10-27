@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openemux.mobile.share.ConnectOutcome
+import com.openemux.mobile.share.ShareAddress
 import com.openemux.mobile.share.ShareFormat
 import com.openemux.mobile.share.qrBitmap
 import com.openemux.mobile.ui.BackLink
@@ -149,8 +150,10 @@ fun ConnectByAddressScreen(initial: String) {
                     keyboardActions = KeyboardActions(onGo = { connect() }),
                 )
                 if (error != null) {
+                    // The address as host:port, not the whole link it may have come in.
+                    val shown = runCatching { ShareAddress.parse(text).let { "${it.host}:${it.port}" } }.getOrDefault(text.trim())
                     Text(
-                        messageText(error, text.trim(), outcome?.peerVersion),
+                        messageText(error, shown, outcome?.peerVersion),
                         style = Type.Small.copy(color = Oe.Danger),
                         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Assertive },
                     )

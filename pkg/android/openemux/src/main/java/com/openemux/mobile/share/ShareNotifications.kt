@@ -119,7 +119,8 @@ class ShareNotifications(private val app: Context) : ShareNotifier {
 
     private fun openApp(request: Int): PendingIntent = PendingIntent.getActivity(
         app, request,
-        Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        // Brings the library forward without closing a game above it.
+        Intent(app, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
             .putExtra(EXTRA_OPEN_OFFER, true),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
