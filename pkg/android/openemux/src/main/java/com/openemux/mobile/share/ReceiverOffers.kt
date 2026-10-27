@@ -131,6 +131,14 @@ class ReceiverOffers(
     fun answer(offerId: String, accepted: Boolean, answers: List<ItemAnswer> = emptyList()) {
         val offer = live(offerId)
         if (offer.status != Status.PENDING) throw ShareError.badRequest("offer is not waiting for an answer")
+        if (accepted) {
+            val items = offer.manifest.items.associateBy { it.id }
+            for (answer in answers) {
+                val item = items[answer.id] ?: throw ShareError.badRequest("no item ${answer.id} in the manifest")
+                if (answer.action != ItemAnswer.SEND && answer.action != ItemAnswer.SKIP) throw ShareError.badRequest("bad action ${answer.action}")
+                if (answer.action == ItemAnswer.SEND && !item.knownKind) throw ShareError.badRequest("an unknown kind must be skipped")
+            }
+        }
         offer.answers = if (accepted) answers else emptyList()
         offer.finish(if (accepted) Status.ACCEPTED else Status.DECLINED, clock())
     }

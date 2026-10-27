@@ -79,12 +79,11 @@ class IdentityStore(
         val fresh = Stored(newId(), stored?.name)
         val made = try {
             backend.delete(ALIAS)
-            backend.generate(ALIAS, DeviceIdentity.subjectCn(fresh.id))
+            backend.generate(ALIAS, DeviceIdentity.subjectCn(fresh.id)).also { write(fresh) }
         } catch (e: Exception) {
-            Log.w(TAG, "share identity: key generation failed", e)
+            Log.w(TAG, "share identity: could not be created", e)
             throw ShareError(ErrorCode.UNAVAILABLE, "keystore", mapOf("reason" to "keystore"))
         }
-        write(fresh)
         return identity(fresh, made)
     }
 

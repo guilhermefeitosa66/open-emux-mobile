@@ -80,9 +80,19 @@ class MulticastBeaconSocket : BeaconSocket {
     // The send loop and stop()'s bye both come through here.
     @Synchronized
     override fun sendToAll(data: ByteArray) {
-        for (iface in interfaces()) {
+        val current = interfaces()
+        // An interface that went down lost its membership: join again when it is back.
+        joined.retainAll(current.map { it.name }.toSet())
+        for (iface in current) {
+            if (iface.name !in joined) {
+                try {
+                    socket.joinGroup(InetSocketAddress(group, ShareProtocol.BEACON_PORT), iface)
+                    joined += iface.name
+                } catch (e: IOException) {
+                    Log.d(TAG, "beacon: ${iface.name} join failed (${e.message})")
+                }
+            }
             try {
-                if (joined.add(iface.name)) socket.joinGroup(InetSocketAddress(group, ShareProtocol.BEACON_PORT), iface)
                 socket.networkInterface = iface
                 socket.send(DatagramPacket(data, data.size, group, ShareProtocol.BEACON_PORT))
             } catch (e: IOException) {

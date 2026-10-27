@@ -47,7 +47,7 @@ object ManifestParser {
             val title = string(game, "title", "game")
             if (!gameIds.add(id)) throw bad("duplicate game id")
             val rawItems = game.opt("items") as? JSONArray ?: throw bad("game.items must be a list")
-            val metadata = game.opt("metadata")
+            val metadata = game.opt("metadata").takeUnless { it == JSONObject.NULL }
             if (metadata != null && metadata !is JSONObject) throw bad("game.metadata must be an object")
             val items = (0 until rawItems.length()).map {
                 count++
@@ -82,7 +82,7 @@ object ManifestParser {
             is Number -> value.toDouble().takeIf { it.isFinite() }
             else -> null
         } ?: throw bad("item.mtime must be a number")
-        val sha256 = item.opt("sha256")
+        val sha256 = item.opt("sha256").takeUnless { it == JSONObject.NULL }
         if (sha256 != null && !isHex((sha256 as? String)?.lowercase(), 64)) throw bad("item.sha256 must be 64 hex characters")
         return Item(id, kind, name as String, size, mtime, (sha256 as String?)?.lowercase(), item)
     }

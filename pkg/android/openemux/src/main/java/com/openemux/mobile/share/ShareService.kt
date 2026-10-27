@@ -54,25 +54,30 @@ class ShareService(
     private val store by lazy(identityStore)
 
     /** Checked before TLS or the Keystore is touched: TLS 1.3 needs Android 10. */
-    fun availability(): ShareAvailability {
-        if (sdkInt < MIN_SDK) return ShareAvailability.Unavailable(REASON_TLS13)
+    fun availability(): ShareAvailability = try {
+        availableIdentity()
+        ShareAvailability.Available
+    } catch (e: ShareError) {
+        ShareAvailability.Unavailable(e.details["reason"] as? String ?: REASON_KEYSTORE)
+    }
+
+    /** The identity, or `unavailable` with the reason: the SDK first, then the Keystore. */
+    private fun availableIdentity(): DeviceIdentity {
+        if (sdkInt < MIN_SDK) throw unavailable(REASON_TLS13)
         return try {
             loadIdentity()
-            ShareAvailability.Available
         } catch (_: ShareError) {
-            ShareAvailability.Unavailable(REASON_KEYSTORE)
+            throw unavailable(REASON_KEYSTORE)
         }
     }
+
+    private fun unavailable(reason: String) = ShareError(ErrorCode.UNAVAILABLE, reason, mapOf("reason" to reason))
 
     /** Listens and becomes discoverable; `unavailable` when this install cannot. */
     @Synchronized
     fun start() {
         if (server != null) return
-        when (val availability = availability()) {
-            is ShareAvailability.Unavailable -> throw ShareError(ErrorCode.UNAVAILABLE, availability.reason, mapOf("reason" to availability.reason))
-            ShareAvailability.Available -> Unit
-        }
-        val identity = loadIdentity()
+        val identity = availableIdentity()
         val server = newServer(identity)
         server.listener = object : IncomingOfferListener {
             override fun onOffer(offer: IncomingOffer) {
@@ -84,8 +89,13 @@ class ShareService(
             }
         }
         val port = server.start()
-        val discovery = newDiscovery(identity.id) { _peers.value = it }
-        discovery.start(identity.announcement(port))
+        val discovery = try {
+            newDiscovery(identity.id) { _peers.value = it }.also { it.start(identity.announcement(port)) }
+        } catch (e: Exception) {
+            // Not kept anywhere yet: a server left listening here would never be stopped.
+            server.stop()
+            throw e
+        }
         _discoveryState.value = discovery.state.value
         this.server = server
         this.discovery = discovery

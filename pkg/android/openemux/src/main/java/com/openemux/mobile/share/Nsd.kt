@@ -14,7 +14,8 @@ object NsdTxt {
 
     fun attributes(announcement: Announcement): Map<String, String> = mapOf(
         "id" to announcement.id,
-        "name" to announcement.name,
+        // Android refuses a TXT entry of 255 bytes or more (key, `=` and value): 64 four-byte characters would be.
+        "name" to cutUtf8(announcement.name, MAX_TXT_ENTRY_BYTES - "name=".length),
         "pf" to announcement.platform,
         "v" to announcement.versions.max.toString(),
         "vmin" to announcement.versions.min.toString(),
@@ -30,6 +31,8 @@ object NsdTxt {
         if (!isDeviceId(id) || !isFingerprint(fp)) return null
         return Announcement.of(id!!, txt["name"], txt["pf"], txt["v"], txt["vmin"], checkedPort, fp!!)
     }
+
+    private const val MAX_TXT_ENTRY_BYTES = 254
 
     internal fun cutUtf8(text: String, maxBytes: Int): String {
         var bytes = 0

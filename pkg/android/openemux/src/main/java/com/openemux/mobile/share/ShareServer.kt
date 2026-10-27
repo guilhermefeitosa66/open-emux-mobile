@@ -80,9 +80,17 @@ class ShareServer(
         val socket = context.serverSocketFactory.createServerSocket() as SSLServerSocket
         socket.reuseAddress = true
         try {
-            socket.bind(bindAddress?.let { InetSocketAddress(it.address, preferredPort) } ?: InetSocketAddress(preferredPort))
-        } catch (_: IOException) {
-            socket.bind(bindAddress?.let { InetSocketAddress(it.address, 0) } ?: InetSocketAddress(0))
+            try {
+                socket.bind(bindAddress?.let { InetSocketAddress(it.address, preferredPort) } ?: InetSocketAddress(preferredPort))
+            } catch (_: IOException) {
+                socket.bind(bindAddress?.let { InetSocketAddress(it.address, 0) } ?: InetSocketAddress(0))
+            }
+        } catch (e: IOException) {
+            try {
+                socket.close()
+            } catch (_: IOException) {
+            }
+            throw e
         }
         socket.enabledProtocols = arrayOf(ShareProtocol.TLS_PROTOCOL)
         socket.needClientAuth = false
@@ -134,16 +142,18 @@ class ShareServer(
                 break
             }
             try {
-                pool.execute { serve(client as SSLSocket) }
+                pool.execute { serve(client as SSLSocket, server) }
             } catch (_: RejectedExecutionException) {
                 closeQuietly(client)
             }
         }
     }
 
-    private fun serve(socket: SSLSocket) {
+    private fun serve(socket: SSLSocket, server: ServerSocket) {
         connections += socket
         try {
+            // stop() closes the server before it closes the connections: one added after that is closed here.
+            if (server.isClosed) return
             socket.soTimeout = ShareProtocol.CONNECT_TIMEOUT_MS
             socket.startHandshake()
             socket.soTimeout = ShareProtocol.IDLE_TIMEOUT_MS

@@ -3,6 +3,7 @@ package com.openemux.mobile.share
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class NsdTxtTest {
@@ -46,5 +47,12 @@ class NsdTxtTest {
         assertEquals("ü".repeat(31), long)
         val emoji = NsdTxt.instanceName("a" + "😀".repeat(20), id)
         assertEquals(61, emoji.toByteArray().size)
+    }
+
+    @Test
+    fun `the name entry stays under the 255 bytes Android allows a TXT entry`() {
+        val name = NsdTxt.attributes(announcement.copy(name = "😀".repeat(64)))["name"]!!
+        assertTrue("name=".length + name.toByteArray().size < 255)
+        assertEquals("😀".repeat(62), name)
     }
 }

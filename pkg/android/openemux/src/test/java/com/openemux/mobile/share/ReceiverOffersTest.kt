@@ -59,6 +59,20 @@ class ReceiverOffersTest {
     }
 
     @Test
+    fun `an answer naming no manifest item, a bad action or sending an unknown kind is refused`() {
+        val unknownKind = manifest().apply {
+            getJSONArray("games").getJSONObject(0).getJSONArray("items").getJSONObject(1).put("kind", "movie")
+        }
+        val id = offers.create(body().put("manifest", unknownKind)).getString("offer_id")
+        reveal(id)
+        assertEquals(ErrorCode.BAD_REQUEST, code { offers.answer(id, true, listOf(ItemAnswer.send("nope"))) })
+        assertEquals(ErrorCode.BAD_REQUEST, code { offers.answer(id, true, listOf(ItemAnswer("i1", "maybe"))) })
+        assertEquals(ErrorCode.BAD_REQUEST, code { offers.answer(id, true, listOf(ItemAnswer.send("i2"))) })
+        offers.answer(id, true, listOf(ItemAnswer.send("i1"), ItemAnswer.skip("i2", "user_unchecked")))
+        assertEquals("accepted", offers.poll(id).getString("status"))
+    }
+
+    @Test
     fun `malformed offers are bad requests`() {
         assertEquals(ErrorCode.BAD_REQUEST, code { offers.create(JSONObject()) })
         assertEquals(ErrorCode.BAD_REQUEST, code { offers.create(body().apply { getJSONObject("sender").put("id", "x") }) })

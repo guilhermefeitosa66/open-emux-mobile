@@ -4,6 +4,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -68,6 +69,17 @@ class ManifestParserTest {
         assertBad(withItem { put("mtime", "now") })
         assertBad(withItem { put("sha256", "abc") })
         assertBad(sample().apply { getJSONArray("games").getJSONObject(0).getJSONArray("items").put(5) })
+    }
+
+    @Test
+    fun `optional fields written as null count as absent`() {
+        val json = sample()
+        val game = json.getJSONArray("games").getJSONObject(0)
+        game.put("metadata", JSONObject.NULL)
+        game.getJSONArray("items").getJSONObject(0).put("sha256", JSONObject.NULL)
+        val manifest = ManifestParser.parse(json)
+        assertNull(manifest.games[0].metadata)
+        assertNull(manifest.items[0].sha256)
     }
 
     @Test
