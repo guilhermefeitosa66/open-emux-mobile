@@ -95,6 +95,13 @@ command interface (`network_cmd_enable`, UDP 127.0.0.1:55355):
 engine polls it on its own thread, paused or not. The sheet's window is
 not focusable, because an unfocused engine stops polling.
 
+One command is OpenEmux's own: `OVERLAY_LOAD <absolute path>` (`command.c`)
+loads another overlay file while the core runs. When the game's window
+changes size (a Fold unfolded, split screen, a free-form resize),
+`GameActivity` redraws the skin for the new window into a fresh
+`launch/current/skin-<n>` directory and swaps it in with it; RetroArch
+behaves as before when the command is never sent.
+
 ### Controller skin
 
 `data/Skin.kt` holds each console's skin as the design draws it: a layout

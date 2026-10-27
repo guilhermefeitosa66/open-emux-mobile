@@ -8,6 +8,9 @@ import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
 import android.graphics.Typeface
+import android.view.WindowInsets
+import android.view.WindowMetrics
+import androidx.annotation.RequiresApi
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.PathParser
 import com.openemux.mobile.data.Console
@@ -27,6 +30,38 @@ import com.openemux.mobile.data.skin
 import com.openemux.mobile.ui.Icons
 import com.retroarch.R
 import java.io.File
+import kotlin.math.abs
+
+/**
+ * The window a skin is drawn for: its short and long sides and the camera
+ * cutout's depth. A rotation keeps it (the skin holds both orientations);
+ * unfolding a Fold, split screen or a free-form resize changes it.
+ */
+data class SkinSize(val short: Int, val long: Int, val cutout: Int) {
+    /** A few px either way is inset jitter, not a new window. */
+    fun differs(other: SkinSize?, tolerance: Int = 8): Boolean = other == null ||
+        abs(short - other.short) > tolerance || abs(long - other.long) > tolerance || abs(cutout - other.cutout) > tolerance
+
+    override fun toString() = "${short}x${long}x$cutout"
+
+    companion object {
+        /**
+         * The cutout is the deeper of the two short-edge insets: top or bottom in portrait (upside down puts
+         * it at the bottom), left or right in landscape. Any of the four rotations then gives the same size.
+         */
+        @RequiresApi(30)
+        fun of(metrics: WindowMetrics): SkinSize {
+            val bounds = metrics.bounds
+            val inset = metrics.windowInsets.getInsetsIgnoringVisibility(WindowInsets.Type.displayCutout())
+            val cutout = if (bounds.height() >= bounds.width()) maxOf(inset.top, inset.bottom) else maxOf(inset.left, inset.right)
+            return SkinSize(minOf(bounds.width(), bounds.height()), maxOf(bounds.width(), bounds.height()), cutout)
+        }
+
+        /** Exactly three numbers: a malformed piece is not skipped over. */
+        fun parse(text: String?): SkinSize? = text?.split('x')?.takeIf { it.size == 3 }
+            ?.map { it.toIntOrNull() ?: return null }?.let { (s, l, c) -> SkinSize(s, l, c) }
+    }
+}
 
 /**
  * Draws the console's controller skin (data/Skin.kt, the design's skin
@@ -51,11 +86,13 @@ class SkinRenderer(private val context: Context) {
      * [hardcore] greys out the strip's fast forward and takes its touch area away:
      * the engine still fast-forwards in RetroAchievements hardcore, the app does not offer it.
      * [density] picks the shape: a window 600dp or more across its short side draws the tablet skin (SkinGeometry).
+     * [first] is the overlay RetroArch opens on, when the skin has one of that name:
+     * a skin redrawn in game keeps the one that was shown.
      */
     fun render(
         console: Console, width: Int, height: Int, outDir: File, cutout: Int = 0,
         ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false, coreId: String? = null,
-        density: Float,
+        density: Float, first: String? = null,
     ): File {
         outDir.mkdirs()
         val skin = console.skin.forCore(coreId)
@@ -88,6 +125,7 @@ class SkinRenderer(private val context: Context) {
                 specs += Spec("keypad-landscape", false, console.gameAspect, "keypad-portrait", keypadOpen = true)
             }
         }
+        if (first != null && specs.any { it.name == first }) specs.sortBy { if (it.name == first) 0 else 1 }
         val cfg = StringBuilder()
         cfg.append("overlays = ${specs.size}\n")
         specs.forEachIndexed { i, spec ->
@@ -115,6 +153,13 @@ class SkinRenderer(private val context: Context) {
         file.writeText(cfg.toString())
         return file
     }
+
+    /** The launcher and the game draw the skin for a window the same way. */
+    fun render(
+        console: Console, size: SkinSize, outDir: File,
+        ndsLayouts: Pair<ScreenLayout, ScreenLayout>? = null, hardcore: Boolean = false, coreId: String? = null,
+        density: Float, first: String? = null,
+    ): File = render(console, size.short, size.long, outDir, size.cutout, ndsLayouts, hardcore, coreId, density, first)
 
     /**
      * One orientation, drawn in the design's units (its phone frame is 390

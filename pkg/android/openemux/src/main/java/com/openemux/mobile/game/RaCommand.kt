@@ -17,6 +17,10 @@ object GameExtras {
     const val CORE_NAME = "OE_CORE_NAME"
     const val LOAD_SLOT = "OE_LOAD_SLOT"
     const val HARDCORE = "OE_HARDCORE"
+    const val LAUNCH_DIR = "OE_LAUNCH_DIR"
+    const val SKIN_SIZE = "OE_SKIN_SIZE"
+    const val SKINS_BASE = "OE_SKINS_BASE"
+    const val CORE_ID = "OE_CORE_ID"
 }
 
 /**
@@ -59,6 +63,10 @@ object RaCommand {
 
     /** True only on a reply saying the content runs: no reply (a timeout) is not taken as running. */
     fun isPlaying(): Boolean = ask("GET_STATUS")?.startsWith("GET_STATUS PLAYING") == true
+
+    /** Content is up, playing or paused; no reply is not taken as running. */
+    fun isRunning(timeoutMs: Int = 400): Boolean = ask("GET_STATUS", timeoutMs)
+        ?.let { it.startsWith("GET_STATUS PLAYING") || it.startsWith("GET_STATUS PAUSED") } == true
 
     fun resume() {
         if (isPaused()) send("PAUSE_TOGGLE")

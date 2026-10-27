@@ -46,10 +46,13 @@ class ImportedSkinRenderer {
             RectF(ox + x.toFloat() * s, oy + y.toFloat() * s, ox + (x + w).toFloat() * s, oy + (y + h).toFloat() * s)
     }
 
-    /** [tablet] picks the skin's iPad art over its iPhone art; [hardcore] leaves fast forward out. */
+    /**
+     * [tablet] picks the skin's iPad art over its iPhone art; [hardcore] leaves fast forward out.
+     * [first] ("portrait" or "landscape") is the overlay RetroArch opens on: a skin redrawn in game keeps the one shown.
+     */
     fun render(
         skinFile: File, console: Console, width: Int, height: Int, outDir: File,
-        cutout: Int = 0, tablet: Boolean = false, hardcore: Boolean = false,
+        cutout: Int = 0, tablet: Boolean = false, hardcore: Boolean = false, first: String? = null,
     ): File {
         this.console = console
         this.hardcore = hardcore
@@ -66,7 +69,8 @@ class ImportedSkinRenderer {
             val reps = info.getJSONObject("representations")
 
             val cfg = StringBuilder("overlays = 2\n")
-            listOf("portrait" to "landscape", "landscape" to "portrait").forEachIndexed { i, (orient, other) ->
+            val orients = listOf("portrait" to "landscape", "landscape" to "portrait")
+            (if (first == "landscape") orients.reversed() else orients).forEachIndexed { i, (orient, other) ->
                 val rep = representation(reps, orient, tablet)
                 val portrait = orient == "portrait"
                 val w = if (portrait) portraitW else portraitH
