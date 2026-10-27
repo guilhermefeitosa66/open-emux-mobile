@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Share nearby (#591): the share screens, the incoming offer, the transfer and its notifications. -->
+    <string name="share_title">அருகில் பகிர்</string>
+    <string name="share_receive_title">கேம்களைப் பெறு</string>
+    <string name="share_receive_subtitle">பெறத் தயார். மற்ற சாதனத்தில் அருகில் பகிர் என்பதைத் திறக்கவும்.</string>
+    <string name="share_items_title">எதை அனுப்புவது</string>
+    <string name="share_items_none">எதுவும் தேர்ந்தெடுக்கப்படவில்லை</string>
+    <string name="share_what_two">%1$s மற்றும் %2$s</string>
+    <string name="share_devices">இந்த நெட்வொர்க்கில் உள்ள சாதனங்கள்</string>
+    <string name="share_device_subtitle">%1$s · %2$s மூலம் கண்டறியப்பட்டது</string>
+    <string name="share_device_incompatible">%1$s · இந்தச் சாதனத்தில் OpenEmux-ஐப் புதுப்பிக்கவும்</string>
+    <string name="share_device_versions">பதிப்பு %1$s, இது %2$s பேசுகிறது</string>
+    <string name="share_platform_desktop">கணினி</string>
+    <string name="share_platform_phone">தொலைபேசி</string>
+    <string name="share_platform_tablet">டேப்லெட்</string>
+    <string name="share_path_mdns">mDNS</string>
+    <string name="share_path_beacon">பீக்கன்</string>
+    <string name="share_path_manual">முகவரி</string>
+    <string name="share_paths_and">%1$s மற்றும் %2$s</string>
+    <string name="share_this_device">இந்தச் சாதனம்</string>
+    <string name="share_visible_as">“%1$s” எனத் தெரியும்</string>
+    <string name="share_visible_hint">இந்தத் திரை திறந்திருக்கும் வரை. அமைப்புகளில் பெயரை மாற்றலாம்.</string>
+    <string name="share_choose_something">அனுப்ப குறைந்தது ஒன்றைத் தேர்ந்தெடுக்கவும்.</string>
+    <string name="share_preparing">தயாராகிறது…</string>
+    <string name="share_hint_send">அனுப்பு</string>
+    <string name="share_hint_toggle">குறி</string>
+    <string name="share_hint_toggle_game">முழு கேம்</string>
+    <string name="share_done">முடிந்தது</string>
+    <string name="share_items_game">கேம்</string>
+    <string name="share_items_save">பேட்டரி சேமிப்பு</string>
+    <string name="share_items_states">சேமித்த நிலைகள்</string>
+    <string name="share_items_states_n">சேமித்த நிலைகள் (%1$d)</string>
+    <string name="share_items_states_hint">மற்ற சாதனத்தின் கோர் ஏற்றக்கூடியவை மட்டும்</string>
+    <string name="share_items_cover">அட்டை</string>
+    <string name="share_items_label">கார்ட்ரிட்ஜ் லேபிள்</string>
+    <string name="share_items_details">நூலக விவரங்கள்</string>
+    <string name="share_items_details_hint">பிடித்தது, கார்ட்ரிட்ஜ் நிறம், கோர், ஷேடர், விளையாடிய நேரம்</string>
+    <string name="share_items_expand">உருப்படிகளைக் காட்டு</string>
+    <string name="share_items_collapse">உருப்படிகளை மறை</string>
+    <string name="share_reason_exists">ஏற்கனவே உள்ளது</string>
+    <string name="share_reason_incompatible_state">இந்தச் சாதனத்தில் இல்லாத கோரால் உருவாக்கப்பட்டது</string>
+    <string name="share_reason_unsupported">ஆதரிக்கப்படாத கன்சோல்</string>
+    <string name="share_reason_unchecked">விலக்கப்பட்டது</string>
+    <string name="share_reason_invalid">பாதுகாப்பாக அனுப்ப முடியாது</string>
+    <string name="share_reason_no_space">போதுமான இடம் இல்லை</string>
+    <string name="share_reason_unit_incomplete">அதன் சில கோப்புகள் இல்லை</string>
+    <string name="share_reason_too_many">ஒரே நேரத்தில் அதிகமான கோப்புகள்</string>
+    <string name="share_reason_generic">தவிர்க்கப்பட்டது</string>
+    <string name="share_kind_rom">கேம்</string>
+    <string name="share_kind_save">பேட்டரி சேமிப்பு</string>
+    <string name="share_kind_state">சேமித்த நிலை</string>
+    <string name="share_kind_cover">அட்டை</string>
+    <string name="share_kind_label">கார்ட்ரிட்ஜ் லேபிள்</string>
+    <string name="share_address_title">முகவரி மூலம் இணை</string>
+    <string name="share_address_other">மற்றொரு சாதனம்</string>
+    <string name="share_address_qr">இந்தச் சாதனத்தின் முகவரி கொண்ட QR குறியீடு</string>
+    <string name="share_address_copy">முகவரியை நகலெடு</string>
+    <string name="share_address_copied">முகவரி நகலெடுக்கப்பட்டது</string>
+    <string name="share_address_scan_hint">மற்ற சாதனத்தில் OpenEmux மூலம் இதை ஸ்கேன் செய்யவும், அல்லது அங்கே முகவரியைத் தட்டச்சு செய்யவும்.</string>
+    <string name="share_address_label">முகவரி</string>
+    <string name="share_address_camera_hint">அல்லது மற்ற சாதனத் திரையில் உள்ள குறியீட்டை நோக்கி கேமரா ஆப்பைக் காட்டவும்.</string>
+    <string name="share_address_connect">இணை</string>
+    <string name="share_address_err_parse">இது முகவரி போல் தெரியவில்லை.</string>
+    <string name="share_address_err_reach">%1$s-ஐ அடைய முடியவில்லை. அது அதே நெட்வொர்க்கில் உள்ளதா எனச் சரிபார்க்கவும்.</string>
+    <string name="share_address_err_identity">அந்தச் சாதனம் வேறு அடையாளத்துடன் பதிலளித்தது. முகவரியைச் சரிபார்க்கவும்.</string>
+    <string name="share_address_err_version">அந்தச் சாதனம் OpenEmux-இன் வேறு பதிப்பை இயக்குகிறது (பதிப்பு %1$s, இது %2$s பேசுகிறது).</string>
+    <string name="share_empty_title">சாதனங்கள் எதுவும் இல்லை</string>
+    <string name="share_empty_body">அதே Wi-Fi-இல், மற்ற சாதனத்தில் “அருகில் பகிர்” அல்லது “கேம்களைப் பெறு” என்பதைத் திறக்கவும்.</string>
+    <string name="share_empty_guest_lead">விருந்தினர் மற்றும் பொது Wi-Fi</string>
+    <string name="share_empty_guest">பெரும்பாலும் சாதனங்களைப் பிரித்து வைக்கும். உங்கள் தொலைபேசியின் ஹாட்ஸ்பாட்டை இயக்கி மற்ற சாதனத்தை அதில் இணைக்கவும்.</string>
+    <string name="share_empty_firewall_lead">கணினியில்,</string>
+    <string name="share_empty_firewall">ஃபயர்வால் OpenEmux-ஐத் தடுக்கலாம். TCP 53319, UDP 53318 ஆகியவற்றை அனுமதிக்கவும்.</string>
+    <string name="share_empty_searching">இன்னும் தேடுகிறது…</string>
+    <string name="share_unavailable_title">அருகில் பகிர் கிடைக்கவில்லை</string>
+    <string name="share_unavailable_tls13">அருகில் பகிர் செயல்பட Android 10 அல்லது புதியது தேவை.</string>
+    <string name="share_unavailable_keystore">இந்தச் சாதனத்தின் சாவியை உருவாக்க முடியவில்லை. ஆப்பை மீண்டும் தொடங்கி மீண்டும் முயலவும்.</string>
+    <string name="share_unavailable_wifi">கேம்களைப் பகிர Wi-Fi-உடன் இணைக்கவும்.</string>
+    <string name="share_warning_multicast">Wi-Fi நெட்வொர்க் தேடலை அனுமதிக்கவில்லை. சில சாதனங்கள் தெரியாமல் போகலாம்; முகவரி மூலம் இணை என்பதைப் பயன்படுத்தவும்.</string>
+    <string name="share_code_eyebrow">சரிபார்ப்புக் குறியீடு</string>
+    <string name="share_code_spoken">சரிபார்ப்புக் குறியீடு %1$s</string>
+    <string name="share_wait_title">%1$s ஏற்கும் வரை காத்திருக்கிறது…</string>
+    <string name="share_wait_hint">%1$s-இல் அதே குறியீடு தெரிய வேண்டும்.</string>
+    <string name="share_cancel">ரத்துசெய்</string>
+    <string name="share_close">மூடு</string>
+    <string name="share_progress_sending">%1$s-க்கு அனுப்புகிறது</string>
+    <string name="share_progress_receiving">%1$s-இடமிருந்து பெறுகிறது</string>
+    <string name="share_progress_bytes">%2$s-இல் %1$s</string>
+    <string name="share_progress_files">கோப்பு %1$d / %2$d</string>
+    <string name="share_progress_note">திரையை அணைக்கலாம் அல்லது ஆப்பை விட்டு வெளியேறலாம். பரிமாற்றம் தொடரும்.</string>
+    <string name="share_progress_cancel">பரிமாற்றத்தை ரத்துசெய்</string>
+    <string name="share_cancel_confirm_title">பரிமாற்றத்தை ரத்துசெய்யவா?</string>
+    <string name="share_cancel_confirm_body">இதுவரை பெற்ற கோப்புகள் நீக்கப்படும்.</string>
+    <string name="share_cancel_confirm_keep">தொடர்</string>
+    <string name="share_offer_title">வரும் கேம்கள்</string>
+    <string name="share_offer_code_hint">%1$s அதே குறியீட்டைக் காட்டினால் மட்டும் ஏற்கவும்.</string>
+    <string name="share_offer_part_game">கேம்</string>
+    <string name="share_offer_part_cover">அட்டை</string>
+    <string name="share_offer_part_label">லேபிள்</string>
+    <string name="share_offer_note_unsupported">%1$s: இந்தச் சாதனம் %2$s-ஐ ஆதரிக்கவில்லை.</string>
+    <string name="share_offer_expires">%1$s-இல் காலாவதியாகும்</string>
+    <string name="share_offer_decline">நிராகரி</string>
+    <string name="share_offer_accept">ஏற்கவும்</string>
+    <string name="share_offer_expired_toast">%1$s-இன் வழங்கல் காலாவதியானது.</string>
+    <string name="share_conflicts_title">ஏற்கனவே உங்கள் நூலகத்தில்</string>
+    <string name="share_conflicts_hint">ஒவ்வொன்றுக்கும் என்ன ஆக வேண்டும் எனத் தேர்ந்தெடுக்கவும். கேட்காமல் எந்தச் சேமிப்பும் மாற்றப்படாது.</string>
+    <string name="share_conflicts_yours">உங்களுடையது: %1$s</string>
+    <string name="share_conflicts_incoming">வருவது: %1$s</string>
+    <string name="share_conflicts_newer">புதியது</string>
+    <string name="share_conflicts_skipped">தவிர்க்கப்பட்டவை</string>
+    <string name="share_policy_newest">புதியதை வை</string>
+    <string name="share_policy_keep_both">இரண்டையும் வை</string>
+    <string name="share_policy_replace">மாற்று</string>
+    <string name="share_policy_skip">தவிர்</string>
+    <string name="share_space_lead">போதுமான இடம் இல்லை.</string>
+    <string name="share_space_body">இந்தக் கேம்களுக்கு %1$s தேவை, %2$s காலியாக உள்ளது. %3$s இடத்தை விடுவிக்கவும், அல்லது மற்ற சாதனத்தில் சில உருப்படிகளின் குறியை நீக்கவும்.</string>
+    <string name="share_result_received_body">%1$s-இடமிருந்து. உங்கள் நூலகத்தில் விளையாடத் தயாராக உள்ளன.</string>
+    <string name="share_result_sent_body">இப்போது அவை %1$s-இடம் உள்ளன.</string>
+    <string name="share_result_show">நூலகத்தில் காட்டு</string>
+    <string name="share_result_cancelled_title">பரிமாற்றம் ரத்துசெய்யப்பட்டது</string>
+    <string name="share_result_cancelled_body">%1$s-இல் எதுவும் சேமிக்கப்படவில்லை.</string>
+    <string name="share_result_cancelled_body_here">இந்தச் சாதனத்தில் எதுவும் சேமிக்கப்படவில்லை.</string>
+    <string name="share_result_declined_title">வழங்கல் நிராகரிக்கப்பட்டது</string>
+    <string name="share_result_declined_body">%1$s கேம்களை நிராகரித்தது.</string>
+    <string name="share_result_expired_title">வழங்கல் காலாவதியானது</string>
+    <string name="share_result_expired_body">%1$s நேரத்தில் பதிலளிக்கவில்லை.</string>
+    <string name="share_result_failed_title">பரிமாற்றம் தோல்வியடைந்தது</string>
+    <string name="share_result_lost_title">இணைப்பு துண்டிக்கப்பட்டது</string>
+    <string name="share_result_lost_body">%1$s பதிலளிப்பதை நிறுத்தியது.</string>
+    <string name="share_error_busy">%1$s வேறொரு பரிமாற்றத்தில் உள்ளது. சிறிது நேரத்தில் மீண்டும் முயலவும்.</string>
+    <string name="share_error_no_space">இந்தக் கேம்களுக்குப் போதுமான இடம் இல்லை.</string>
+    <string name="share_error_source_changed">வழங்கும்போது ஒரு கோப்பு மாறியது. மீண்டும் முயலவும்.</string>
+    <string name="share_error_generic">ஏதோ தவறு நடந்தது. மீண்டும் முயலவும்.</string>
+    <string name="share_size_b">%1$s B</string>
+    <string name="share_size_kb">%1$s kB</string>
+    <string name="share_size_mb">%1$s MB</string>
+    <string name="share_size_gb">%1$s GB</string>
+    <string name="share_notif_channel_transfers">பரிமாற்றங்கள்</string>
+    <string name="share_notif_channel_transfers_desc">அருகில் அனுப்பப்படும் அல்லது பெறப்படும் கேம்களின் முன்னேற்றம்</string>
+    <string name="share_notif_channel_offers">வரும் கேம்கள்</string>
+    <string name="share_notif_channel_offers_desc">மற்றொரு சாதனம் உங்களுக்குக் கேம்களை அனுப்ப விரும்புகிறது</string>
+    <string name="share_notif_cancel">ரத்துசெய்</string>
+    <string name="share_notif_offer_title">%1$s-இடமிருந்து வரும் கேம்கள்</string>
+    <string name="share_notif_offer_text">பார்க்கத் தட்டவும். குறியீடு %1$s.</string>
+    <string name="share_notif_failed">பரிமாற்றம் தோல்வியடைந்தது</string>
+    <string name="settings_share_section">அருகில் பகிர்</string>
+    <string name="settings_share_receive">கேம்களைப் பெறு</string>
+    <string name="settings_share_receive_hint">மற்றொரு சாதனம் உங்களுக்குக் கேம்களை அனுப்ப அனுமதி</string>
+    <string name="settings_device_name">சாதனப் பெயர்</string>
+    <string name="settings_device_name_label">மற்ற சாதனங்கள் பார்க்கும் பெயர்</string>
+    <string name="settings_device_name_hint">“%1$s” பயன்படுத்த காலியாக விடவும்.</string>
+    <string name="settings_device_name_save">சேமி</string>
+    <string name="detail_share">அருகில் பகிர்</string>
+    <string name="library_share_console">எல்லாக் கேம்களையும் அருகில் பகிர்</string>
+    <string name="library_hint_share">பகிர்</string>
+    <plurals name="share_games">
+        <item quantity="one">%1$d கேம்</item>
+        <item quantity="other">%1$d கேம்கள்</item>
+    </plurals>
+    <plurals name="share_files">
+        <item quantity="one">%1$d கோப்பு</item>
+        <item quantity="other">%1$d கோப்புகள்</item>
+    </plurals>
+    <plurals name="share_subtitle">
+        <item quantity="one">%1$d கேம் · %2$s</item>
+        <item quantity="other">%1$d கேம்கள் · %2$s</item>
+    </plurals>
+    <plurals name="share_what_more">
+        <item quantity="one">%1$s, %2$s மற்றும் இன்னும் %3$d</item>
+        <item quantity="other">%1$s, %2$s மற்றும் இன்னும் %3$d</item>
+    </plurals>
+    <plurals name="share_items_count">
+        <item quantity="one">%1$d உருப்படி</item>
+        <item quantity="other">%1$d உருப்படிகள்</item>
+    </plurals>
+    <plurals name="share_items_of">
+        <item quantity="one">%2$d-இல் %1$d உருப்படி</item>
+        <item quantity="other">%2$d-இல் %1$d உருப்படிகள்</item>
+    </plurals>
+    <plurals name="share_offer_lead">
+        <item quantity="one">உங்களுக்கு %1$d கேமை அனுப்ப விரும்புகிறது (%2$s).</item>
+        <item quantity="other">உங்களுக்கு %1$d கேம்களை அனுப்ப விரும்புகிறது (%2$s).</item>
+    </plurals>
+    <plurals name="share_offer_note_states">
+        <item quantity="one">%1$d சேமித்த நிலை தவிர்க்கப்பட்டது: இந்தச் சாதனத்தில் இல்லாத கோரால் உருவாக்கப்பட்டது.</item>
+        <item quantity="other">%1$d சேமித்த நிலைகள் தவிர்க்கப்பட்டன: இந்தச் சாதனத்தில் இல்லாத கோரால் உருவாக்கப்பட்டவை.</item>
+    </plurals>
+    <plurals name="share_offer_part_saves">
+        <item quantity="one">%1$d சேமிப்பு</item>
+        <item quantity="other">%1$d சேமிப்புகள்</item>
+    </plurals>
+    <plurals name="share_offer_part_states">
+        <item quantity="one">%1$d நிலை</item>
+        <item quantity="other">%1$d நிலைகள்</item>
+    </plurals>
+    <plurals name="share_offer_conflicts">
+        <item quantity="one">%1$d முரண்பாட்டைப் பார்</item>
+        <item quantity="other">%1$d முரண்பாடுகளைப் பார்</item>
+    </plurals>
+    <plurals name="share_result_received_title">
+        <item quantity="one">%1$d கேம் பெறப்பட்டது</item>
+        <item quantity="other">%1$d கேம்கள் பெறப்பட்டன</item>
+    </plurals>
+    <plurals name="share_result_sent_title">
+        <item quantity="one">%1$d கேம் அனுப்பப்பட்டது</item>
+        <item quantity="other">%1$d கேம்கள் அனுப்பப்பட்டன</item>
+    </plurals>
+    <plurals name="share_result_skipped">
+        <item quantity="one">%1$d உருப்படி தவிர்க்கப்பட்டது</item>
+        <item quantity="other">%1$d உருப்படிகள் தவிர்க்கப்பட்டன</item>
+    </plurals>
+    <plurals name="share_result_kept">
+        <item quantity="one">%1$d சேமிப்பு வைக்கப்பட்டது (உங்களுடையது புதியது)</item>
+        <item quantity="other">%1$d சேமிப்புகள் வைக்கப்பட்டன (உங்களுடையவை புதியவை)</item>
+    </plurals>
+    <plurals name="share_notif_progress_text">
+        <item quantity="one">%1$d கேம் · %3$s-இல் %2$s</item>
+        <item quantity="other">%1$d கேம்கள் · %3$s-இல் %2$s</item>
+    </plurals>
+    <plurals name="share_notif_done_received">
+        <item quantity="one">%1$d கேம் பெறப்பட்டது</item>
+        <item quantity="other">%1$d கேம்கள் பெறப்பட்டன</item>
+    </plurals>
+    <plurals name="share_notif_done_sent">
+        <item quantity="one">%1$d கேம் அனுப்பப்பட்டது</item>
+        <item quantity="other">%1$d கேம்கள் அனுப்பப்பட்டன</item>
+    </plurals>
+    <plurals name="library_share_selection">
+        <item quantity="one">%1$d கேமை அருகில் பகிர்</item>
+        <item quantity="other">%1$d கேம்களை அருகில் பகிர்</item>
+    </plurals>
+</resources>

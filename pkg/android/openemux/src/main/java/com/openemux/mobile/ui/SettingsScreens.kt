@@ -69,6 +69,9 @@ import com.openemux.mobile.data.LoginResult
 import com.openemux.mobile.data.RaLogin
 import com.openemux.mobile.data.SHADERS
 import com.openemux.mobile.data.shaderById
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.saveable.rememberSaveable
+import com.openemux.mobile.share.ShareProtocol
 import com.retroarch.BuildConfig
 import com.retroarch.R
 import kotlinx.coroutines.launch
@@ -92,6 +95,7 @@ private val THEMES = listOf(
 fun SettingsScreen() {
     var themeSheet by remember { mutableStateOf(false) }
     var languageSheet by remember { mutableStateOf(false) }
+    var nameSheet by remember { mutableStateOf(false) }
     GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_open), "B" to stringResource(R.string.settings_hint_back), "L1 R1" to stringResource(R.string.settings_hint_tabs)))
     val a = LocalActions.current
     val lib = a.app.library
@@ -178,6 +182,23 @@ fun SettingsScreen() {
             }
         }
 
+        SectionHeader(stringResource(R.string.settings_share_section))
+        Card(Modifier.padding(horizontal = 20.dp)) {
+            val share = a.app.shareCoordinator
+            val name by share.deviceName.collectAsState()
+            LaunchedEffect(Unit) { share.loadName() }
+            ListRow(
+                stringResource(R.string.settings_share_receive), subtitle = stringResource(R.string.settings_share_receive_hint), minHeight = 60.dp,
+                leading = {
+                    Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(Oe.AccentTint), contentAlignment = Alignment.Center) {
+                        Icon(Icons.Share, Oe.AccentText, 22.dp)
+                    }
+                },
+                onClick = { a.nav.navigate(Routes.SHARE_RECEIVE) },
+            )
+            ListRow(stringResource(R.string.settings_device_name), value = name ?: "…", divider = true, onClick = { nameSheet = true })
+        }
+
         SectionHeader(stringResource(R.string.settings_section_general))
         Card(Modifier.padding(horizontal = 20.dp)) {
             ListRow(stringResource(R.string.settings_rom_folder), subtitle = "Android/data/${context.packageName}/files/roms", value = "${roms.size}")
@@ -194,6 +215,7 @@ fun SettingsScreen() {
         Spacer(BottomSpace)
     } }
 
+    if (nameSheet) DeviceNameSheet { nameSheet = false }
     if (themeSheet) {
         ModalBottomSheet({ themeSheet = false }, containerColor = Oe.Sheet) {
             ImmersiveWindow()
@@ -717,4 +739,35 @@ fun ImportScreen() {
         )
         Spacer(BottomSpace)
     } }
+}
+
+/** Settings › Device Name (Share nearby): what the other devices list this one as; empty goes back to the default. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeviceNameSheet(onClose: () -> Unit) {
+    val share = LocalActions.current.app.shareCoordinator
+    val current by share.deviceName.collectAsState()
+    var name by rememberSaveable { mutableStateOf(current.orEmpty()) }
+    val default = remember { share.defaultName() }
+    fun save() {
+        share.rename(name)
+        onClose()
+    }
+    ModalBottomSheet(onClose, containerColor = Oe.Sheet) {
+        ImmersiveWindow()
+        Column(Modifier.padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text(stringResource(R.string.settings_device_name), style = Type.Title.copy(fontSize = 22.sp))
+            OeTextField(
+                stringResource(R.string.settings_device_name_label), name, { name = it.take(ShareProtocol.MAX_NAME_CHARS) },
+                Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { save() }),
+            )
+            Text(stringResource(R.string.settings_device_name_hint, default), style = Type.Small)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SecondaryButton(stringResource(R.string.detail_cancel), onClose, Modifier.weight(1f))
+                PrimaryButton(stringResource(R.string.settings_device_name_save), ::save, Modifier.weight(1f))
+            }
+        }
+    }
 }

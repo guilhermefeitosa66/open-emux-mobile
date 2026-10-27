@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Share nearby (#591): the share screens, the incoming offer, the transfer and its notifications. -->
+    <string name="share_title">近くの端末と共有</string>
+    <string name="share_receive_title">ゲームを受け取る</string>
+    <string name="share_receive_subtitle">受け取りの準備ができました。もう一方の端末で「近くの端末と共有」を開いてください。</string>
+    <string name="share_items_title">送る内容</string>
+    <string name="share_items_none">何も選択されていません</string>
+    <string name="share_what_two">%1$s、%2$s</string>
+    <string name="share_devices">このネットワーク上の端末</string>
+    <string name="share_device_subtitle">%1$s · %2$sで検出</string>
+    <string name="share_device_incompatible">%1$s · この端末の OpenEmux を更新してください</string>
+    <string name="share_device_versions">バージョン %1$s、こちらは %2$s に対応</string>
+    <string name="share_platform_desktop">パソコン</string>
+    <string name="share_platform_phone">スマートフォン</string>
+    <string name="share_platform_tablet">タブレット</string>
+    <string name="share_path_mdns">mDNS</string>
+    <string name="share_path_beacon">ビーコン</string>
+    <string name="share_path_manual">アドレス</string>
+    <string name="share_paths_and">%1$sと%2$s</string>
+    <string name="share_this_device">この端末</string>
+    <string name="share_visible_as">「%1$s」として表示中</string>
+    <string name="share_visible_hint">この画面を開いている間だけです。名前は設定で変更できます。</string>
+    <string name="share_choose_something">送る項目を 1 つ以上選んでください。</string>
+    <string name="share_preparing">準備中…</string>
+    <string name="share_hint_send">送る</string>
+    <string name="share_hint_toggle">チェック</string>
+    <string name="share_hint_toggle_game">ゲーム全体</string>
+    <string name="share_done">完了</string>
+    <string name="share_items_game">ゲーム</string>
+    <string name="share_items_save">セーブデータ</string>
+    <string name="share_items_states">ステート</string>
+    <string name="share_items_states_n">ステート (%1$d)</string>
+    <string name="share_items_states_hint">相手の端末のコアで読み込めるものだけ</string>
+    <string name="share_items_cover">カバー</string>
+    <string name="share_items_label">カートリッジラベル</string>
+    <string name="share_items_details">ライブラリの詳細</string>
+    <string name="share_items_details_hint">お気に入り、カートリッジの色、コア、シェーダー、プレイ時間</string>
+    <string name="share_items_expand">項目を表示</string>
+    <string name="share_items_collapse">項目を隠す</string>
+    <string name="share_reason_exists">すでにあります</string>
+    <string name="share_reason_incompatible_state">この端末にないコアで作成</string>
+    <string name="share_reason_unsupported">未対応の機種</string>
+    <string name="share_reason_unchecked">除外</string>
+    <string name="share_reason_invalid">安全に送れません</string>
+    <string name="share_reason_no_space">空き容量が足りません</string>
+    <string name="share_reason_unit_incomplete">一部のファイルがありません</string>
+    <string name="share_reason_too_many">一度に送るファイルが多すぎます</string>
+    <string name="share_reason_generic">スキップ</string>
+    <string name="share_kind_rom">ゲーム</string>
+    <string name="share_kind_save">セーブデータ</string>
+    <string name="share_kind_state">ステート</string>
+    <string name="share_kind_cover">カバー</string>
+    <string name="share_kind_label">カートリッジラベル</string>
+    <string name="share_address_title">アドレスで接続</string>
+    <string name="share_address_other">ほかの端末</string>
+    <string name="share_address_qr">この端末のアドレスを含む QR コード</string>
+    <string name="share_address_copy">アドレスをコピー</string>
+    <string name="share_address_copied">アドレスをコピーしました</string>
+    <string name="share_address_scan_hint">もう一方の端末の OpenEmux で読み取るか、そこにアドレスを入力してください。</string>
+    <string name="share_address_label">アドレス</string>
+    <string name="share_address_camera_hint">または、カメラアプリを相手の画面のコードに向けてください。</string>
+    <string name="share_address_connect">接続</string>
+    <string name="share_address_err_parse">アドレスの形式ではありません。</string>
+    <string name="share_address_err_reach">%1$s に接続できませんでした。同じネットワークにあるか確認してください。</string>
+    <string name="share_address_err_identity">その端末は別の ID で応答しました。アドレスを確認してください。</string>
+    <string name="share_address_err_version">その端末は別のバージョンの OpenEmux です (バージョン %1$s、こちらは %2$s に対応)。</string>
+    <string name="share_empty_title">端末が見つかりません</string>
+    <string name="share_empty_body">同じ Wi-Fi で、もう一方の端末の「近くの端末と共有」か「ゲームを受け取る」を開いてください。</string>
+    <string name="share_empty_guest_lead">ゲスト用や公衆の Wi-Fi</string>
+    <string name="share_empty_guest">では端末同士が隔離されることがあります。スマートフォンのテザリングをオンにして、相手の端末をつないでください。</string>
+    <string name="share_empty_firewall_lead">パソコンでは、</string>
+    <string name="share_empty_firewall">ファイアウォールが OpenEmux を遮断することがあります。TCP 53319 と UDP 53318 を許可してください。</string>
+    <string name="share_empty_searching">検索中…</string>
+    <string name="share_unavailable_title">近くの端末と共有は使えません</string>
+    <string name="share_unavailable_tls13">近くの端末と共有には Android 10 以降が必要です。</string>
+    <string name="share_unavailable_keystore">この端末の鍵を作成できませんでした。アプリを再起動してもう一度お試しください。</string>
+    <string name="share_unavailable_wifi">ゲームを共有するには Wi-Fi に接続してください。</string>
+    <string name="share_warning_multicast">Wi-Fi がネットワーク検索を許可しませんでした。一部の端末が表示されないかもしれません。「アドレスで接続」を使ってください。</string>
+    <string name="share_code_eyebrow">確認コード</string>
+    <string name="share_code_spoken">確認コード %1$s</string>
+    <string name="share_wait_title">%1$s の承認を待っています…</string>
+    <string name="share_wait_hint">%1$s に同じコードが表示されているはずです。</string>
+    <string name="share_cancel">キャンセル</string>
+    <string name="share_close">閉じる</string>
+    <string name="share_progress_sending">%1$s に送信中</string>
+    <string name="share_progress_receiving">%1$s から受信中</string>
+    <string name="share_progress_bytes">%1$s / %2$s</string>
+    <string name="share_progress_files">ファイル %1$d / %2$d</string>
+    <string name="share_progress_note">画面を消したりアプリを離れたりしても大丈夫です。転送は続きます。</string>
+    <string name="share_progress_cancel">転送をキャンセル</string>
+    <string name="share_cancel_confirm_title">転送をキャンセルしますか?</string>
+    <string name="share_cancel_confirm_body">ここまでに受け取ったファイルは破棄されます。</string>
+    <string name="share_cancel_confirm_keep">続ける</string>
+    <string name="share_offer_title">届いたゲーム</string>
+    <string name="share_offer_code_hint">%1$s に同じコードが表示されている場合だけ承認してください。</string>
+    <string name="share_offer_part_game">ゲーム</string>
+    <string name="share_offer_part_cover">カバー</string>
+    <string name="share_offer_part_label">ラベル</string>
+    <string name="share_offer_note_unsupported">%1$s: この端末は %2$s に対応していません。</string>
+    <string name="share_offer_expires">残り %1$s</string>
+    <string name="share_offer_decline">拒否</string>
+    <string name="share_offer_accept">承認</string>
+    <string name="share_offer_expired_toast">%1$s からの申し出は期限切れになりました。</string>
+    <string name="share_conflicts_title">すでにライブラリにあります</string>
+    <string name="share_conflicts_hint">それぞれの扱いを選んでください。セーブデータが確認なしに置き換えられることはありません。</string>
+    <string name="share_conflicts_yours">この端末: %1$s</string>
+    <string name="share_conflicts_incoming">届いたもの: %1$s</string>
+    <string name="share_conflicts_newer">新しい</string>
+    <string name="share_conflicts_skipped">スキップ</string>
+    <string name="share_policy_newest">新しい方を残す</string>
+    <string name="share_policy_keep_both">両方残す</string>
+    <string name="share_policy_replace">置き換える</string>
+    <string name="share_policy_skip">スキップ</string>
+    <string name="share_space_lead">空き容量が足りません。</string>
+    <string name="share_space_body">これらのゲームには %1$s 必要ですが、空きは %2$s です。%3$s 空けるか、相手の端末で項目を外してください。</string>
+    <string name="share_result_received_body">%1$s から。ライブラリに入り、すぐ遊べます。</string>
+    <string name="share_result_sent_body">%1$s に届きました。</string>
+    <string name="share_result_show">ライブラリで見る</string>
+    <string name="share_result_cancelled_title">転送をキャンセルしました</string>
+    <string name="share_result_cancelled_body">%1$s には何も保存されていません。</string>
+    <string name="share_result_cancelled_body_here">この端末には何も保存されていません。</string>
+    <string name="share_result_declined_title">拒否されました</string>
+    <string name="share_result_declined_body">%1$s がゲームを拒否しました。</string>
+    <string name="share_result_expired_title">期限切れ</string>
+    <string name="share_result_expired_body">%1$s が時間内に応答しませんでした。</string>
+    <string name="share_result_failed_title">転送に失敗しました</string>
+    <string name="share_result_lost_title">接続が切れました</string>
+    <string name="share_result_lost_body">%1$s が応答しなくなりました。</string>
+    <string name="share_error_busy">%1$s は別の転送中です。少ししてからもう一度お試しください。</string>
+    <string name="share_error_no_space">これらのゲームを入れる空き容量がありません。</string>
+    <string name="share_error_source_changed">送信中にファイルが変更されました。もう一度お試しください。</string>
+    <string name="share_error_generic">問題が発生しました。もう一度お試しください。</string>
+    <string name="share_size_b">%1$s B</string>
+    <string name="share_size_kb">%1$s kB</string>
+    <string name="share_size_mb">%1$s MB</string>
+    <string name="share_size_gb">%1$s GB</string>
+    <string name="share_notif_channel_transfers">転送</string>
+    <string name="share_notif_channel_transfers_desc">近くの端末と送受信中のゲームの進行状況</string>
+    <string name="share_notif_channel_offers">届いたゲーム</string>
+    <string name="share_notif_channel_offers_desc">ほかの端末がゲームを送ろうとしています</string>
+    <string name="share_notif_cancel">キャンセル</string>
+    <string name="share_notif_offer_title">%1$s からゲームが届いています</string>
+    <string name="share_notif_offer_text">タップして確認。コード %1$s。</string>
+    <string name="share_notif_failed">転送に失敗しました</string>
+    <string name="settings_share_section">近くの端末と共有</string>
+    <string name="settings_share_receive">ゲームを受け取る</string>
+    <string name="settings_share_receive_hint">ほかの端末からゲームを受け取ります</string>
+    <string name="settings_device_name">端末名</string>
+    <string name="settings_device_name_label">ほかの端末に表示される名前</string>
+    <string name="settings_device_name_hint">空欄にすると「%1$s」を使います。</string>
+    <string name="settings_device_name_save">保存</string>
+    <string name="detail_share">近くの端末と共有</string>
+    <string name="library_share_console">すべてのゲームを近くの端末と共有</string>
+    <string name="library_hint_share">共有</string>
+    <plurals name="share_games">
+        <item quantity="other">%1$d 本</item>
+    </plurals>
+    <plurals name="share_files">
+        <item quantity="other">%1$d ファイル</item>
+    </plurals>
+    <plurals name="share_subtitle">
+        <item quantity="other">%1$d 本 · %2$s</item>
+    </plurals>
+    <plurals name="share_what_more">
+        <item quantity="other">%1$s、%2$s ほか %3$d 本</item>
+    </plurals>
+    <plurals name="share_items_count">
+        <item quantity="other">%1$d 項目</item>
+    </plurals>
+    <plurals name="share_items_of">
+        <item quantity="other">%2$d 項目中 %1$d</item>
+    </plurals>
+    <plurals name="share_offer_lead">
+        <item quantity="other">が %1$d 本のゲームを送ろうとしています (%2$s)。</item>
+    </plurals>
+    <plurals name="share_offer_note_states">
+        <item quantity="other">%1$d 個のステートをスキップ: この端末にないコアで作成されています。</item>
+    </plurals>
+    <plurals name="share_offer_part_saves">
+        <item quantity="other">セーブ %1$d 個</item>
+    </plurals>
+    <plurals name="share_offer_part_states">
+        <item quantity="other">ステート %1$d 個</item>
+    </plurals>
+    <plurals name="share_offer_conflicts">
+        <item quantity="other">%1$d 件の競合を確認</item>
+    </plurals>
+    <plurals name="share_result_received_title">
+        <item quantity="other">%1$d 本を受け取りました</item>
+    </plurals>
+    <plurals name="share_result_sent_title">
+        <item quantity="other">%1$d 本を送りました</item>
+    </plurals>
+    <plurals name="share_result_skipped">
+        <item quantity="other">%1$d 項目をスキップ</item>
+    </plurals>
+    <plurals name="share_result_kept">
+        <item quantity="other">%1$d 個のセーブを保持 (こちらが新しい)</item>
+    </plurals>
+    <plurals name="share_notif_progress_text">
+        <item quantity="other">%1$d 本 · %2$s / %3$s</item>
+    </plurals>
+    <plurals name="share_notif_done_received">
+        <item quantity="other">%1$d 本を受け取りました</item>
+    </plurals>
+    <plurals name="share_notif_done_sent">
+        <item quantity="other">%1$d 本を送りました</item>
+    </plurals>
+    <plurals name="library_share_selection">
+        <item quantity="other">%1$d 本を近くの端末と共有</item>
+    </plurals>
+</resources>

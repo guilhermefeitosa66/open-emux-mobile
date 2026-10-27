@@ -1,6 +1,7 @@
 package com.openemux.mobile
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.InputDevice
@@ -37,6 +38,24 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(dark) { systemBars(dark) }
             ProvideWindowLayout { OpenEmuxRoot() }
         }
+        handleShareLink(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleShareLink(intent)
+    }
+
+    /**
+     * An `openemux-share://` link only fills Connect by Address: it never
+     * connects or sends on its own. The incoming-offer notification needs
+     * nothing here: bringing the activity up shows the sheet from state.
+     */
+    private fun handleShareLink(intent: Intent?) {
+        val uri = intent?.data ?: return
+        if (intent.action != Intent.ACTION_VIEW || uri.scheme != "openemux-share") return
+        (application as OpenEmuxApp).shareCoordinator.link.value = uri.toString()
     }
 
     /** Status and navigation bar icons follow the theme, not the system. */
@@ -64,6 +83,12 @@ class MainActivity : ComponentActivity() {
     override fun onStart() {
         super.onStart()
         (application as OpenEmuxApp).retryArtwork()
+        (application as OpenEmuxApp).setForeground(true)
+    }
+
+    override fun onStop() {
+        (application as OpenEmuxApp).setForeground(false)
+        super.onStop()
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {

@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Share nearby (#591): the share screens, the incoming offer, the transfer and its notifications. -->
+    <string name="share_title">Share Nearby</string>
+    <string name="share_receive_title">Receive Games</string>
+    <string name="share_receive_subtitle">Ready to receive. Open Share Nearby on the other device.</string>
+    <string name="share_items_title">What to Send</string>
+    <string name="share_items_none">Nothing selected</string>
+    <string name="share_what_two">%1$s and %2$s</string>
+    <string name="share_devices">Devices on this network</string>
+    <string name="share_device_subtitle">%1$s · found by %2$s</string>
+    <string name="share_device_incompatible">%1$s · update OpenEmux on this device</string>
+    <string name="share_device_versions">Version %1$s, this one speaks %2$s</string>
+    <string name="share_platform_desktop">Desktop</string>
+    <string name="share_platform_phone">Phone</string>
+    <string name="share_platform_tablet">Tablet</string>
+    <string name="share_path_mdns">mDNS</string>
+    <string name="share_path_beacon">beacon</string>
+    <string name="share_path_manual">address</string>
+    <string name="share_paths_and">%1$s and %2$s</string>
+    <string name="share_this_device">This device</string>
+    <string name="share_visible_as">Visible as “%1$s”</string>
+    <string name="share_visible_hint">While this screen is open. Rename it in Settings.</string>
+    <string name="share_choose_something">Choose at least one item to send.</string>
+    <string name="share_preparing">Preparing…</string>
+    <string name="share_hint_send">Send</string>
+    <string name="share_hint_toggle">Check</string>
+    <string name="share_hint_toggle_game">Whole game</string>
+    <string name="share_done">Done</string>
+    <string name="share_items_game">Game</string>
+    <string name="share_items_save">Battery Save</string>
+    <string name="share_items_states">Save States</string>
+    <string name="share_items_states_n">Save States (%1$d)</string>
+    <string name="share_items_states_hint">Only the ones the other device’s core can load</string>
+    <string name="share_items_cover">Cover</string>
+    <string name="share_items_label">Cartridge Label</string>
+    <string name="share_items_details">Library Details</string>
+    <string name="share_items_details_hint">Favorite, cartridge color, core, shader, play time</string>
+    <string name="share_items_expand">Show items</string>
+    <string name="share_items_collapse">Hide items</string>
+    <string name="share_reason_exists">Already there</string>
+    <string name="share_reason_incompatible_state">Made with a core this device doesn’t have</string>
+    <string name="share_reason_unsupported">Console not supported</string>
+    <string name="share_reason_unchecked">Left out</string>
+    <string name="share_reason_invalid">Can’t be sent safely</string>
+    <string name="share_reason_no_space">Not enough space</string>
+    <string name="share_reason_unit_incomplete">Some of its files are missing</string>
+    <string name="share_reason_too_many">Too many files in one go</string>
+    <string name="share_reason_generic">Skipped</string>
+    <string name="share_kind_rom">game</string>
+    <string name="share_kind_save">battery save</string>
+    <string name="share_kind_state">save state</string>
+    <string name="share_kind_cover">cover</string>
+    <string name="share_kind_label">cartridge label</string>
+    <string name="share_address_title">Connect by Address</string>
+    <string name="share_address_other">Another device</string>
+    <string name="share_address_qr">QR code with this device’s address</string>
+    <string name="share_address_copy">Copy Address</string>
+    <string name="share_address_copied">Address copied</string>
+    <string name="share_address_scan_hint">Scan this with OpenEmux on the other device, or type the address there.</string>
+    <string name="share_address_label">Address</string>
+    <string name="share_address_camera_hint">Or point your camera app at the code on the other device’s screen.</string>
+    <string name="share_address_connect">Connect</string>
+    <string name="share_address_err_parse">That doesn’t look like an address.</string>
+    <string name="share_address_err_reach">Couldn’t reach %1$s. Check that it is on the same network.</string>
+    <string name="share_address_err_identity">That device answered with a different identity. Check the address.</string>
+    <string name="share_address_err_version">That device runs another version of OpenEmux (version %1$s, this one speaks %2$s).</string>
+    <string name="share_empty_title">No Devices Found</string>
+    <string name="share_empty_body">Open “Share Nearby” or “Receive Games” on the other device, on the same Wi-Fi.</string>
+    <string name="share_empty_guest_lead">Guest and public Wi-Fi</string>
+    <string name="share_empty_guest">often keep devices apart. Turn on your phone’s hotspot and connect the other device to it.</string>
+    <string name="share_empty_firewall_lead">On a computer,</string>
+    <string name="share_empty_firewall">the firewall may block OpenEmux. Allow TCP 53319 and UDP 53318.</string>
+    <string name="share_empty_searching">Still searching…</string>
+    <string name="share_unavailable_title">Share Nearby Isn’t Available</string>
+    <string name="share_unavailable_tls13">Share Nearby needs Android 10 or newer.</string>
+    <string name="share_unavailable_keystore">Couldn’t create this device’s key. Restart the app and try again.</string>
+    <string name="share_unavailable_wifi">Connect to Wi-Fi to share games.</string>
+    <string name="share_warning_multicast">Wi-Fi didn’t allow the network search. Some devices may not show up; use Connect by Address.</string>
+    <string name="share_code_eyebrow">Verification code</string>
+    <string name="share_code_spoken">Verification code %1$s</string>
+    <string name="share_wait_title">Waiting for %1$s to accept…</string>
+    <string name="share_wait_hint">The same code must show on %1$s.</string>
+    <string name="share_cancel">Cancel</string>
+    <string name="share_close">Close</string>
+    <string name="share_progress_sending">Sending to %1$s</string>
+    <string name="share_progress_receiving">Receiving from %1$s</string>
+    <string name="share_progress_bytes">%1$s of %2$s</string>
+    <string name="share_progress_files">File %1$d of %2$d</string>
+    <string name="share_progress_note">You can turn off the screen or leave the app. The transfer keeps going.</string>
+    <string name="share_progress_cancel">Cancel Transfer</string>
+    <string name="share_cancel_confirm_title">Cancel the transfer?</string>
+    <string name="share_cancel_confirm_body">Files received so far are discarded.</string>
+    <string name="share_cancel_confirm_keep">Keep Going</string>
+    <string name="share_offer_title">Incoming Games</string>
+    <string name="share_offer_code_hint">Accept only if %1$s shows the same code.</string>
+    <string name="share_offer_part_game">Game</string>
+    <string name="share_offer_part_cover">cover</string>
+    <string name="share_offer_part_label">label</string>
+    <string name="share_offer_note_unsupported">%1$s: this device doesn’t support %2$s.</string>
+    <string name="share_offer_expires">Expires in %1$s</string>
+    <string name="share_offer_decline">Decline</string>
+    <string name="share_offer_accept">Accept</string>
+    <string name="share_offer_expired_toast">%1$s’s offer expired.</string>
+    <string name="share_conflicts_title">Already in Your Library</string>
+    <string name="share_conflicts_hint">Choose what happens to each one. A save is never replaced without asking.</string>
+    <string name="share_conflicts_yours">Yours: %1$s</string>
+    <string name="share_conflicts_incoming">Incoming: %1$s</string>
+    <string name="share_conflicts_newer">newer</string>
+    <string name="share_conflicts_skipped">Skipped</string>
+    <string name="share_policy_newest">Keep Newest</string>
+    <string name="share_policy_keep_both">Keep Both</string>
+    <string name="share_policy_replace">Replace</string>
+    <string name="share_policy_skip">Skip</string>
+    <string name="share_space_lead">Not enough space.</string>
+    <string name="share_space_body">These games need %1$s and %2$s is free. Free up %3$s, or uncheck some items on the other device.</string>
+    <string name="share_result_received_body">From %1$s. They’re in your library, ready to play.</string>
+    <string name="share_result_sent_body">%1$s has them now.</string>
+    <string name="share_result_show">Show in Library</string>
+    <string name="share_result_cancelled_title">Transfer Cancelled</string>
+    <string name="share_result_cancelled_body">Nothing was saved on %1$s.</string>
+    <string name="share_result_cancelled_body_here">Nothing was saved on this device.</string>
+    <string name="share_result_declined_title">Offer Declined</string>
+    <string name="share_result_declined_body">%1$s declined the games.</string>
+    <string name="share_result_expired_title">Offer Expired</string>
+    <string name="share_result_expired_body">%1$s didn’t answer in time.</string>
+    <string name="share_result_failed_title">Transfer Failed</string>
+    <string name="share_result_lost_title">Connection Lost</string>
+    <string name="share_result_lost_body">%1$s stopped answering.</string>
+    <string name="share_error_busy">%1$s is busy with another transfer. Try again in a moment.</string>
+    <string name="share_error_no_space">There isn’t enough space for these games.</string>
+    <string name="share_error_source_changed">A file changed while it was being offered. Try again.</string>
+    <string name="share_error_generic">Something went wrong. Try again.</string>
+    <string name="share_size_b">%1$s B</string>
+    <string name="share_size_kb">%1$s kB</string>
+    <string name="share_size_mb">%1$s MB</string>
+    <string name="share_size_gb">%1$s GB</string>
+    <string name="share_notif_channel_transfers">Transfers</string>
+    <string name="share_notif_channel_transfers_desc">Progress of games being sent or received nearby</string>
+    <string name="share_notif_channel_offers">Incoming games</string>
+    <string name="share_notif_channel_offers_desc">Another device wants to send you games</string>
+    <string name="share_notif_cancel">Cancel</string>
+    <string name="share_notif_offer_title">Incoming games from %1$s</string>
+    <string name="share_notif_offer_text">Tap to review. Code %1$s.</string>
+    <string name="share_notif_failed">Transfer failed</string>
+    <string name="settings_share_section">Share Nearby</string>
+    <string name="settings_share_receive">Receive Games</string>
+    <string name="settings_share_receive_hint">Let another device send you games</string>
+    <string name="settings_device_name">Device Name</string>
+    <string name="settings_device_name_label">Name other devices see</string>
+    <string name="settings_device_name_hint">Leave empty to use “%1$s”.</string>
+    <string name="settings_device_name_save">Save</string>
+    <string name="detail_share">Share Nearby</string>
+    <string name="library_share_console">Share All Games Nearby</string>
+    <string name="library_hint_share">Share</string>
+    <plurals name="share_games">
+        <item quantity="one">%1$d game</item>
+        <item quantity="other">%1$d games</item>
+    </plurals>
+    <plurals name="share_files">
+        <item quantity="one">%1$d file</item>
+        <item quantity="other">%1$d files</item>
+    </plurals>
+    <plurals name="share_subtitle">
+        <item quantity="one">%1$d game · %2$s</item>
+        <item quantity="other">%1$d games · %2$s</item>
+    </plurals>
+    <plurals name="share_what_more">
+        <item quantity="one">%1$s, %2$s and %3$d more</item>
+        <item quantity="other">%1$s, %2$s and %3$d more</item>
+    </plurals>
+    <plurals name="share_items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="share_items_of">
+        <item quantity="one">%1$d of %2$d item</item>
+        <item quantity="other">%1$d of %2$d items</item>
+    </plurals>
+    <plurals name="share_offer_lead">
+        <item quantity="one">wants to send you %1$d game (%2$s).</item>
+        <item quantity="other">wants to send you %1$d games (%2$s).</item>
+    </plurals>
+    <plurals name="share_offer_note_states">
+        <item quantity="one">%1$d save state skipped: made with a core this device doesn’t have.</item>
+        <item quantity="other">%1$d save states skipped: made with a core this device doesn’t have.</item>
+    </plurals>
+    <plurals name="share_offer_part_saves">
+        <item quantity="one">%1$d save</item>
+        <item quantity="other">%1$d saves</item>
+    </plurals>
+    <plurals name="share_offer_part_states">
+        <item quantity="one">%1$d state</item>
+        <item quantity="other">%1$d states</item>
+    </plurals>
+    <plurals name="share_offer_conflicts">
+        <item quantity="one">Review %1$d Conflict</item>
+        <item quantity="other">Review %1$d Conflicts</item>
+    </plurals>
+    <plurals name="share_result_received_title">
+        <item quantity="one">%1$d Game Received</item>
+        <item quantity="other">%1$d Games Received</item>
+    </plurals>
+    <plurals name="share_result_sent_title">
+        <item quantity="one">%1$d Game Sent</item>
+        <item quantity="other">%1$d Games Sent</item>
+    </plurals>
+    <plurals name="share_result_skipped">
+        <item quantity="one">%1$d item skipped</item>
+        <item quantity="other">%1$d items skipped</item>
+    </plurals>
+    <plurals name="share_result_kept">
+        <item quantity="one">%1$d save kept (yours was newer)</item>
+        <item quantity="other">%1$d saves kept (yours was newer)</item>
+    </plurals>
+    <plurals name="share_notif_progress_text">
+        <item quantity="one">%1$d game · %2$s of %3$s</item>
+        <item quantity="other">%1$d games · %2$s of %3$s</item>
+    </plurals>
+    <plurals name="share_notif_done_received">
+        <item quantity="one">%1$d game received</item>
+        <item quantity="other">%1$d games received</item>
+    </plurals>
+    <plurals name="share_notif_done_sent">
+        <item quantity="one">%1$d game sent</item>
+        <item quantity="other">%1$d games sent</item>
+    </plurals>
+    <plurals name="library_share_selection">
+        <item quantity="one">Share %1$d game nearby</item>
+        <item quantity="other">Share %1$d games nearby</item>
+    </plurals>
+</resources>

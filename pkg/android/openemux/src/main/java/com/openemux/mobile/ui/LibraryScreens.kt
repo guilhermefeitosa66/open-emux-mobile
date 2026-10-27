@@ -352,6 +352,19 @@ fun ShelfScreen() {
                 Card {
                     // Only the moves that have somewhere to go, as the desktop sidebar does.
                     var divider = false
+                    val games = roms.filter { it.console == console }
+                    if (games.isNotEmpty()) {
+                        ListRow(
+                            stringResource(R.string.library_share_console), value = countString(R.plurals.share_games, games.size, games.size),
+                            leading = { Icon(Icons.Share, Oe.AccentText, 20.dp) },
+                            onClick = {
+                                menuFor = null
+                                a.app.shareCoordinator.startSend(games)
+                                a.nav.navigate(Routes.SHARE)
+                            },
+                        )
+                        divider = true
+                    }
                     if (i > 0) {
                         ListRow(stringResource(R.string.library_shelf_move_up), onClick = { lib.moveConsole(console, present, -1); menuFor = null })
                         divider = true
@@ -696,13 +709,23 @@ fun LibraryScreen(filter: String) {
         select = { searching = !searching; if (!searching) query = "" },
         start = { focusedRom.value?.takeIf { it in visibleKeys }?.let { selection = selection.start(it) } },
     )
+    // Share nearby (#591): the selected games, as the list shows them.
+    fun shareSelection() {
+        val picked = list.filter { it.key in selection }
+        if (picked.isEmpty()) return
+        selection = selection.clear()
+        a.app.shareCoordinator.startSend(picked)
+        a.nav.navigate(Routes.SHARE)
+    }
     if (selection.active) {
         // On top of the screen's buttons while selecting; A stays the tile's click, which now toggles.
         GamepadButtons(
             hints = listOf(
                 "A" to stringResource(R.string.library_hint_select), "X" to stringResource(R.string.library_hint_select_all),
-                "Y" to stringResource(R.string.library_hint_remove), "B" to stringResource(R.string.library_hint_done),
+                "Y" to stringResource(R.string.library_hint_remove), "SELECT" to stringResource(R.string.library_hint_share),
+                "B" to stringResource(R.string.library_hint_done),
             ),
+            select = ::shareSelection,
             x = { selection = selection.selectAll(visibleKeys) },
             y = { if (selection.count(visibleKeys) > 0) confirmRemove = true },
             start = { selection = selection.clear() },
@@ -741,6 +764,7 @@ fun LibraryScreen(filter: String) {
                 allSelected = selection.allSelected(visibleKeys),
                 onClose = { selection = selection.clear() },
                 onSelectAll = { selection = selection.selectAll(visibleKeys) },
+                onShare = ::shareSelection,
                 onRemove = { if (selection.count(visibleKeys) > 0) confirmRemove = true },
             )
         }
@@ -962,7 +986,7 @@ private fun CheckCircle(picked: Boolean, outline: Color, modifier: Modifier = Mo
 
 /** The contextual bar over the top of the library while selecting. */
 @Composable
-private fun SelectionBar(count: Int, allSelected: Boolean, onClose: () -> Unit, onSelectAll: () -> Unit, onRemove: () -> Unit) {
+private fun SelectionBar(count: Int, allSelected: Boolean, onClose: () -> Unit, onSelectAll: () -> Unit, onShare: () -> Unit, onRemove: () -> Unit) {
     val short = LocalWindowLayout.current.short
     Column(
         Modifier.fillMaxWidth().background(Oe.Surface)
@@ -989,6 +1013,10 @@ private fun SelectionBar(count: Int, allSelected: Boolean, onClose: () -> Unit, 
                     .padding(horizontal = 14.dp),
                 contentAlignment = Alignment.Center,
             ) { Text(stringResource(R.string.library_select_all), style = Type.Section.copy(fontSize = 14.sp, color = Oe.AccentText), maxLines = 1) }
+            RoundIconButton(
+                Icons.Share, countString(R.plurals.library_share_selection, count, count), onShare,
+                tint = Oe.AccentOnSoft, background = Oe.AccentSoft,
+            )
             RoundIconButton(Icons.Trash, stringResource(R.string.library_remove_selected), onRemove, tint = Oe.Danger, background = Oe.DangerBg)
         }
         Box(Modifier.fillMaxWidth().height(1.dp).background(Oe.Border))
