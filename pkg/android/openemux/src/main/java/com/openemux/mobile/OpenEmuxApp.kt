@@ -61,7 +61,7 @@ class OpenEmuxApp : Application() {
 
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var visible = false
-    private var coordinator: ShareCoordinator? = null
+    @Volatile private var coordinator: ShareCoordinator? = null
 
     /** The screens' side of Share nearby; created by the first screen or link that needs it. */
     val shareCoordinator: ShareCoordinator
@@ -74,6 +74,8 @@ class OpenEmuxApp : Application() {
                 appScope,
                 // Start, stop and the network calls run one at a time, in order.
                 Dispatchers.IO.limitedParallelism(1),
+                // Hashing the manifest runs beside them, so it never holds up an offer.
+                Dispatchers.IO,
             ).also {
                 it.setForeground(visible)
                 coordinator = it

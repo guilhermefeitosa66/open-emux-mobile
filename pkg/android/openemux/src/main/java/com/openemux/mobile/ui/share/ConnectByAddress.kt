@@ -83,7 +83,8 @@ fun ConnectByAddressScreen(initial: String) {
     }
     GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.settings_hint_back)))
     val own by share.ownAddress.collectAsState()
-    var text by rememberSaveable { mutableStateOf(initial) }
+    // Keyed on the link: a second one opened over this screen fills its own address in.
+    var text by rememberSaveable(initial) { mutableStateOf(initial) }
     var checking by remember { mutableStateOf(false) }
     var outcome by remember { mutableStateOf<ConnectOutcome?>(null) }
     val scope = rememberCoroutineScope()

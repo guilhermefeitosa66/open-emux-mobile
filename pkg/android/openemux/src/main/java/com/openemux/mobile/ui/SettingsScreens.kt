@@ -747,9 +747,11 @@ fun ImportScreen() {
 private fun DeviceNameSheet(onClose: () -> Unit) {
     val share = LocalActions.current.app.shareCoordinator
     val current by share.deviceName.collectAsState()
-    var name by rememberSaveable { mutableStateOf(current.orEmpty()) }
+    // Filled once the name has loaded: saving an empty field would reset it to the default.
+    var name by rememberSaveable(current != null) { mutableStateOf(current.orEmpty()) }
     val default = remember { share.defaultName() }
     fun save() {
+        if (current == null) return
         share.rename(name)
         onClose()
     }

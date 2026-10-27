@@ -75,7 +75,8 @@ class TransferService : Service() {
         }
         if (wifiLock == null) {
             @Suppress("DEPRECATION")
-            val mode = if (Build.VERSION.SDK_INT >= 29) WifiManager.WIFI_MODE_FULL_LOW_LATENCY else WifiManager.WIFI_MODE_FULL_HIGH_PERF
+            // Low latency only holds while the screen is on; high-perf keeps the radio up with it off, where it still works.
+            val mode = if (Build.VERSION.SDK_INT >= 34) WifiManager.WIFI_MODE_FULL_LOW_LATENCY else WifiManager.WIFI_MODE_FULL_HIGH_PERF
             wifiLock = applicationContext.getSystemService(WifiManager::class.java).createWifiLock(mode, WAKE_TAG)
                 .apply { setReferenceCounted(false); acquire() }
         }

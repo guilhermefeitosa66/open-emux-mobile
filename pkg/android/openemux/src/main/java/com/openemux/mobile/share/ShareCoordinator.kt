@@ -79,6 +79,8 @@ class ShareCoordinator(
     private val startService: () -> Unit,
     private val scope: CoroutineScope,
     private val io: CoroutineDispatcher,
+    /** Where the manifest is hashed: off [io], so a long hash does not hold up offers, Connect by Address or start/stop. */
+    private val work: CoroutineDispatcher = io,
 ) {
     private val _availability = MutableStateFlow<ShareAvailability?>(null)
     val availability: StateFlow<ShareAvailability?> = _availability.asStateFlow()
@@ -126,6 +128,8 @@ class ShareCoordinator(
     private var prepareJob: Job? = null
     private var expiry: Cancellable? = null
     private var nothingCheck: Cancellable? = null
+    /** The offer the layer last revealed, while it is still being planned or shown. */
+    @Volatile private var incomingId: String? = null
     private val nothing = NothingFound()
     private val answered: MutableSet<String> = Collections.synchronizedSet(mutableSetOf())
 
@@ -202,12 +206,15 @@ class ShareCoordinator(
         val roms = _sendRoms.value
         prepareJob?.cancel()
         _sendPrep.value = SendPrep.Building(0, 0)
-        prepareJob = scope.launch(io) {
+        prepareJob = scope.launch(work) {
             try {
-                val built = layer.buildManifest(roms, { done, total -> _sendPrep.value = SendPrep.Building(done, total) }, { !isActive })
+                // A cancelled build must not write over the state the next one starts from.
+                val built = layer.buildManifest(roms, { done, total -> if (isActive) _sendPrep.value = SendPrep.Building(done, total) }, { !isActive })
                 if (isActive) _sendPrep.value = SendPrep.Ready(built, SendSelection.from(built, roms).copy(unchecked = keep))
             } catch (e: ShareError) {
                 if (isActive) _sendPrep.value = SendPrep.Failed(ShareFormat.errorKey(e.code))
+            } catch (e: Exception) {
+                if (isActive) _sendPrep.value = SendPrep.Failed(ShareMessage.GENERIC)
             }
         }
     }
@@ -235,6 +242,9 @@ class ShareCoordinator(
                 holdCancel(cancel)
             } catch (e: ShareError) {
                 finish(sendResult(peer.name, games, SendResult(SendResult.FAILED, error = e.code)))
+            } catch (e: Exception) {
+                // Anything else would leave the transfer busy for good (and take the app down).
+                finish(sendResult(peer.name, games, SendResult(SendResult.FAILED, error = ErrorCode.INTERNAL)))
             }
         }
     }
@@ -258,8 +268,11 @@ class ShareCoordinator(
 
     private fun onIncoming(offer: IncomingOffer?) {
         if (offer == null) {
-            // The sender cancelled, or the layer stopped.
-            if (_pendingOffer.value != null) dropOffer()
+            // The sender cancelled, or the layer stopped: an offer still being planned must not show up afterwards.
+            val stale = incomingId
+            incomingId = null
+            if (stale != null) answered += stale
+            if (stale != null || _pendingOffer.value != null) dropOffer()
             return
         }
         if (offer.offerId in answered || _pendingOffer.value?.offer?.offerId == offer.offerId) return
@@ -269,6 +282,7 @@ class ShareCoordinator(
             scope.launch(io) { quietly { layer.decline(offer.offerId) } }
             return
         }
+        incomingId = offer.offerId
         val receivedAt = scheduler.now()
         expiry?.cancel()
         expiry = scheduler.schedule(ShareProtocol.OFFER_TTL_MS) { expire(offer.offerId) }
@@ -302,10 +316,16 @@ class ShareCoordinator(
 
     /** The user's choice for one conflicting item; the plan and the space check follow it. */
     fun setOverride(itemId: String, policy: Policy) {
-        val model = _pendingOffer.value ?: return
+        val offerId = _pendingOffer.value?.offer?.offerId ?: return
         scope.launch(io) {
-            val next = model.replan({ layer.plan(model.offer, it) }, model.overrides + (itemId to policy))
-            if (_pendingOffer.value?.offer?.offerId == model.offer.offerId) _pendingOffer.value = next
+            // The latest model, read in turn: two quick choices both count.
+            val model = _pendingOffer.value?.takeIf { it.offer.offerId == offerId } ?: return@launch
+            val next = try {
+                model.replan({ layer.plan(model.offer, it) }, model.overrides + (itemId to policy))
+            } catch (e: Exception) {
+                return@launch
+            }
+            if (_pendingOffer.value?.offer?.offerId == offerId) _pendingOffer.value = next
         }
     }
 
@@ -313,9 +333,16 @@ class ShareCoordinator(
         val model = _pendingOffer.value ?: return
         if (_transfer.value.busy || !model.spaceOk) return
         val offerId = model.offer.offerId
-        val games = model.plan.games.count { g -> g.decisions.any { it.send } }
-        begin(TransferState.Running(false, model.sender, games, null))
+        begin(TransferState.Running(false, model.sender, model.plan.games.count { g -> g.decisions.any { it.send } }, null))
         scope.launch(io) {
+            // A choice made just before Accept replans on [io] first: accept what it planned.
+            val model = _pendingOffer.value?.takeIf { it.offer.offerId == offerId } ?: model
+            val games = model.plan.games.count { g -> g.decisions.any { it.send } }
+            if (!model.spaceOk) {
+                _transfer.value = TransferState.Idle
+                discoverability.transferEnded()
+                return@launch
+            }
             try {
                 val cancel = layer.accept(
                     offerId, model.plan,
@@ -330,6 +357,10 @@ class ShareCoordinator(
                 _transfer.value = TransferState.Idle
                 discoverability.transferEnded()
                 if (_pendingOffer.value?.offer?.offerId == offerId) _pendingOffer.value = model.withError(ShareFormat.errorKey(e.code))
+            } catch (e: Exception) {
+                _transfer.value = TransferState.Idle
+                discoverability.transferEnded()
+                if (_pendingOffer.value?.offer?.offerId == offerId) _pendingOffer.value = model.withError(ShareMessage.GENERIC)
             }
         }
     }
@@ -341,8 +372,11 @@ class ShareCoordinator(
             else -> failure(result.error)
         }
         val kinds = model.plan.decisions.associate { it.itemId to it.kind }
+        // Kept because the local one was newer: Keep Newest only, not a Skip the user chose.
         val keptNewer = result.skipped.count { (id, reason) ->
-            reason == SkipReason.EXISTS_SKIP && kinds[id] in setOf(Item.BATTERY_SAVE, Item.STATE)
+            val kind = kinds[id]
+            reason == SkipReason.EXISTS_SKIP && kind in setOf(Item.BATTERY_SAVE, Item.STATE) &&
+                (model.overrides[id] ?: DEFAULT_POLICIES[kind]) == Policy.NEWEST
         }
         val first = model.plan.games.firstOrNull { it.romStatus.placed || it.romStatus == RomStatus.REPLACED }?.console?.id
         return ShareResult(kind, false, model.sender, games, result.skipped.size, keptNewer, errorOf(kind, result.error), first)

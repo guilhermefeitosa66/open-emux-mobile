@@ -38,7 +38,8 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(dark) { systemBars(dark) }
             ProvideWindowLayout { OpenEmuxRoot() }
         }
-        handleShareLink(intent)
+        // A recreated activity, or one relaunched from Recents, carries the link it was opened with: it was handled then.
+        if (savedInstanceState == null && (intent.flags and Intent.FLAG_ACTIVITY_LAUNCHED_FROM_HISTORY) == 0) handleShareLink(intent)
     }
 
     override fun onNewIntent(intent: Intent) {

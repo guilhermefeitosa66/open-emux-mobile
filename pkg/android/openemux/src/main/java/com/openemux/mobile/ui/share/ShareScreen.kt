@@ -94,7 +94,11 @@ fun ShareScreen(receive: Boolean) {
     val share = a.app.shareCoordinator
     DisposableEffect(Unit) {
         share.openScreen(send = !receive)
-        onDispose { share.closeScreen() }
+        onDispose {
+            // A send's result belongs to this screen: the next Share opens on the devices, not on it.
+            if ((share.transfer.value as? TransferState.Finished)?.result?.outgoing == true && !receive) share.dismissResult()
+            share.closeScreen()
+        }
     }
     AskNotificationsOnce()
     val transfer by share.transfer.collectAsState()
