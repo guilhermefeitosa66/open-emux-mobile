@@ -730,7 +730,7 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
                 if (!pane || isPicked) openFull(rom.key)
                 else picked = rom.key
             }
-            val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey).pickedRing(isPicked, outset = m != ViewMode.List)
+            val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey).pickedRing(isPicked, outset = m != ViewMode.List).paneOpener(isPicked)
             when (m) {
                 ViewMode.Carts -> CappedCell(GridSpec.Carts) {
                     Column(

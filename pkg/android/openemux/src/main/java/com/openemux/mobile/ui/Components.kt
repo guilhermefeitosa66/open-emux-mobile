@@ -371,7 +371,7 @@ fun ListRow(
             .fillMaxWidth()
             .heightIn(min = minHeight)
             .let { if (selected) it.background(Oe.AccentTint).semantics { this.selected = true } else it }
-            .let { if (onClick != null && enabled) it.gamepadFocus(corner = 0.dp, inset = true).clickable(role = Role.Button, onClick = onClick) else it }
+            .let { if (onClick != null && enabled) it.paneOpener(selected).gamepadFocus(corner = 0.dp, inset = true).clickable(role = Role.Button, onClick = onClick) else it }
             .alpha(if (enabled) 1f else DISABLED_ALPHA)
             .padding(horizontal = 14.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,

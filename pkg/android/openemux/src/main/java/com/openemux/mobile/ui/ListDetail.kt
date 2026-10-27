@@ -59,6 +59,13 @@ sealed interface SettingsItem {
     }
 }
 
+/** The item a phone's open sheet becomes in the pane when a resize brings the split back; null with none open. */
+fun sheetToPane(themeSheet: Boolean, languageSheet: Boolean): SettingsItem? = when {
+    themeSheet -> SettingsItem.Theme
+    languageSheet -> SettingsItem.Language
+    else -> null
+}
+
 /** What Back does on a list + detail screen. */
 enum class BackStep { FocusList, ClearSelection, Leave }
 

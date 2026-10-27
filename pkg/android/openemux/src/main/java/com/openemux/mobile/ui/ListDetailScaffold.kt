@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,11 +41,25 @@ import androidx.compose.ui.unit.dp
 /** The saved-state key a screen of its own hands its item back under, when a resize makes it a pane again. */
 const val PICKED = "openemux.picked"
 
+/** The list's handle on its picked item, so a gamepad leaving the detail lands on it; null outside a split's list. */
+val LocalPaneOpener = staticCompositionLocalOf<FocusRequester?> { null }
+
+/**
+ * Marks the list item whose detail sits beside the list while [picked], so Back
+ * from the detail focuses it again. Goes before the item's own focus target.
+ */
+@Composable
+fun Modifier.paneOpener(picked: Boolean): Modifier {
+    val opener = LocalPaneOpener.current
+    return if (picked && opener != null) this.focusRequester(opener) else this
+}
+
 /**
  * A list with the picked item's detail beside it. Exactly one of [listWidth]
  * and [detailWidth] is set; the other side takes the rest. Back focuses the
- * list again (gamepad in the detail), then clears the pick, then leaves the
- * screen; each side brings focus back to the item it last had.
+ * list again (gamepad in the detail), on the item marked with [paneOpener],
+ * then clears the pick, then leaves the screen; each side brings focus back to
+ * the item it last had.
  */
 @Composable
 fun ListDetailScaffold(
@@ -56,22 +72,27 @@ fun ListDetailScaffold(
     detailBackground: Color = Color.Transparent,
 ) {
     val listFocus = remember { FocusRequester() }
+    val opener = remember { FocusRequester() }
     var focusInDetail by remember { mutableStateOf(false) }
     // Composed with the screen's NavHost entry, so it goes when the screen goes.
     BackHandler(enabled = backStep(selected, focusInDetail, InputMode.gamepad) != BackStep.Leave) {
         when (backStep(selected, focusInDetail, InputMode.gamepad)) {
-            BackStep.FocusList -> runCatching { listFocus.requestFocus() }
+            // The list's own restorer only knows its first group, which would start over at the top.
+            // Without a picked item in view (scrolled off a lazy grid), the list's restorer still takes focus back.
+            BackStep.FocusList -> if (!runCatching { opener.requestFocus() }.getOrDefault(false)) runCatching { listFocus.requestFocus() }
             BackStep.ClearSelection -> onClear()
             BackStep.Leave -> {}
         }
     }
     Row(Modifier.fillMaxSize()) {
-        Box(side(listWidth).focusRequester(listFocus).focusRestorer().focusGroup()) { list() }
+        Box(side(listWidth).focusRequester(listFocus).focusRestorer().focusGroup()) {
+            CompositionLocalProvider(LocalPaneOpener provides opener, content = list)
+        }
         VerticalDivider(color = Oe.Surface2, thickness = 1.dp)
         Box(
             side(detailWidth).background(detailBackground)
                 .onFocusChanged { focusInDetail = it.hasFocus }.focusRestorer().focusGroup(),
-        ) { detail(focusInDetail) }
+        ) { CompositionLocalProvider(LocalPaneOpener provides null) { detail(focusInDetail) } }
     }
 }
 

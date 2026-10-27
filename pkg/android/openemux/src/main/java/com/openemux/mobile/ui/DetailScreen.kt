@@ -53,7 +53,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.BoxWithConstraints
 import android.text.format.Formatter
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
@@ -69,8 +68,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.openemux.mobile.data.CART_COLORS

@@ -150,4 +150,11 @@ class ListDetailTest {
         assertNull(splitChange(before = true, now = true))
         assertNull(splitChange(before = false, now = false))
     }
+
+    @Test
+    fun anOpenSheetBecomesThePanesItem() {
+        assertEquals(SettingsItem.Theme, sheetToPane(themeSheet = true, languageSheet = false))
+        assertEquals(SettingsItem.Language, sheetToPane(themeSheet = false, languageSheet = true))
+        assertNull(sheetToPane(themeSheet = false, languageSheet = false))
+    }
 }

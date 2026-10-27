@@ -98,8 +98,9 @@ private val THEMES = listOf(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(entry: NavBackStackEntry? = null) {
-    var themeSheet by remember { mutableStateOf(false) }
-    var languageSheet by remember { mutableStateOf(false) }
+    // Saveable: a density change recreates the activity, and an open sheet must still be there.
+    var themeSheet by rememberSaveable { mutableStateOf(false) }
+    var languageSheet by rememberSaveable { mutableStateOf(false) }
     GamepadButtons(hints = listOf("A" to stringResource(R.string.settings_hint_open), "B" to stringResource(R.string.settings_hint_back), "L1 R1" to stringResource(R.string.settings_hint_tabs)))
     val a = LocalActions.current
     val layout = LocalWindowLayout.current
@@ -122,6 +123,11 @@ fun SettingsScreen(entry: NavBackStackEntry? = null) {
             // A license text sits on About on a phone too, so Back steps there first as it does in the pane.
             if (it is SettingsItem.License) openAlone(SettingsItem.About)
             openAlone(it)
+        } else sheetToPane(themeSheet, languageSheet)?.let {
+            // The phone's sheet becomes the pane's item; the screens of their own hand theirs back by themselves.
+            themeSheet = false
+            languageSheet = false
+            pickedKey = it.key
         }
     }
 
@@ -181,7 +187,7 @@ private fun SettingsList(picked: SettingsItem?, onPick: (SettingsItem) -> Unit) 
 
         val biosPicked = picked == SettingsItem.Bios
         Row(
-            Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp).fillMaxWidth().gamepadFocus(corner = 20.dp).clip(RoundedCornerShape(20.dp))
+            Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp).fillMaxWidth().paneOpener(biosPicked).gamepadFocus(corner = 20.dp).clip(RoundedCornerShape(20.dp))
                 .background(if (biosPicked) Oe.AccentTint else Oe.Surface)
                 .border(1.dp, Oe.Border, RoundedCornerShape(20.dp)).semantics { selected = biosPicked }
                 .clickable(role = Role.Button) { onPick(SettingsItem.Bios) }.padding(14.dp),
