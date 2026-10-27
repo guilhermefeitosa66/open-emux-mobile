@@ -31,11 +31,13 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         ThemePref.load(this)
         Oe.syncSystem(this)
-        systemBars(Oe.dark)
         super.onCreate(savedInstanceState)
+        // Before the window is attached, so the first frame is already full screen rather than animating into it.
+        enableEdgeToEdge(statusBarStyle = barStyle(Oe.dark), navigationBarStyle = barStyle(Oe.dark))
+        immersive()
         setContent {
             val dark = Oe.dark
-            LaunchedEffect(dark) { systemBars(dark) }
+            LaunchedEffect(dark) { barIcons(dark) }
             ProvideWindowLayout { OpenEmuxRoot() }
         }
         // A recreated activity, or one relaunched from Recents, carries the link it was opened with: it was handled then.
@@ -60,11 +62,17 @@ class MainActivity : ComponentActivity() {
     }
 
     /** Status and navigation bar icons follow the theme, not the system. */
-    private fun systemBars(dark: Boolean) {
+    private fun barStyle(dark: Boolean): SystemBarStyle {
         val transparent = android.graphics.Color.TRANSPARENT
-        val style = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
-        enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
-        immersive()
+        return if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent)
+    }
+
+    /** A theme change only turns the icons over: the window itself was set up once, in onCreate. */
+    private fun barIcons(dark: Boolean) {
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = !dark
+            isAppearanceLightNavigationBars = !dark
+        }
     }
 
     /** Full screen, like the game: the bars come back over the app on a swipe and leave on their own. */
@@ -79,6 +87,12 @@ class MainActivity : ComponentActivity() {
         super.onWindowFocusChanged(hasFocus)
         // Back from the game, a dialog or the shade, the bars may be showing again.
         if (hasFocus) immersive()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // A warm start or the way back from the game resumes before focus arrives: hide them already.
+        immersive()
     }
 
     override fun onStart() {

@@ -3,12 +3,16 @@
     <color name="oe_bg">#FF121216</color>
     <color name="oe_accent">#FF7C3AED</color>
     <color name="oe_icon_background">#FF14101C</color>
-    <style name="Theme.OpenEmux" parent="android:Theme.Material.NoActionBar">
+    <!-- Full screen from the starting window on: the bars never show before MainActivity hides them. -->
+    <style name="Theme.OpenEmux.Base" parent="android:Theme.Material.NoActionBar">
         <item name="android:windowBackground">@color/oe_bg</item>
+        <item name="android:windowFullscreen">true</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+    <style name="Theme.OpenEmux" parent="Theme.OpenEmux.Base" />
     <style name="Theme.OpenEmux.Game" parent="android:Theme.NoTitleBar.Fullscreen">
         <item name="android:windowBackground">@android:color/black</item>
     </style>
