@@ -138,6 +138,8 @@ class BackupManager(private val context: Context, private val library: Library) 
             return@restore
         }
         staged.prefs?.let { restorePrefs(it) }
+        // The index lists the ROMs from before the restore: the restarted app would open on them.
+        library.paths.index.delete()
         // The cores are not in the archive: the first-run setup fetches whatever is missing.
         File(library.paths.internal, "setup.done").delete()
         File(library.paths.internal, "setup").deleteRecursively()

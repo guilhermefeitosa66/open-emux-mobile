@@ -6872,6 +6872,29 @@ static void sdl_exit(void)
 }
 #endif
 
+/* OpenEmux: as retroarch_save_for_suspend(), for the auto save state,
+ * when the platform says the content is no longer seen (Android, when
+ * the activity is paused). Guarded as the save on quit is. True when
+ * there is content running to come back to, whether or not a state was
+ * written: auto save is off in hardcore, and some cores have no states. */
+bool retroarch_save_auto_state_for_suspend(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+
+   if (     !settings
+         || !(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING)
+         ||  (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+         ||   runloop_st->content_closing)
+      return false;
+
+   /* A state task may be inside the core on its worker thread. */
+   if (     settings->bools.savestate_auto_save
+         && !command_event_core_deinit_pending())
+      command_event_save_auto_state();
+   return true;
+}
+
 /* The platform is taking the application away and may not give it
  * back - Android, when the activity is paused. Everything that would
  * otherwise only be written by retroarch_main_quit() is written now:

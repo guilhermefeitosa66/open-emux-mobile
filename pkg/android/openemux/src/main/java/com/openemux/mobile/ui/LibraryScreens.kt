@@ -1,6 +1,10 @@
 package com.openemux.mobile.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -11,6 +15,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -46,9 +51,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
@@ -56,6 +63,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -76,6 +84,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.key
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.composed
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
@@ -99,7 +108,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -113,7 +125,10 @@ import coil.compose.AsyncImage
 import com.openemux.mobile.data.Console
 import com.openemux.mobile.data.Meta
 import com.openemux.mobile.data.Rom
+import com.openemux.mobile.data.ShelfContent
+import com.openemux.mobile.data.shelfContent
 import com.retroarch.R
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -121,6 +136,8 @@ fun ShelfScreen() {
     val a = LocalActions.current
     val roms by a.app.library.roms.collectAsState()
     val meta by a.app.library.meta.collectAsState()
+    val loaded by a.app.library.loaded.collectAsState()
+    val content = shelfContent(loaded, roms)
     val focusedShelf = rememberSaveable { mutableStateOf<String?>(null) }
     val lib = a.app.library
     val present = lib.orderedConsoles(meta.consoleOrder).filter { c -> roms.any { it.console == c } }
@@ -177,7 +194,7 @@ fun ShelfScreen() {
             horizontalArrangement = Arrangement.spacedBy(spec.gap.dp),
         ) {
             if (spec.tablet) item(span = { GridItemSpan(maxLineSpan) }) {
-                TabletShelfHeader(spec, roms)
+                TabletShelfHeader(spec, roms, content != ShelfContent.Loading)
             } else item(span = { GridItemSpan(maxLineSpan) }) {
                 Column(Modifier.bleed(spec.sidePadding.dp)) {
                     // The grid clips at its top: the room above the header is the focus ring's.
@@ -197,13 +214,14 @@ fun ShelfScreen() {
                     Column(Modifier.padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 16.dp)) {
                         Text(stringResource(R.string.library_shelf_title), style = Type.Display)
                         val consoles = Console.entries.count { c -> roms.any { it.console == c } }
-                        Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 6.dp))
+                        // No count until the library is known: "0 consoles" reads as a lost library.
+                        if (content != ShelfContent.Loading) Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 6.dp))
                     }
                     UpdateBanner(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
                     ArtworkSyncPill(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 16.dp))
                 }
             }
-            if (roms.isEmpty()) {
+            if (content == ShelfContent.Empty) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     EmptyState(
                         stringResource(R.string.library_shelf_empty_title),
@@ -213,7 +231,7 @@ fun ShelfScreen() {
                         Modifier.bleed(spec.sidePadding.dp),
                     )
                 }
-            } else {
+            } else if (content == ShelfContent.Shelves) {
                 if (spec.tablet) {
                     // No more continue cards than the grid below has columns, so the two line up.
                     if (playing.isNotEmpty() && !tabletop) item(span = { GridItemSpan(maxLineSpan) }) {
@@ -342,6 +360,19 @@ fun ShelfScreen() {
                 Card {
                     // Only the moves that have somewhere to go, as the desktop sidebar does.
                     var divider = false
+                    val games = roms.filter { it.console == console }
+                    if (games.isNotEmpty()) {
+                        ListRow(
+                            stringResource(R.string.library_share_console), value = countString(R.plurals.share_games, games.size, games.size),
+                            leading = { Icon(Icons.Share, Oe.AccentText, 20.dp) },
+                            onClick = {
+                                menuFor = null
+                                a.app.shareCoordinator.startSend(games)
+                                a.nav.navigate(Routes.SHARE)
+                            },
+                        )
+                        divider = true
+                    }
                     if (i > 0) {
                         ListRow(stringResource(R.string.library_shelf_move_up), onClick = { lib.moveConsole(console, present, -1); menuFor = null })
                         divider = true
@@ -465,14 +496,15 @@ private fun ShelfCard(
 
 /** The tablet shelf's top: title and counts, then search and import on the same row. */
 @Composable
-private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>) {
+private fun TabletShelfHeader(spec: ShelfSpec, roms: List<Rom>, known: Boolean) {
     val a = LocalActions.current
     Column(Modifier.padding(top = spec.topPadding.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.library_shelf_title), style = Type.Display.copy(fontSize = 36.sp, lineHeight = 40.sp))
                 val consoles = Console.entries.count { c -> roms.any { it.console == c } }
-                Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp))
+                // As on the phone header: no count while the library is not known yet.
+                if (known) Text("${countString(R.plurals.library_consoles_count, consoles, consoles)} · ${countString(R.plurals.library_games_count, roms.size, roms.size)}", style = Type.Small.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp))
             }
             val search = stringResource(R.string.library_search_all_consoles)
             if (spec.maxColumns > 2) {
@@ -636,6 +668,9 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
         if (pane) picked?.let { entry?.savedStateHandle?.set(PICKED, it) }
         a.nav.navigate(Routes.rom(key))
     }
+    val loaded by lib.loaded.collectAsState()
+    // The empty texts wait until the library is known, as on the shelf.
+    val known = shelfContent(loaded, roms) != ShelfContent.Loading
     val searchRequested = filter == "SEARCH"
     var mode by rememberSaveable { mutableStateOf(ViewMode.Carts) }
     var sort by rememberSaveable { mutableStateOf(SortMode.Az) }
@@ -661,26 +696,109 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
         else lib.orderedConsoles(meta.consoleOrder).mapNotNull { c -> list.filter { it.console == c }.takeIf { it.isNotEmpty() }?.let { c to it } }
     val firstKey = groups.firstOrNull()?.second?.firstOrNull()?.key
     val focusedRom = rememberSaveable { mutableStateOf<String?>(null) }
+    // A focused game that left the library (a bulk remove, a remove from its page, a rescan) is
+    // forgotten once it is gone, so the first tile that stayed takes the gamepad's focus. Not on
+    // an empty list: that is also the library before its first scan, with the saved focus still good.
+    LaunchedEffect(roms) { if (roms.isNotEmpty()) focusedRom.value = focusAfterRemoval(focusedRom.value, roms.map { it.key }) }
     val chipIds = listOf("ALL", "FAV") + lib.orderedConsoles(meta.consoleOrder).filter { c -> roms.any { it.console == c } }.map { it.id }
     fun chip(step: Int) {
         current = chipIds[(chipIds.indexOf(current).coerceAtLeast(0) + step).coerceIn(0, chipIds.lastIndex)]
         focusedRom.value = null
     }
+    // Selection mode (issue #585): it only ever holds games on screen, so a hidden one is never removed.
+    var selection by remember { mutableStateOf(RomSelection()) }
+    var confirmRemove by remember { mutableStateOf(false) }
+    val visibleKeys = remember(list) { list.map { it.key } }
+    LaunchedEffect(visibleKeys) { selection = selection.retain(visibleKeys) }
+    // Nothing left to remove (the filter changed under the dialog): close it rather than ask about 0 games.
+    LaunchedEffect(selection.active) { if (!selection.active) confirmRemove = false }
+    val haptic = LocalHapticFeedback.current
+    val pick = TilePick(
+        selection = selection,
+        select = stringResource(R.string.library_select_tile),
+        deselect = stringResource(R.string.library_deselect_tile),
+        onStart = { key -> haptic.performHapticFeedback(HapticFeedbackType.LongPress); selection = selection.start(key) },
+        onToggle = { key -> selection = selection.toggle(key) },
+    )
+    val scope = rememberCoroutineScope()
     GamepadButtons(
         hints = listOf(
             "A" to stringResource(R.string.library_hint_detail), "X" to stringResource(R.string.library_hint_favorite),
             "Y" to stringResource(R.string.library_hint_options), "B" to stringResource(R.string.library_shelf_title),
+            "START" to stringResource(R.string.library_hint_select),
         ),
         l1 = { chip(-1) },
         r1 = { chip(1) },
         x = { focusedRom.value?.let { key -> lib.updateRom(key) { it.copy(favorite = !it.favorite) } } },
         y = { focusedRom.value?.let { openFull(it) } },
         select = { searching = !searching; if (!searching) query = "" },
+        start = { focusedRom.value?.takeIf { it in visibleKeys }?.let { selection = selection.start(it) } },
     )
+    // Share nearby (#591): the selected games, as the list shows them.
+    fun shareSelection() {
+        val picked = list.filter { it.key in selection }
+        if (picked.isEmpty()) return
+        selection = selection.clear()
+        a.app.shareCoordinator.startSend(picked)
+        a.nav.navigate(Routes.SHARE)
+    }
+    if (selection.active) {
+        // On top of the screen's buttons while selecting; A stays the tile's click, which now toggles.
+        GamepadButtons(
+            hints = listOf(
+                "A" to stringResource(R.string.library_hint_select), "X" to stringResource(R.string.library_hint_select_all),
+                "Y" to stringResource(R.string.library_hint_remove), "SELECT" to stringResource(R.string.library_hint_share),
+                "B" to stringResource(R.string.library_hint_done),
+            ),
+            select = ::shareSelection,
+            x = { selection = selection.selectAll(visibleKeys) },
+            y = { if (selection.count(visibleKeys) > 0) confirmRemove = true },
+            start = { selection = selection.clear() },
+        )
+    }
+    if (confirmRemove) {
+        // The dialog is modal for the gamepad too: X, Start, L1/R1 and Select would otherwise
+        // reach the selection (or the filter) behind it and change which games get removed.
+        val swallow = {}
+        GamepadButtons(
+            hints = listOf("A" to stringResource(R.string.settings_hint_choose), "B" to stringResource(R.string.detail_cancel)),
+            l1 = swallow, r1 = swallow, x = swallow, y = swallow, select = swallow, start = swallow,
+        )
+        val doomed = list.filter { it.key in selection }
+        val n = doomed.size
+        AlertDialog(
+            onDismissRequest = { confirmRemove = false },
+            containerColor = Oe.Sheet,
+            title = { ImmersiveWindow(); Text(countString(R.plurals.library_remove_many_title, n, n), style = Type.Title.copy(fontSize = 20.sp)) },
+            text = { Text(countString(R.plurals.library_remove_many_message, n), style = Type.Small) },
+            confirmButton = {
+                TextButton({
+                    confirmRemove = false
+                    selection = selection.clear()
+                    scope.launch(Dispatchers.IO) { lib.deleteAll(doomed) }
+                }) { Text(stringResource(R.string.detail_remove), style = Type.Section.copy(color = Oe.Danger)) }
+            },
+            dismissButton = { TextButton({ confirmRemove = false }) { Text(stringResource(R.string.detail_cancel), style = Type.Section) } },
+        )
+    }
+    val bar: @Composable BoxScope.() -> Unit = {
+        // Here, so it is composed after the split's own Back: while selecting, Back ends the selection first.
+        BackHandler(enabled = selection.active) { selection = selection.clear() }
+        AnimatedVisibility(selection.active, Modifier.align(Alignment.TopCenter), enter = fadeIn(), exit = fadeOut()) {
+            SelectionBar(
+                count = selection.count(visibleKeys),
+                allSelected = selection.allSelected(visibleKeys),
+                onClose = { selection = selection.clear() },
+                onSelectAll = { selection = selection.selectAll(visibleKeys) },
+                onShare = ::shareSelection,
+                onRemove = { if (selection.count(visibleKeys) > 0) confirmRemove = true },
+            )
+        }
+    }
 
     val tabletop = LocalTabletop.current
     // Tabletop decides first: the top half takes the upright layout, however short it is.
-    if (LocalWindowLayout.current.short && !tabletop && mode != ViewMode.List) {
+    if (LocalWindowLayout.current.short && !tabletop && mode != ViewMode.List) Box(Modifier.fillMaxSize()) {
         LandscapeLibrary(
             title = when (current) { "FAV" -> stringResource(R.string.library_favorites); "ALL" -> stringResource(R.string.library_all_games); else -> console!!.displayName },
             list = list, groups = groups, roms = roms, current = current, onPick = { current = it },
@@ -688,8 +806,9 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
             searching = searching, query = query, onQuery = { query = it },
             onSearch = { searching = !searching; if (!searching) query = "" },
             sort = sort, onSort = { sort = if (sort == SortMode.Az) SortMode.Recent else SortMode.Az },
-            focusedRom = focusedRom,
+            focusedRom = focusedRom, known = known, pick = pick,
         )
+        bar()
         return
     }
 
@@ -732,37 +851,41 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
                 else picked = rom.key
             }
             val focus = Modifier.restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey).pickedRing(isPicked, outset = m != ViewMode.List).paneOpener(isPicked)
+            val chosen = rom.key in selection
             when (m) {
                 ViewMode.Carts -> CappedCell(GridSpec.Carts) {
                     Column(
-                        it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).combinedClickable(onClick = open, onLongClick = open),
+                        it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).pickable(pick, rom.key, open),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Box {
+                        Box(Modifier.selectionLook(selection.active, chosen)) {
                             Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.fillMaxWidth(), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
-                            if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
+                            TileBadges(selection.active, chosen, romMeta?.favorite == true)
                         }
                         Text(
-                            rom.title, style = Type.Caption.copy(color = Oe.Text, fontSize = 13.sp),
+                            rom.title, style = Type.Caption.copy(color = captionColor(selection.active, chosen), fontSize = 13.sp),
                             maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 6.dp).fillMaxWidth(),
                         )
                     }
                 }
                 ViewMode.Covers -> CappedCell(GridSpec.Covers) {
-                    Column(it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).combinedClickable(onClick = open, onLongClick = open)) {
-                        Box {
+                    Column(it.gamepadFocus(corner = 10.dp, scale = 1.05f).then(focus).pickable(pick, rom.key, open)) {
+                        Box(Modifier.selectionLook(selection.active, chosen)) {
                             BoxArt(rom, Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)))
-                            if (romMeta?.favorite == true) FavBadge(Modifier.padding(4.dp))
+                            TileBadges(selection.active, chosen, romMeta?.favorite == true)
                         }
-                        Text(rom.title, style = Type.Caption.copy(color = Oe.Text), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
+                        Text(rom.title, style = Type.Caption.copy(color = captionColor(selection.active, chosen)), maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 6.dp))
                     }
                 }
-                ViewMode.List -> if (table) TableRow(rom, playtimes[rom.key] ?: 0L, romMeta?.lastPlayed ?: 0L, romMeta?.favorite == true, focus, open)
+                ViewMode.List -> if (table) TableRow(rom, playtimes[rom.key] ?: 0L, romMeta?.lastPlayed ?: 0L, romMeta?.favorite == true, focus, pick, open)
                 else Row(
-                    Modifier.fillMaxWidth().gamepadFocus(corner = 12.dp, inset = true).then(focus).clickable(onClick = open).padding(vertical = 8.dp),
+                    Modifier.fillMaxWidth().gamepadFocus(corner = 12.dp, inset = true).then(focus).pickable(pick, rom.key, open)
+                        .then(if (chosen) Modifier.background(Oe.AccentSoft, RoundedCornerShape(12.dp)) else Modifier)
+                        .padding(vertical = 8.dp, horizontal = if (selection.active) 8.dp else 0.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (selection.active) CheckCircle(chosen, outline = Oe.Chevron, modifier = Modifier.padding(end = 12.dp))
                     Box(Modifier.size(64.dp), contentAlignment = Alignment.Center) {
                         BoxArt(rom, Modifier.clip(RoundedCornerShape(6.dp)), maxHeight = 64.dp)
                     }
@@ -785,7 +908,9 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
     val gridState = rememberLazyStaggeredGridState()
     val grid: @Composable () -> Unit = { MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
-        Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down),
+        // While selecting, the D-pad stays on the games: not off the side onto the tabs or the rail,
+        // nor down onto the tabletop deck.
+        Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down).holdGamepadFocus(selection.active),
         state = gridState,
         // A tablet's wider margins line the grid up with the shelf.
         contentPadding = contentSideDp(LocalWindowLayout.current).dp.let { side ->
@@ -795,7 +920,8 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
         verticalItemSpacing = if (shown == ViewMode.List) 0.dp else 18.dp,
     ) {
         item(span = StaggeredGridItemSpan.FullLine) {
-            Column {
+            // While selecting, the D-pad stays on the games: the bar covers the header's top row.
+            Column(Modifier.gamepadFence(selection.active)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.weight(1f)) { BackLink(stringResource(R.string.library_shelf_title)) { a.nav.popBackStack(Routes.SHELF, false) } }
                     if (!tabletop) searchAndSort()
@@ -822,7 +948,7 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
                     Text(stringResource(if (sort == SortMode.Az) R.string.library_section_carts else R.string.library_section_recent), style = Type.Section.copy(fontSize = 17.sp), modifier = Modifier.weight(1f))
                     if (!tabletop) ViewToggle(mode) { mode = it }
                 }
-                if (list.isEmpty()) {
+                if (list.isEmpty() && known) {
                     Text(
                         if (query.isNotBlank()) stringResource(R.string.library_no_results, query) else stringResource(R.string.library_empty_list),
                         style = Type.Small, modifier = Modifier.padding(vertical = 24.dp),
@@ -844,8 +970,10 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
         }
     } } }
 
+    // The selection bar sits over the games, beside the pane rather than over it.
+    val games: @Composable () -> Unit = { Box(Modifier.fillMaxSize()) { grid(); bar() } }
     if (!pane) {
-        grid()
+        games()
         return
     }
     val pickedRom = picked?.takeIf { key -> roms.any { it.key == key } }
@@ -853,7 +981,7 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
         listWidth = null, detailWidth = LIBRARY_PANE_DP.dp,
         // A pick whose game is gone (removed on its own screen) shows the placeholder, and Back must not stop there.
         selected = pickedRom != null, onClear = { picked = null },
-        list = grid,
+        list = games,
         detail = { focusInDetail ->
             if (pickedRom == null) PanePlaceholder(Icons.Cart, stringResource(R.string.library_pick_hint), Modifier.padding(bottom = TabBarHeight))
             else key(pickedRom) {
@@ -894,17 +1022,22 @@ private fun TableHeader() {
 
 /** A game as a table row: its art, title and file, time played, when it was last played and its star. */
 @Composable
-private fun TableRow(rom: Rom, playtime: Long, lastPlayed: Long, favorite: Boolean, focus: Modifier, onClick: () -> Unit) {
+private fun TableRow(rom: Rom, playtime: Long, lastPlayed: Long, favorite: Boolean, focus: Modifier, pick: TilePick, open: () -> Unit) {
     val lib = LocalActions.current.app.library
+    val selecting = pick.selection.active
+    val chosen = rom.key in pick.selection
     val time = formatPlaytime(playtime)
     val last = if (lastPlayed > 0) formatAgo(lastPlayed) else ""
     // Never played: the time already says so, and "last played never played" says it twice.
     val description = if (last.isEmpty()) "${rom.title}, $time" else stringResource(R.string.library_row_description, rom.title, time, last)
     Row(
         Modifier.fillMaxWidth().heightIn(min = 64.dp).gamepadFocus(corner = 12.dp, inset = true).then(focus)
-            .semantics { contentDescription = description }.clickable(onClick = onClick).padding(vertical = 6.dp),
+            .semantics { contentDescription = description }.pickable(pick, rom.key, open)
+            .then(if (chosen) Modifier.background(Oe.AccentSoft, RoundedCornerShape(12.dp)) else Modifier)
+            .padding(vertical = 6.dp, horizontal = if (selecting) 8.dp else 0.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (selecting) CheckCircle(chosen, outline = Oe.Chevron, modifier = Modifier.padding(end = 12.dp))
         Row(Modifier.weight(1f).clearAndSetSemantics {}, verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.width(76.dp), contentAlignment = Alignment.Center) {
                 if (rom.console.frame != null) Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(76.dp), pending = labelPending(rom), cover = LocalActions.current.app.covers.urlFor(rom))
@@ -918,6 +1051,99 @@ private fun TableRow(rom: Rom, playtime: Long, lastPlayed: Long, favorite: Boole
             Text(last, style = Type.Small, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.width(80.dp))
             Box(Modifier.width(24.dp), contentAlignment = Alignment.Center) { if (favorite) Icon(Icons.Star, Oe.Star, 16.dp, filled = true) }
         }
+    }
+}
+
+/** What a tap and a long press on a game do: open it and start selecting, or toggle it while selecting. */
+private class TilePick(
+    val selection: RomSelection,
+    val select: String,
+    val deselect: String,
+    val onStart: (String) -> Unit,
+    val onToggle: (String) -> Unit,
+)
+
+@OptIn(ExperimentalFoundationApi::class)
+private fun Modifier.pickable(pick: TilePick, key: String, open: () -> Unit): Modifier =
+    if (pick.selection.active) {
+        val picked = key in pick.selection
+        semantics { selected = picked; toggleableState = ToggleableState(picked) }
+            .combinedClickable(
+                onClickLabel = if (picked) pick.deselect else pick.select, role = Role.Checkbox,
+                onClick = { pick.onToggle(key) }, onLongClick = { pick.onToggle(key) },
+            )
+    } else {
+        combinedClickable(onClick = open, onLongClick = { pick.onStart(key) })
+    }
+
+/** A selected game's ring, and the others dimmed while selecting; nothing outside selection mode. */
+private fun Modifier.selectionLook(selecting: Boolean, picked: Boolean): Modifier = when {
+    picked -> border(3.dp, Oe.AccentBright, RoundedCornerShape(10.dp))
+    selecting -> alpha(0.78f)
+    else -> this
+}
+
+@Composable
+private fun captionColor(selecting: Boolean, picked: Boolean) = if (selecting && !picked) Oe.Muted else Oe.Text
+
+/** The marker at the top start of a tile while selecting; the favorite star moves to the other corner. */
+@Composable
+private fun BoxScope.TileBadges(selecting: Boolean, picked: Boolean, favorite: Boolean) {
+    if (selecting) CheckCircle(picked, outline = Color.White.copy(alpha = 0.85f), hollow = Color.Black.copy(alpha = 0.35f), modifier = Modifier.align(Alignment.TopStart).padding(6.dp))
+    if (favorite) FavBadge(Modifier.align(if (selecting) Alignment.TopEnd else Alignment.TopStart).padding(4.dp))
+}
+
+/** Selected: an accent disc with a check, haloed; not selected: a hollow ring. Never colour alone. */
+@Composable
+private fun CheckCircle(picked: Boolean, outline: Color, modifier: Modifier = Modifier, hollow: Color = Color.Transparent) {
+    Box(modifier.size(24.dp), contentAlignment = Alignment.Center) {
+        if (picked) {
+            Box(
+                Modifier.size(24.dp).clip(CircleShape).background(Oe.Accent).border(2.dp, Oe.Bg, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { Icon(Icons.Check, Color.White, 16.dp, stroke = 2.5f) }
+        } else {
+            Box(Modifier.size(20.dp).clip(CircleShape).background(hollow).border(2.dp, outline, CircleShape))
+        }
+    }
+}
+
+/** The contextual bar over the top of the library while selecting. */
+@Composable
+private fun SelectionBar(count: Int, allSelected: Boolean, onClose: () -> Unit, onSelectAll: () -> Unit, onShare: () -> Unit, onRemove: () -> Unit) {
+    val short = LocalWindowLayout.current.short
+    Column(
+        Modifier.fillMaxWidth().background(Oe.Surface)
+            // Taps on the bar never reach the header it covers.
+            .pointerInput(Unit) { awaitPointerEventScope { while (true) awaitPointerEvent() } }
+            // The gamepad has X, Y and B for these, and the D-pad stays on the games: A means "Select".
+            .gamepadFence(closed = true)
+            .statusBarsPadding().displayCutoutPadding(),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().height(if (short) 52.dp else 56.dp).padding(horizontal = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            RoundIconButton(Icons.Close, stringResource(R.string.library_selection_close), onClose, background = Color.Transparent)
+            Text(
+                countString(R.plurals.library_selected_count, count, count), style = Type.Section.copy(fontSize = 17.sp),
+                maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+            )
+            Box(
+                Modifier.height(40.dp).alpha(if (allSelected) 0.4f else 1f)
+                    .clip(RoundedCornerShape(20.dp)).background(Oe.Control)
+                    .clickable(enabled = !allSelected, role = Role.Button, onClick = onSelectAll)
+                    .padding(horizontal = 14.dp),
+                contentAlignment = Alignment.Center,
+            ) { Text(stringResource(R.string.library_select_all), style = Type.Section.copy(fontSize = 14.sp, color = Oe.AccentText), maxLines = 1) }
+            RoundIconButton(
+                Icons.Share, countString(R.plurals.library_share_selection, count, count), onShare,
+                tint = Oe.AccentOnSoft, background = Oe.AccentSoft,
+            )
+            RoundIconButton(Icons.Trash, stringResource(R.string.library_remove_selected), onRemove, tint = Oe.Danger, background = Oe.DangerBg)
+        }
+        Box(Modifier.fillMaxWidth().height(1.dp).background(Oe.Border))
     }
 }
 
@@ -978,6 +1204,8 @@ private fun LandscapeLibrary(
     sort: SortMode,
     onSort: () -> Unit,
     focusedRom: MutableState<String?>,
+    known: Boolean,
+    pick: TilePick,
 ) {
     val a = LocalActions.current
     val lib = a.app.library
@@ -1003,7 +1231,7 @@ private fun LandscapeLibrary(
             val caption = 28.dp
             // Room above and below, so nothing touches the edges.
             val itemH = maxHeight - caption - 56.dp
-            if (list.isEmpty()) {
+            if (list.isEmpty() && known) {
                 Text(
                     if (query.isNotBlank()) stringResource(R.string.library_no_results, query) else stringResource(R.string.library_empty_list),
                     style = Type.Small, modifier = Modifier.align(Alignment.Center),
@@ -1013,7 +1241,8 @@ private fun LandscapeLibrary(
             // The last game sits at the row's end, which is the left in a right-to-left layout.
             val rowEnd = if (LocalLayoutDirection.current == LayoutDirection.Rtl) FocusDirection.Left else FocusDirection.Right
             CenteredFocusScroll { LazyRow(
-                Modifier.fillMaxSize().holdFocusAtEnd(rowEnd),
+                // While selecting, the D-pad stays on the games, as in the portrait grid.
+                Modifier.fillMaxSize().holdFocusAtEnd(rowEnd).holdGamepadFocus(pick.selection.active),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = margin),
                 horizontalArrangement = Arrangement.spacedBy(gap),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1032,22 +1261,24 @@ private fun LandscapeLibrary(
                         Column(
                             Modifier.width(maxOf(third, w ?: third)).gamepadFocus(corner = 10.dp, scale = 1.05f) { lit = it }
                                 .restorableFocus(rom.key, focusedRom, initial = rom.key == firstKey)
-                                .combinedClickable(onClick = open, onLongClick = open),
+                                .pickable(pick, rom.key, open),
                             horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Box {
+                            val selecting = pick.selection.active
+                            val picked = rom.key in pick.selection
+                            Box(Modifier.selectionLook(selecting, picked)) {
                                 if (itemMode == ViewMode.Carts) {
                                     Cartridge(rom.console, labelFor(rom), rom.title, lib.effectiveColor(rom), Modifier.width(w!!), pending = labelPending(rom), cover = a.app.covers.urlFor(rom))
                                 } else {
                                     BoxArt(rom, Modifier.clip(RoundedCornerShape(10.dp)), maxHeight = itemH)
                                 }
-                                if (favorite) FavBadge(Modifier.padding(4.dp))
+                                TileBadges(selecting, picked, favorite)
                             }
                             // With the gamepad, the focused game's title stands out from the others.
                             Text(
                                 rom.title,
                                 style = Type.Caption.copy(
-                                    color = if (InputMode.gamepad && !lit) Oe.Muted else Oe.Text, fontSize = 13.sp,
+                                    color = if ((InputMode.gamepad && !lit) || (selecting && !picked)) Oe.Muted else Oe.Text, fontSize = 13.sp,
                                     fontWeight = if (lit) FontWeight.SemiBold else Type.Caption.fontWeight,
                                 ),
                                 maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center,
@@ -1143,6 +1374,7 @@ fun RecentScreen() {
     val lib = a.app.library
     val roms by lib.roms.collectAsState()
     val meta by lib.meta.collectAsState()
+    val loaded by lib.loaded.collectAsState()
     val recent = roms.filter { (meta.roms[it.key]?.lastPlayed ?: 0) > 0 }.sortedByDescending { meta.roms[it.key]!!.lastPlayed }
     GamepadButtons(hints = listOf("A" to stringResource(R.string.library_hint_detail), "L1 R1" to stringResource(R.string.library_hint_tabs)))
 
@@ -1150,7 +1382,7 @@ fun RecentScreen() {
         item {
             Text(stringResource(R.string.library_recent_title), style = Type.Display, modifier = Modifier.padding(start = 20.dp, end = 20.dp, top = 20.dp, bottom = 16.dp))
         }
-        if (recent.isEmpty()) {
+        if (recent.isEmpty() && shelfContent(loaded, roms) != ShelfContent.Loading) {
             item { EmptyState(stringResource(R.string.library_recent_empty_title), stringResource(R.string.library_recent_empty_body), null, {}) }
         }
         items(recent, key = { it.key }) { rom ->

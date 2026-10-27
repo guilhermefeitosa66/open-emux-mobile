@@ -99,4 +99,26 @@
     <string name="library_col_last">Last played</string>
     <string name="library_hint_list">List</string>
     <string name="library_row_description">%1$s, %2$s, last played %3$s</string>
+    <!-- Selection mode (issue #585) -->
+    <plurals name="library_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="library_select_all">Select all</string>
+    <string name="library_selection_close">Cancel selection</string>
+    <string name="library_remove_selected">Remove selected</string>
+    <plurals name="library_remove_many_title">
+        <item quantity="one">Remove %1$d game?</item>
+        <item quantity="other">Remove %1$d games?</item>
+    </plurals>
+    <plurals name="library_remove_many_message">
+        <item quantity="one">The ROM file is deleted from the device. Saves and states are kept in case you import it again.</item>
+        <item quantity="other">The ROM files are deleted from the device. Saves and states are kept in case you import them again.</item>
+    </plurals>
+    <string name="library_select_tile">Select</string>
+    <string name="library_deselect_tile">Deselect</string>
+    <string name="library_hint_select">Select</string>
+    <string name="library_hint_select_all">Select all</string>
+    <string name="library_hint_remove">Remove</string>
+    <string name="library_hint_done">Done</string>
 </resources>

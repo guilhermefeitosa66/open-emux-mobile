@@ -23,10 +23,19 @@
  *      elsewhere still gets its save before the following onStop()
  *      returns.
  *   5. A resume that arrives after such a timeout stays in effect.
+ *   6. OpenEmux: with the activity's autoSaveOnPause(), the auto save
+ *      state current when onPause() was called is on disk when it
+ *      returns, written with the flush; the stop after it writes nothing;
+ *      the next focus keeps the content paused and tells the activity
+ *      once, from the runloop. A pause after a resume writes it again.
+ *   7. A pause in the startup pump, before content is loaded, writes no
+ *      state and leaves nothing for the return.
  *
- * Two sabotage modes reproduce the bugs the lanes exist for and are
+ * Three sabotage modes reproduce the bugs the lanes exist for and are
  * asserted to be caught: acknowledging before the save (the previous
- * behaviour) and holding the acknowledgement in the startup pump.
+ * behaviour), holding the acknowledgement in the startup pump, and
+ * leaving the auto save state to the stop (the first version of it: on
+ * Home the stop's flush did not run until the app came back).
  *
  * The acknowledgement and its wait are the driver's own, from
  * frontend/drivers/android_lifecycle.h; the command handling around
@@ -51,6 +60,7 @@ enum
    CMD_RESUME,
    CMD_PAUSE,
    CMD_STOP,
+   CMD_GAINED_FOCUS,
    CMD_DESTROY
 };
 
@@ -60,6 +70,7 @@ enum
 /* Sabotage hooks: 0 = shipping behaviour. */
 static int sab_ack_before_flush = 0;
 static int sab_hold_in_pump     = 0;
+static int sab_save_on_stop     = 0;
 
 /* struct android_app, as far as the handshake cares. Everything the two
  * threads share sits behind mtx. */
@@ -75,11 +86,21 @@ static int  disk_gen;       /* what the last completed save wrote */
 static int  flushes;
 static int  pump_mode;      /* app thread is in android_run_events() */
 static int  stall_ms;       /* app thread held outside the looper */
+static int  auto_on_pause;   /* the activity's autoSaveOnPause() */
+static int  content_loaded; /* runloop_content_loaded() */
+static int  game_gen;       /* bumped by the game while it runs */
+static int  state_disk_gen; /* what the last auto save state wrote */
+static int  state_saves;
+static int  paused;         /* RUNLOOP_FLAG_PAUSED */
+static int  sheet_calls;    /* onResumedIntoPause() */
 
 /* App-thread-only state: android_input.c's statics. */
 static bool state_flushed;
 static bool state_flush_pending;
 static int  state_ack_cmd;
+static bool autosave_pending;
+static bool resume_into_menu;
+static bool resume_into_menu_pending;
 
 static int  failures;
 static int  quiet;          /* sabotage runs: failures are expected */
@@ -92,6 +113,8 @@ static void sleep_ms(int ms)
    while (nanosleep(&ts, &ts) != 0 && errno == EINTR)
       ;
 }
+
+static int read_locked(const int *v);
 
 /* android_input_release_state_ack() */
 static void release_state_ack(void)
@@ -119,9 +142,46 @@ static void flush_state(void)
    pthread_mutex_unlock(&mtx);
 }
 
+/* retroarch_save_auto_state_for_suspend(): true with content running. */
+static bool save_auto_state(void)
+{
+   int gen;
+   pthread_mutex_lock(&mtx);
+   gen = game_gen;
+   if (!content_loaded)
+   {
+      pthread_mutex_unlock(&mtx);
+      return false;
+   }
+   pthread_mutex_unlock(&mtx);
+
+   sleep_ms(FLUSH_MS);
+
+   pthread_mutex_lock(&mtx);
+   state_disk_gen = gen;
+   state_saves++;
+   pthread_mutex_unlock(&mtx);
+   return true;
+}
+
+/* android_app_resume_into_menu() */
+static void resume_into_menu_call(void)
+{
+   pthread_mutex_lock(&mtx);
+   paused = 1;
+   sheet_calls++;
+   pthread_mutex_unlock(&mtx);
+}
+
 /* android_input_flush_pending_state() */
 static void flush_pending_state(void)
 {
+   if (resume_into_menu_pending)
+   {
+      resume_into_menu_pending = false;
+      resume_into_menu_call();
+   }
+
    if (!state_flush_pending)
       return;
    state_flush_pending = false;
@@ -130,6 +190,13 @@ static void flush_pending_state(void)
    {
       state_flushed = true;
       flush_state();
+   }
+
+   if (autosave_pending)
+   {
+      autosave_pending = false;
+      if (save_auto_state())
+         resume_into_menu = true;
    }
 
    release_state_ack();
@@ -144,8 +211,17 @@ static void poll_main_cmd(int cmd)
       case CMD_START:
       case CMD_PAUSE:
       {
-         bool hold_ack = (cmd == CMD_PAUSE) && !state_flushed
-            && !sab_ack_before_flush;
+         bool hold_ack;
+
+         if (     cmd == CMD_PAUSE
+               && !sab_save_on_stop
+               && read_locked(&auto_on_pause)
+               && read_locked(&content_loaded))
+            autosave_pending = true;
+
+         hold_ack = (cmd == CMD_PAUSE)
+            && (     (!state_flushed && !sab_ack_before_flush)
+                  || autosave_pending);
 
          if (!hold_ack)
             android_lifecycle_set_state(&lc, cmd);
@@ -161,17 +237,36 @@ static void poll_main_cmd(int cmd)
             state_flush_pending = false;
             state_flushed       = false;
             state_ack_cmd       = -1;
+            autosave_pending    = false;
          }
          break;
       }
       case CMD_STOP:
-         if (!state_flushed && !sab_ack_before_flush)
+         if (     sab_save_on_stop
+               && read_locked(&auto_on_pause)
+               && read_locked(&content_loaded))
+            autosave_pending = true;
+
+         if (     (!state_flushed && !sab_ack_before_flush)
+               || autosave_pending)
          {
             state_flush_pending = true;
             state_ack_cmd       = CMD_STOP;
          }
          else
             android_lifecycle_set_state(&lc, cmd);
+         break;
+      case CMD_GAINED_FOCUS:
+         /* The platform unpause is not RUNLOOP_FLAG_PAUSED: a focus
+          * never clears the content's own pause. */
+         pthread_mutex_lock(&mtx);
+         if (resume_into_menu)
+         {
+            resume_into_menu         = false;
+            resume_into_menu_pending = true;
+            paused                   = 1;
+         }
+         pthread_mutex_unlock(&mtx);
          break;
       default:
          break;
@@ -285,6 +380,16 @@ static int start_app(pthread_t *t, int pump)
    state_flushed       = false;
    state_flush_pending = false;
    state_ack_cmd       = -1;
+   auto_on_pause        = 0;
+   content_loaded      = 0;
+   game_gen            = 0;
+   state_disk_gen      = 0;
+   state_saves         = 0;
+   paused              = 0;
+   sheet_calls         = 0;
+   autosave_pending    = false;
+   resume_into_menu    = false;
+   resume_into_menu_pending = false;
    return pthread_create(t, NULL, app_thread, NULL) == 0;
 }
 
@@ -395,6 +500,85 @@ static int lane_supersede(void)
    return failures - before;
 }
 
+/* No waiter: onWindowFocusChanged() posts the command and returns. */
+static void post_focus(void)
+{
+   char c = CMD_GAINED_FOCUS;
+   if (write(msgwrite, &c, 1) != 1)
+      failures++;
+}
+
+/* 6: the device closed mid-game. */
+static int lane_autosave(void)
+{
+   pthread_t t;
+   int before = failures;
+
+   if (!start_app(&t, 0))
+      return ++failures - before;
+   write_locked(&auto_on_pause, 1);
+   write_locked(&content_loaded, 1);
+
+   expect("resume acked", set_activity_state(CMD_RESUME, ACK_TIMEOUT_MS), 1);
+   write_locked(&game_gen, 5);
+   expect("pause acked",  set_activity_state(CMD_PAUSE,  ACK_TIMEOUT_MS), 1);
+   /* The process may be killed from here on. */
+   expect("state on disk when onPause() returns",
+         read_locked(&state_disk_gen), 5);
+   expect("settings written with it", read_locked(&flushes), 1);
+   expect("stop acked",   set_activity_state(CMD_STOP,   ACK_TIMEOUT_MS), 1);
+   expect("the stop writes no state", read_locked(&state_saves), 1);
+
+   expect("start acked",  set_activity_state(CMD_START,  ACK_TIMEOUT_MS), 1);
+   expect("resume acked", set_activity_state(CMD_RESUME, ACK_TIMEOUT_MS), 1);
+   expect("no call before the focus", read_locked(&sheet_calls), 0);
+   post_focus();
+   sleep_ms(FLUSH_MS * 4);
+   expect("paused on return", read_locked(&paused), 1);
+   expect("activity told once", read_locked(&sheet_calls), 1);
+
+   /* A focus with no save behind it is the plain one: the pause is
+    * the sheet's to lift. */
+   post_focus();
+   sleep_ms(FLUSH_MS * 4);
+   expect("a later focus leaves the pause", read_locked(&paused), 1);
+   expect("and calls nothing", read_locked(&sheet_calls), 1);
+
+   /* The next time the game leaves the screen writes it again. */
+   write_locked(&game_gen, 9);
+   expect("pause acked again", set_activity_state(CMD_PAUSE, ACK_TIMEOUT_MS), 1);
+   expect("the second state on disk", read_locked(&state_disk_gen), 9);
+   expect("one state per pause", read_locked(&state_saves), 2);
+
+   stop_app(t);
+   return failures - before;
+}
+
+/* 7: a pause before the content is up. */
+static int lane_autosave_pump(void)
+{
+   pthread_t t;
+   int before = failures;
+
+   if (!start_app(&t, 1))
+      return ++failures - before;
+   write_locked(&auto_on_pause, 1);
+
+   expect("pump: pause acked", set_activity_state(CMD_PAUSE, 500), 1);
+   expect("pump: stop acked",  set_activity_state(CMD_STOP,  500), 1);
+   write_locked(&content_loaded, 1);
+   write_locked(&pump_mode, 0);
+   sleep_ms(FLUSH_MS * 4);
+   expect("pump: no state written", read_locked(&state_saves), 0);
+   post_focus();
+   sleep_ms(FLUSH_MS * 4);
+   expect("pump: not paused on return", read_locked(&paused), 0);
+   expect("pump: nothing called", read_locked(&sheet_calls), 0);
+
+   stop_app(t);
+   return failures - before;
+}
+
 int main(void)
 {
    int shipping;
@@ -403,6 +587,8 @@ int main(void)
    shipping += lane_pump();
    shipping += lane_stop_backstop();
    shipping += lane_supersede();
+   shipping += lane_autosave();
+   shipping += lane_autosave_pump();
    if (!shipping)
       printf("[pass] shipping handshake\n");
 
@@ -428,6 +614,16 @@ int main(void)
    else
       printf("[pass] holding the acknowledgement in the pump is caught\n");
    sab_hold_in_pump = 0;
+
+   sab_save_on_stop = 1;
+   if (lane_autosave() == 0)
+   {
+      printf("[fail] leaving the state to the stop was not caught\n");
+      shipping++;
+   }
+   else
+      printf("[pass] leaving the state to the stop is caught\n");
+   sab_save_on_stop = 0;
    quiet            = 0;
 
    if (shipping)

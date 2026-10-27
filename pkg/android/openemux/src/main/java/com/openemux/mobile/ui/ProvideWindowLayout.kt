@@ -17,9 +17,11 @@ import androidx.window.layout.FoldingFeature
 import androidx.window.layout.WindowInfoTracker
 import androidx.window.layout.WindowMetricsCalculator
 import com.retroarch.BuildConfig
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 
@@ -43,22 +45,24 @@ fun ProvideWindowLayout(content: @Composable () -> Unit) {
             ?.let { it.width() / density to it.height() / density }
             ?: (configuration.screenWidthDp.toFloat() to configuration.screenHeightDp.toFloat())
     }
-    val folds = remember(activity) {
-        // A device or a window the tracker cannot read has no fold.
-        val info = activity?.let { runCatching { WindowInfoTracker.getOrCreate(it).windowLayoutInfo(it) }.getOrNull() }
-        (info ?: emptyFlow()).map { layout ->
-            layout.displayFeatures.filterIsInstance<FoldingFeature>().firstOrNull()?.let { fold ->
-                val b = fold.bounds
-                foldOf(fold.state == FoldingFeature.State.HALF_OPENED, fold.orientation == FoldingFeature.Orientation.VERTICAL, b.left, b.top, b.right, b.bottom)
-            }
-        }.catch { emit(null) }
-            // Debug builds say which fold the app saw, once per change, so QA can tell an
-            // emulator without the window extensions from a layout bug.
-            .distinctUntilChanged().onEach { if (BuildConfig.DEBUG) Log.d("OpenEmuxWindow", "window fold: $it") }
-    }
+    val folds = remember(activity) { activity?.folds() ?: emptyFlow() }
     val fold by folds.collectAsStateWithLifecycle(initialValue = null)
     val posture = fold?.let { postureOf(it.halfOpened, it.vertical, it.leftPx, it.topPx, it.rightPx, it.bottomPx) } ?: Posture.Flat
     CompositionLocalProvider(LocalWindowLayout provides WindowLayout.of(size.first, size.second, posture, fold, density), content = content)
+}
+
+/** The activity's fold as its window reports it, null without one: a device or a window the tracker cannot read has none. */
+fun Activity.folds(): Flow<Fold?> {
+    val info = runCatching { WindowInfoTracker.getOrCreate(this).windowLayoutInfo(this) }.getOrNull() ?: return flowOf(null)
+    return info.map { layout ->
+        layout.displayFeatures.filterIsInstance<FoldingFeature>().firstOrNull()?.let { fold ->
+            val b = fold.bounds
+            foldOf(fold.state == FoldingFeature.State.HALF_OPENED, fold.orientation == FoldingFeature.Orientation.VERTICAL, b.left, b.top, b.right, b.bottom)
+        }
+    }.catch { emit(null) }
+        // Debug builds say which fold the app saw, once per change, so QA can tell an
+        // emulator without the window extensions from a layout bug.
+        .distinctUntilChanged().onEach { if (BuildConfig.DEBUG) Log.d("OpenEmuxWindow", "window fold: $it") }
 }
 
 /** The activity behind a context, through any wrappers (a dialog's themed context included). */

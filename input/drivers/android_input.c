@@ -737,6 +737,21 @@ static bool android_state_flush_pending = false;
  * the flush has run, or -1. See android_input_flush_pending_state(). */
 static int android_state_ack_cmd = -1;
 
+/* OpenEmux: set by APP_CMD_PAUSE when the activity asks for the auto
+ * save state on pause (android_app->auto_save_on_pause), consumed by the
+ * flush that the same pause holds its acknowledgement for. */
+static bool android_autosave_pending = false;
+
+/* OpenEmux: set once that save has run with content loaded. Survives
+ * start and resume, and is consumed by the next APP_CMD_GAINED_FOCUS,
+ * which keeps the content paused and owes the activity a call. */
+static bool android_resume_into_menu = false;
+
+/* The call owed by that focus, made from the runloop: the focus arrives
+ * through the same poll as the other commands, and entering Java is only
+ * safe on the OS stack. */
+static bool android_resume_into_menu_pending = false;
+
 /* Set by the keypress haptic callback, consumed by
  * android_input_flush_pending_haptics() at the top of the next runloop
  * iteration. Cleared by the lifecycle handlers: the runloop blocks in the
@@ -754,6 +769,18 @@ static void android_input_release_state_ack(struct android_app *android_app)
    android_lifecycle_set_state(&android_app->lc, android_state_ack_cmd);
 
    android_state_ack_cmd = -1;
+}
+
+/* OpenEmux: back after a pause that saved the state. The content stays
+ * paused - not one frame runs - and the activity is told from the
+ * runloop to show its menu. */
+static void android_input_take_resume_into_menu(void)
+{
+   if (!android_resume_into_menu)
+      return;
+   android_resume_into_menu         = false;
+   android_resume_into_menu_pending = true;
+   runloop_state_get_ptr()->flags  |= RUNLOOP_FLAG_PAUSED;
 }
 
 /* Swiping the task away from Recents and the low-memory killer end the
@@ -776,6 +803,12 @@ static void android_input_release_state_ack(struct android_app *android_app)
  * core memory and rewrite the config from inside retro_run(). */
 void android_input_flush_pending_state(void)
 {
+   if (android_resume_into_menu_pending)
+   {
+      android_resume_into_menu_pending = false;
+      android_app_resume_into_menu();
+   }
+
    if (!android_state_flush_pending)
       return;
    android_state_flush_pending = false;
@@ -784,6 +817,16 @@ void android_input_flush_pending_state(void)
    {
       android_state_flushed = true;
       retroarch_save_for_suspend();
+   }
+
+   /* OpenEmux: the device was closed or the game left the screen. The
+    * state is written before the pause is acknowledged, so it is on disk
+    * before the process can be reclaimed; the return opens paused. */
+   if (android_autosave_pending)
+   {
+      android_autosave_pending = false;
+      if (retroarch_save_auto_state_for_suspend())
+         android_resume_into_menu = true;
    }
 
    android_input_release_state_ack(g_android);
@@ -859,10 +902,25 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_START:
       case APP_CMD_PAUSE:
       {
+         bool hold_ack;
+
+         /* OpenEmux: the activity asked for the auto save state when it
+          * leaves the screen. Owed before the process can be reclaimed,
+          * like the flush, and written with it. On the pause, not the
+          * stop: by the stop the window is going away, and on Home the
+          * runloop was seen held until the app came back, past the
+          * stop's timeout. Not before the content is up: a pause in the
+          * startup pump would otherwise write the state of a game that
+          * has not run a frame over the one left last time. */
+         if (     cmd == APP_CMD_PAUSE
+               && android_app->auto_save_on_pause
+               && runloop_content_loaded())
+            android_autosave_pending = true;
+
          /* Acknowledged by the flush, see
           * android_input_flush_pending_state(). */
-         bool hold_ack               = (cmd == APP_CMD_PAUSE)
-            && !android_state_flushed;
+         hold_ack                    = (cmd == APP_CMD_PAUSE)
+            && (!android_state_flushed || android_autosave_pending);
 
          if (!hold_ack)
             android_lifecycle_set_state(&android_app->lc, cmd);
@@ -882,6 +940,7 @@ static void android_input_poll_main_cmd(void)
                android_state_flush_pending = false;
                android_state_flushed = false;
                android_state_ack_cmd = -1;
+               android_autosave_pending = false;
             }
             break;
          }
@@ -909,6 +968,17 @@ static void android_input_poll_main_cmd(void)
             android_state_flush_pending = false;
             android_state_flushed       = false;
             android_state_ack_cmd       = -1;
+            /* A pause's save still owed is superseded with it. Not
+             * android_resume_into_menu: that waits for the focus. */
+            android_autosave_pending    = false;
+
+            /* OpenEmux: unless the focus was never lost. A pause that
+             * kept it gets no APP_CMD_GAINED_FOCUS to return on, and the
+             * flag left set would pause the game at some later, unrelated
+             * focus change. */
+            if (     cmd == APP_CMD_RESUME
+                  && !retro_atomic_load_relaxed_int(&android_app->unfocused))
+               android_input_take_resume_into_menu();
          }
 
 #ifdef HAVE_ANDROID_LIFECYCLE_HOOKS
@@ -995,6 +1065,8 @@ static void android_input_poll_main_cmd(void)
 
             runloop_set_platform_paused(false);
             video_driver_unset_stub_frame();
+
+            android_input_take_resume_into_menu();
 
             /* Try to enable sensors via input driver. If that fails before the
              * input driver has initialized, enable directly via sensor API. */
@@ -1092,6 +1164,8 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_DESTROY:
          android_keypress_vibrate_pending = false;
+         android_resume_into_menu         = false;
+         android_resume_into_menu_pending = false;
          android_app->destroyRequested = 1;
          break;
    }

@@ -131,8 +131,11 @@ data class Band(val vertical: Boolean, val startDp: Float, val endDp: Float) {
     val centerDp get() = (startDp + endDp) / 2f
 }
 
+/** The forbidden band's margin each side of the fold, in dp; the tabletop skin keeps the same one (SkinGeometry). */
+const val FOLD_MARGIN_DP = 12f
+
 /** The fold's bounds plus [marginDp] on each side, inside the window; null without a fold. */
-fun forbiddenBand(layout: WindowLayout, marginDp: Float = 12f): Band? {
+fun forbiddenBand(layout: WindowLayout, marginDp: Float = FOLD_MARGIN_DP): Band? {
     val fold = layout.fold ?: return null
     val (start, end, limit) =
         if (fold.vertical) Triple(fold.leftPx, fold.rightPx, layout.widthDp)

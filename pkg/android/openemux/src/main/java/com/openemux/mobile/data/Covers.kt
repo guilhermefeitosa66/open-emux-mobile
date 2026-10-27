@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import java.io.File
 import java.io.IOException
 import java.text.Normalizer
 import java.util.concurrent.ConcurrentHashMap
@@ -20,9 +21,11 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Box art from the openemux-artwork mirror, matched by name against the
- * No-Intro titles it holds (shipped as one list per console).
+ * No-Intro titles it holds (shipped as one list per console). A cover kept on
+ * the device ([Paths.covers], one received through Share nearby) wins over
+ * the mirror; it is looked for on every call, so one that arrives later shows.
  */
-class Covers(private val context: Context) {
+class Covers(private val context: Context, private val paths: Paths) {
     private val indexes = ConcurrentHashMap<Console, Index>()
     /** "" marks a ROM with no match: ConcurrentHashMap takes no nulls. */
     private val cache = ConcurrentHashMap<String, String>()
@@ -34,7 +37,10 @@ class Covers(private val context: Context) {
     suspend fun prefetch(roms: List<Rom>) = coroutineScope {
         val withArt = roms.mapNotNull { rom -> urlFor(rom)?.let { rom to it } }
         val missing = roms.size - withArt.size
-        val cached = withArt.filter { (_, url) -> context.imageLoader.diskCache?.openSnapshot(url)?.use { true } == true }
+        // A local cover needs no network: it counts as cached.
+        val cached = withArt.filter { (rom, url) ->
+            localCover(rom) != null || context.imageLoader.diskCache?.openSnapshot(url)?.use { true } == true
+        }
         val todo = withArt - cached.toSet()
         val done = AtomicInteger(missing + cached.size)
         val offline = AtomicInteger()
@@ -59,7 +65,17 @@ class Covers(private val context: Context) {
 
     private class Index(val exact: Map<String, List<String>>, val tokens: List<Pair<Set<String>, String>>)
 
-    fun urlFor(rom: Rom): String? = cache.getOrPut(rom.key) {
+    fun urlFor(rom: Rom): String? = localCover(rom)?.toURI()?.toASCIIString() ?: mirrorUrl(rom)
+
+    /** The cover kept on the device for [rom], if any. */
+    fun localCover(rom: Rom): File? = localCover(paths, rom.console, rom.baseName)
+
+    /** Drops the mirror matches of [keys], so they are looked up again. */
+    fun forget(keys: Collection<String>) {
+        keys.forEach(cache::remove)
+    }
+
+    private fun mirrorUrl(rom: Rom): String? = cache.getOrPut(rom.key) {
         match(rom.console, rom.file.nameWithoutExtension)?.let { name ->
             "https://raw.githubusercontent.com/guilhermefeitosa66/openemux-artwork/main/" +
                 "${rom.console.artworkDir}/${Uri.encode(name)}.webp"
@@ -106,6 +122,12 @@ class Covers(private val context: Context) {
     } + (if ("Beta" in name || "Proto" in name || "Demo" in name) 10 else 0)
 
     companion object {
+        /** The suffixes a local cover may have, in the order they are looked for. */
+        val COVER_SUFFIXES = listOf("png", "jpg", "jpeg", "webp")
+
+        fun localCover(paths: Paths, console: Console, stem: String): File? =
+            COVER_SUFFIXES.map { File(paths.covers(console), "$stem.$it") }.firstOrNull { it.isFile }
+
         private val tags = Regex("[(\\[][^)\\]]*[)\\]]")
         private val stop = setOf("the", "a", "of", "and", "version", "u", "e", "j")
 

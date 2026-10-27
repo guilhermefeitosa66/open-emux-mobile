@@ -177,6 +177,8 @@ struct android_app
    jmethodID onExternalMenuInput;
    jmethodID onOverlayChanged;
    jmethodID onToggleStates;
+   jmethodID autoSaveOnPause;
+   jmethodID onResumedIntoPause;
 
    jmethodID isPlayStoreBuild;
    jmethodID isMetaQuestBuild;
@@ -216,6 +218,9 @@ struct android_app
 
    bool is_play_store_build;
    bool is_meta_quest_build;
+   /* OpenEmux: the activity's autoSaveOnPause(), asked once at start-up:
+    * APP_CMD_PAUSE is read where entering Java is not safe. */
+   bool auto_save_on_pause;
 
 #ifdef HAVE_SAF
    jmethodID requestOpenDocumentTree;
@@ -418,6 +423,10 @@ void android_app_overlay_changed(const char *name);
 /* OpenEmux: tells the activity whether fast forward and turbo are on,
  * when either changes, so its pause sheet shows the engine's state. */
 void android_app_toggle_states(bool fast_forward, bool turbo);
+
+/* OpenEmux: back after a pause that saved the auto state. Pauses the
+ * content and tells the activity, which shows its own menu. */
+void android_app_resume_into_menu(void);
 bool android_get_vfs_authorized_locations(
       struct retro_vfs_authorized_locations *locations);
 #endif

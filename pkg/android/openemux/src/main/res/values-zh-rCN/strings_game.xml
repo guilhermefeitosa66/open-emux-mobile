@@ -80,6 +80,7 @@
     <string name="game_screens_top">仅上屏</string>
     <string name="game_screens_bottom">仅下屏</string>
     <string name="game_screens_stacked">上下排列</string>
+    <string name="game_screens_halves">每半屏一个</string>
     <string name="game_screens_side">左右排列</string>
 
     <!-- RetroAchievements hardcore -->

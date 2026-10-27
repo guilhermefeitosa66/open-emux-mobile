@@ -99,4 +99,26 @@
     <string name="library_col_last">கடைசியாக</string>
     <string name="library_hint_list">பட்டியல்</string>
     <string name="library_row_description">%1$s, %2$s, கடைசியாக %3$s</string>
+    <!-- Selection mode (issue #585) -->
+    <plurals name="library_selected_count">
+        <item quantity="one">%1$d தேர்ந்தெடுக்கப்பட்டது</item>
+        <item quantity="other">%1$d தேர்ந்தெடுக்கப்பட்டன</item>
+    </plurals>
+    <string name="library_select_all">அனைத்தையும் தேர்ந்தெடு</string>
+    <string name="library_selection_close">தேர்வை ரத்துசெய்</string>
+    <string name="library_remove_selected">தேர்ந்தெடுத்தவற்றை நீக்கு</string>
+    <plurals name="library_remove_many_title">
+        <item quantity="one">%1$d விளையாட்டை நீக்கவா?</item>
+        <item quantity="other">%1$d விளையாட்டுகளை நீக்கவா?</item>
+    </plurals>
+    <plurals name="library_remove_many_message">
+        <item quantity="one">ROM கோப்பு சாதனத்திலிருந்து நீக்கப்படும். மீண்டும் இறக்குமதி செய்தால் பயன்படும்படி சேமிப்புகளும் நிலைகளும் வைக்கப்படும்.</item>
+        <item quantity="other">ROM கோப்புகள் சாதனத்திலிருந்து நீக்கப்படும். மீண்டும் இறக்குமதி செய்தால் பயன்படும்படி சேமிப்புகளும் நிலைகளும் வைக்கப்படும்.</item>
+    </plurals>
+    <string name="library_select_tile">தேர்ந்தெடு</string>
+    <string name="library_deselect_tile">தேர்வை நீக்கு</string>
+    <string name="library_hint_select">தேர்ந்தெடு</string>
+    <string name="library_hint_select_all">அனைத்தும்</string>
+    <string name="library_hint_remove">நீக்கு</string>
+    <string name="library_hint_done">முடிந்தது</string>
 </resources>

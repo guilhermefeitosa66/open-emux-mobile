@@ -99,4 +99,26 @@
     <string name="library_col_last">Zuletzt</string>
     <string name="library_hint_list">Liste</string>
     <string name="library_row_description">%1$s, %2$s, zuletzt %3$s</string>
+    <!-- Selection mode (issue #585) -->
+    <plurals name="library_selected_count">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
+    <string name="library_select_all">Alle auswählen</string>
+    <string name="library_selection_close">Auswahl abbrechen</string>
+    <string name="library_remove_selected">Auswahl entfernen</string>
+    <plurals name="library_remove_many_title">
+        <item quantity="one">%1$d Spiel entfernen?</item>
+        <item quantity="other">%1$d Spiele entfernen?</item>
+    </plurals>
+    <plurals name="library_remove_many_message">
+        <item quantity="one">Die ROM-Datei wird vom Gerät gelöscht. Spielstände und Savestates bleiben erhalten, falls du sie erneut importierst.</item>
+        <item quantity="other">Die ROM-Dateien werden vom Gerät gelöscht. Spielstände und Savestates bleiben erhalten, falls du sie erneut importierst.</item>
+    </plurals>
+    <string name="library_select_tile">Auswählen</string>
+    <string name="library_deselect_tile">Abwählen</string>
+    <string name="library_hint_select">Auswählen</string>
+    <string name="library_hint_select_all">Alle auswählen</string>
+    <string name="library_hint_remove">Entfernen</string>
+    <string name="library_hint_done">Fertig</string>
 </resources>

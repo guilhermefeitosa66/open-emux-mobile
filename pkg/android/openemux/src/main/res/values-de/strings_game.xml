@@ -81,6 +81,7 @@
     <string name="game_screens_top">Nur oberer Bildschirm</string>
     <string name="game_screens_bottom">Nur unterer Bildschirm</string>
     <string name="game_screens_stacked">Übereinander</string>
+    <string name="game_screens_halves">Eine pro Hälfte</string>
     <string name="game_screens_side">Nebeneinander</string>
 
     <!-- RetroAchievements hardcore -->

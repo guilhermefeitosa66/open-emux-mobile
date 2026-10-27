@@ -168,6 +168,15 @@ fun RomDetail(key: String, style: DetailStyle, active: Boolean = true, onClose: 
             RoundIconButton(Icons.Dots, stringResource(R.string.detail_more_options), { menu = true }, background = Oe.Control.copy(alpha = 0.8f), filled = true)
             androidx.compose.material3.DropdownMenu(menu, { menu = false }, containerColor = Oe.Surface2) {
                 androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(stringResource(R.string.detail_share), style = Type.Body) },
+                    leadingIcon = { Icon(Icons.Share, Oe.Text, 20.dp) },
+                    onClick = {
+                        menu = false
+                        a.app.shareCoordinator.startSend(listOf(rom))
+                        a.nav.navigate(Routes.SHARE)
+                    },
+                )
+                androidx.compose.material3.DropdownMenuItem(
                     text = { Text(stringResource(R.string.detail_remove_from_library), style = Type.Body.copy(color = Oe.Danger)) },
                     onClick = { menu = false; confirmDelete = true },
                 )

@@ -152,6 +152,10 @@ const char* video_shader_get_current_shader_preset(void);
  * back: SRAM, core options and the main config are written now. */
 void retroarch_save_for_suspend(void);
 
+/* OpenEmux: the auto save state, guarded as on quit, when the platform
+ * takes the content off the screen. True when content is running. */
+bool retroarch_save_auto_state_for_suspend(void);
+
 /* Cancels and drains the task queue (bounded) so in-flight tasks
  * retire while the subsystems their callbacks reach are alive.
  * main_exit() runs it first; exposed for the exit-drain harness. */

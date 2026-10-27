@@ -21,7 +21,7 @@ mean writing a new menu driver in C. So the split is:
 |---|---|---|
 | Library, settings, import | Kotlin + Jetpack Compose | `src/main/java/com/openemux/mobile/ui`, `data` |
 | Launch | Writes a per-game `retroarch.cfg`, shader preset, core options and the controller skin, then starts the engine | `launch/GameLauncher.kt`, `launch/SkinRenderer.kt` |
-| Engine | RetroArch's `NativeActivity`, unchanged except for two hooks | `game/GameActivity.kt` (extends `RetroActivityFuture`) |
+| Engine | RetroArch's `NativeActivity`, unchanged except for the hooks below | `game/GameActivity.kt` (extends `RetroActivityFuture`) |
 | Pause sheet | Compose, in a dialog over the engine | `game/PauseSheet.kt` |
 
 The engine runs in its own process (`:game`): RetroArch exits the process
@@ -51,7 +51,11 @@ when the content closes, and the library must survive that.
    DeSmuME's `desmume_screens_layout` to match through `SET_CORE_OPTION`
    and keeps each orientation's last layout. `android_app_overlay_changed()`
    in `frontend/drivers/platform_unix.c`, called from `CMD_EVENT_OVERLAY_NEXT`
-   in `retroarch.c`.
+   in `retroarch.c`. A video reinit reloads the overlay pack (DeSmuME asks
+   for one when a screen gap or layout changes its geometry); the reloaded
+   pack opens on the overlay that was shown, by name, instead of its first
+   one, so the activity's idea of it stays true.
+   `input_overlay_keep_active()` in `input/input_driver.c`.
 5. **Toggles lit.** An overlay desc can name a frontend state its image
    shows (`overlayN_descM_lit_by = "fast_forward"` or `"turbo"`): the image
    is hidden while that state is off, with or without the overlay LED
@@ -74,10 +78,26 @@ when the content closes, and the library must survive that.
    at the window's edge; the viewport position (a lightgun's offscreen
    test) is unchanged. `android_pointer_set()` in
    `input/drivers/android_input.c`.
+8. **Closing the device.** When the activity is paused (a Flip closed, the
+   screen off, Home), the engine writes the auto save state
+   (`<rom>.state.auto`) before acknowledging `APP_CMD_PAUSE`, so it is on
+   disk before Android can reclaim the process. Not on `APP_CMD_STOP`: by
+   then the window is going away, and the runloop can be held until the
+   app comes back. On the next focus the content stays paused and the
+   activity's `onResumedIntoPause()` opens the pause sheet; a focus never
+   lifts a pause it did not make, so a sheet left open keeps the game
+   paused. Asked once at start-up through `autoSaveOnPause()`; skipped
+   (pause only) in hardcore and for cores without save states.
+   `APP_CMD_PAUSE` / `APP_CMD_GAINED_FOCUS` and
+   `android_input_flush_pending_state()` in `input/drivers/android_input.c`,
+   `retroarch_save_auto_state_for_suspend()` in `retroarch.c`,
+   `android_app_resume_into_menu()` in `frontend/drivers/platform_unix.c`;
+   the handshake is reproduced in `samples/input/android_lifecycle_flush/`.
 
 Upstream behaviour is kept: the base `RetroActivityCommon` returns false
-from the first two and ignores the overlay change and the toggles, so the stock RetroArch
-app still opens and drives its own menu.
+from the first two and from `autoSaveOnPause()`, and ignores the overlay
+change and the toggles, so the stock RetroArch app still opens and drives
+its own menu.
 
 Two config-only keys (not in the menu; their defaults keep upstream
 behaviour) are set by the generated `retroarch.cfg`:
@@ -139,6 +159,21 @@ colour around it) and drawn on it in white, so a user's skin lights up too.
 `launch/OverlayWriter.kt` writes the overlays and their images for both
 renderers, each stick's movable knob (`<overlay>-knob<N>.png`) and its
 widened touch zone included.
+
+On a foldable, `SkinRenderer` also draws a tabletop shape for the half-open
+posture with the fold across the screen: the picture on the top half, the
+controls on the bottom one, nothing within 12 dp of the fold, and on NDS one
+screen per half (DeSmuME's stacked layout with `desmume_screens_gap` over the
+fold). These `portrait-tabletop` overlays go after the others in the same
+`skin.cfg`, and `GameActivity` switches to them and back by name
+(`OVERLAY_SELECT`) as the posture changes, without restarting the core. The
+packaged skins have no tabletop art, so in tabletop every console uses the
+drawn skin, the twelve above included: their `skin.cfg` gets the drawn
+tabletop overlays after the package's own, and opening the device flat brings
+the package skin back (on NDS with its one-over-the-other layout). A skin
+redrawn for a new window (`OVERLAY_LOAD` above) is drawn for the fold the
+game sees then, and one drawn before the fold showed up is drawn again for
+it.
 
 The art comes from a design canvas whose Skin component holds the layout
 engine and each console's colors; `tools/skins/build.py` renders it with

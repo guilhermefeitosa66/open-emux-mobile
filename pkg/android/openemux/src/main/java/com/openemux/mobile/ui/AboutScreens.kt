@@ -205,6 +205,7 @@ private fun appNotices() = listOf(
         Notice("Kotlin, AndroidX, Jetpack Compose", "Apache-2.0", "https://www.apache.org/licenses/LICENSE-2.0"),
         Notice("kotlinx.coroutines", "Apache-2.0", "https://github.com/Kotlin/kotlinx.coroutines"),
         Notice("Coil", "Apache-2.0", "https://github.com/coil-kt/coil"),
+        Notice("ZXing (QR codes)", "Apache-2.0", "https://github.com/zxing/zxing"),
         Notice("OpenEmu (console icons)", "BSD-3-Clause · © 2009-2023 OpenEmu Team", "https://github.com/OpenEmu/OpenEmu", "openemu"),
         Notice("retroarch-assets (save/load state icons)", "CC-BY-4.0 · © libretro", "https://github.com/libretro/retroarch-assets"),
         Notice("Inter", "SIL OFL 1.1", "https://github.com/rsms/inter"),
