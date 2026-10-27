@@ -51,7 +51,11 @@ when the content closes, and the library must survive that.
    DeSmuME's `desmume_screens_layout` to match through `SET_CORE_OPTION`
    and keeps each orientation's last layout. `android_app_overlay_changed()`
    in `frontend/drivers/platform_unix.c`, called from `CMD_EVENT_OVERLAY_NEXT`
-   in `retroarch.c`.
+   in `retroarch.c`. A video reinit reloads the overlay pack (DeSmuME asks
+   for one when a screen gap or layout changes its geometry); the reloaded
+   pack opens on the overlay that was shown, by name, instead of its first
+   one, so the activity's idea of it stays true.
+   `input_overlay_keep_active()` in `input/input_driver.c`.
 5. **Toggles lit.** An overlay desc can name a frontend state its image
    shows (`overlayN_descM_lit_by = "fast_forward"` or `"turbo"`): the image
    is hidden while that state is off, with or without the overlay LED
@@ -139,6 +143,21 @@ colour around it) and drawn on it in white, so a user's skin lights up too.
 `launch/OverlayWriter.kt` writes the overlays and their images for both
 renderers, each stick's movable knob (`<overlay>-knob<N>.png`) and its
 widened touch zone included.
+
+On a foldable, `SkinRenderer` also draws a tabletop shape for the half-open
+posture with the fold across the screen: the picture on the top half, the
+controls on the bottom one, nothing within 12 dp of the fold, and on NDS one
+screen per half (DeSmuME's stacked layout with `desmume_screens_gap` over the
+fold). These `portrait-tabletop` overlays go after the others in the same
+`skin.cfg`, and `GameActivity` switches to them and back by name
+(`OVERLAY_SELECT`) as the posture changes, without restarting the core. The
+packaged skins have no tabletop art, so in tabletop every console uses the
+drawn skin, the twelve above included: their `skin.cfg` gets the drawn
+tabletop overlays after the package's own, and opening the device flat brings
+the package skin back (on NDS with its one-over-the-other layout). A skin
+redrawn for a new window (`OVERLAY_LOAD` above) is drawn for the fold the
+game sees then, and one drawn before the fold showed up is drawn again for
+it.
 
 The art comes from a design canvas whose Skin component holds the layout
 engine and each console's colors; `tools/skins/build.py` renders it with

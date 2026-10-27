@@ -4501,6 +4501,58 @@ bool command_set_core_option(command_t *cmd, const char *arg)
    return true;
 }
 
+/* OVERLAY_SELECT <name>
+ *
+ * Shows the overlay of the loaded pack that goes by this name through
+ * the path OVERLAY_NEXT takes, so the frontend hears of it once; a
+ * frontend switching to a far overlay would otherwise step through,
+ * and show, every one between. Turning the screen is left alone: the
+ * frontend asked for this one. Asking for the overlay already shown
+ * changes nothing. */
+bool command_overlay_select(command_t *cmd, const char *arg)
+{
+#ifdef HAVE_OVERLAY
+   char reply[96];
+   size_t i;
+   size_t _len;
+   input_overlay_t *ol = input_state_get_ptr()->overlay_ptr;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (!arg || !*arg)
+   {
+      command_reply_error(cmd, "OVERLAY_SELECT", "an overlay name");
+      return false;
+   }
+   if (!ol || !(ol->flags & INPUT_OVERLAY_ALIVE))
+   {
+      command_reply_error(cmd, "OVERLAY_SELECT", "no overlay is loaded");
+      return false;
+   }
+   for (i = 0; i < ol->size; i++)
+      if (string_is_equal(ol->overlays[i].name, arg))
+         break;
+   if (i == ol->size)
+   {
+      command_reply_error(cmd, "OVERLAY_SELECT", "no overlay named %s", arg);
+      return false;
+   }
+   if (i != ol->index)
+   {
+      bool check_rotation = false;
+      ol->next_index      = (unsigned)i;
+      command_event(CMD_EVENT_OVERLAY_NEXT, &check_rotation);
+   }
+   _len = (size_t)snprintf(reply, sizeof(reply), "OVERLAY_SELECT %s\n",
+         ol->overlays[i].name);
+   cmd->replier(cmd, reply, _len);
+   return true;
+#else
+   command_reply_error(cmd, "OVERLAY_SELECT", "this build has no overlays");
+   return false;
+#endif
+}
+
 /* GET_CONFIG_PARAM <param name>
  *
  * The option that goes by this name, which GET_OPTION also reports;

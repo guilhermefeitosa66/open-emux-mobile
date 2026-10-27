@@ -11290,6 +11290,58 @@ static void input_overlay_viewport_publish(void)
          (ol && !(ol->flags & INPUT_OVERLAY_GAMEPAD_HIDDEN)) ? ol->active : NULL);
 }
 
+/* OpenEmux: the overlay shown when its pack was last torn down, kept
+ * by name so a reload of the same pack (a video reinit, which a core
+ * changing its geometry asks for) comes back on it instead of the
+ * pack's first one. The frontend switched to it by name and is never
+ * told of a reload, so it would go on believing it is shown. */
+static char input_overlay_kept_path[PATH_MAX_LENGTH];
+static char input_overlay_kept_name[64];
+
+static void input_overlay_keep_active(const input_overlay_t *ol,
+      const char *path)
+{
+   if (     !ol
+         || !(ol->flags & INPUT_OVERLAY_ALIVE)
+         || !ol->active
+         || !ol->path
+         || !string_is_equal(ol->path, path))
+      return;
+   strlcpy(input_overlay_kept_path, path, sizeof(input_overlay_kept_path));
+   strlcpy(input_overlay_kept_name, ol->active->name,
+         sizeof(input_overlay_kept_name));
+}
+
+/* OpenEmux: a load that ends, or fails, uses the kept overlay up, so a
+ * later load of the same pack (the next game's) opens on its first. */
+static void input_overlay_forget_active(void)
+{
+   *input_overlay_kept_path = '\0';
+   *input_overlay_kept_name = '\0';
+}
+
+/* OpenEmux: a freshly loaded pack opens on the overlay kept above, when
+ * it is the same pack and still has an overlay of that name. */
+static void input_overlay_restore_active(input_overlay_t *ol)
+{
+   size_t i;
+   if (     *input_overlay_kept_name
+         && ol->path
+         && string_is_equal(ol->path, input_overlay_kept_path))
+   {
+      for (i = 0; i < ol->size; i++)
+      {
+         if (string_is_equal(ol->overlays[i].name, input_overlay_kept_name))
+         {
+            ol->index  = (unsigned)i;
+            ol->active = &ol->overlays[i];
+            break;
+         }
+      }
+   }
+   input_overlay_forget_active();
+}
+
 static void input_overlay_deinit(void)
 {
    input_overlay_free(input_driver_st.overlay_ptr);
@@ -11576,7 +11628,10 @@ static void input_overlay_loaded(retro_task_t *task,
          && config_get_ptr()->bools.input_overlay_enable;
 
    if (err)
+   {
+      input_overlay_forget_active();
       return;
+   }
 
    /* NULL-check task_data: the task producer (task_overlay_handler
     * in tasks/task_overlay.c) can legitimately fail its data
@@ -11584,7 +11639,10 @@ static void input_overlay_loaded(retro_task_t *task,
     * would NULL-deref.  Nothing useful to do with a NULL payload
     * so bail cleanly. */
    if (!data)
+   {
+      input_overlay_forget_active();
       return;
+   }
 
    ol              = (input_overlay_t*)calloc(1, sizeof(*ol));
    /* NULL-check the ol calloc: the field writes below NULL-deref
@@ -11598,6 +11656,7 @@ static void input_overlay_loaded(retro_task_t *task,
     * entries' .data strings, not their .attr.p attachments). */
    if (!ol)
    {
+      input_overlay_forget_active();
       if (data->image_list)
       {
          size_t i;
@@ -11626,6 +11685,7 @@ static void input_overlay_loaded(retro_task_t *task,
    ol->active      = data->active;
    ol->path        = data->overlay_path;
    ol->num_images  = data->image_list->size;
+   input_overlay_restore_active(ol);
    ol->next_index  = (unsigned)((ol->index + 1) % ol->size);
    ol->flags      |= INPUT_OVERLAY_ALIVE;
    if (data->flags & OVERLAY_LOADER_IS_OSK)
@@ -11848,6 +11908,10 @@ void input_overlay_init(void)
       input_overlay_swap_with_cached();
       return;
    }
+
+   /* OpenEmux: reloading the pack shown, or the one just set aside */
+   input_overlay_keep_active(ol_cache, path_overlay);
+   input_overlay_keep_active(ol, path_overlay);
 
    /* Cache current overlay when loading a different type */
    if (want_osk != (ol && (ol->flags & INPUT_OVERLAY_IS_OSK)))

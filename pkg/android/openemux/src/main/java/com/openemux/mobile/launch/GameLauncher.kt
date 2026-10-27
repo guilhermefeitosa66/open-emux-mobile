@@ -27,9 +27,12 @@ import com.openemux.mobile.data.Rom
 import com.openemux.mobile.data.configKeys
 import com.openemux.mobile.game.GameActivity
 import com.openemux.mobile.game.GameExtras
+import com.openemux.mobile.ui.folds
 import com.retroarch.R
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 
 /** Composes the cartridge art the way the desktop does: label under the frame. */
@@ -152,6 +155,9 @@ class GameLauncher(
         val cheevos = achievements.state.value
         // Hardcore refuses loading a state: start fresh rather than have the engine refuse it.
         val hardcore = cheevos.hardcoreActive
+        // The fold as the library's window sees it now: the skin draws the tabletop shape for it.
+        // folds() already turns a tracker failure into null; a runCatching here would swallow the launch's cancellation.
+        val fold = withTimeoutOrNull(500) { from.folds().first() }
         val intent = withContext(Dispatchers.IO) {
             prepareEngine()
             val dir = File(paths.launch, "current").apply { deleteRecursively(); mkdirs() }
@@ -160,10 +166,13 @@ class GameLauncher(
             cartFile.outputStream().use { cart.compress(Bitmap.CompressFormat.PNG, 100, it) }
 
             // The largest window: right full screen; the game redraws it for split screen or free form.
-            val size = SkinSize.of((context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).maximumWindowMetrics)
+            val metrics = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).maximumWindowMetrics
+            val size = SkinSize.of(metrics)
             val core = library.effectiveCore(rom)
             val density = context.resources.displayMetrics.density
-            val drawn = GameSkin.render(context, paths.base, rom.console, size, File(dir, "skin"), density, hardcore, core.id)
+            // The skin is drawn upright: the fold goes with it.
+            val upright = SkinGeometry.portraitFold(fold, metrics.bounds.width(), metrics.bounds.height())
+            val drawn = GameSkin.render(context, paths.base, rom.console, size, File(dir, "skin"), density, hardcore, core.id, fold = upright)
             val skin = drawn.file
             val ndsLayouts = drawn.ndsLayouts
 
@@ -179,7 +188,7 @@ class GameLauncher(
                     "picodrive_input1 = \"6 button pad\"\n" +
                     // The skin opens on the saved portrait layout; the activity follows the overlay from there.
                     (ndsLayouts?.let { "desmume_screens_layout = \"${it.first.value}\"\n" } ?: "") +
-                    (if (rom.console == Console.NDS && drawn.packaged) "desmume_screens_layout = \"top/bottom\"\n" else "")
+                    (if (rom.console == Console.NDS && drawn.packaged) "desmume_screens_layout = \"$PACKAGE_NDS_LAYOUT\"\n" else "")
             )
 
             listOf(paths.states(rom.console), paths.saves(rom.console), paths.system, paths.screenshots, paths.playtime)
