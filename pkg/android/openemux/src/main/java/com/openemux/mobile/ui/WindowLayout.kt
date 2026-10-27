@@ -76,29 +76,51 @@ data class WindowLayout(
     /** Room for a list beside its detail, and for the tablet's rail: not a phone, not a short window. */
     private val roomy get() = width != SizeClass.Compact && !short
 
-    /** Settings as its list beside the picked item, instead of a screen per item. */
-    val splitSettings get() = roomy
+    /**
+     * Settings as its list beside the picked item, instead of a screen per item: only while the detail keeps
+     * [SETTINGS_MIN_DETAIL_DP] beside a 320dp list. A 7" tablet held upright (600dp) would leave it about 260dp,
+     * where titles and the theme cards break letter by letter, so it keeps a screen per item.
+     */
+    val splitSettings get() = roomy && widthDp - railWidthDp(this) >= SETTINGS_LIST_DP + SETTINGS_MIN_DETAIL_DP
 
-    /** The library beside the picked game's detail: 440dp of pane next to a grid that still holds cartridges. */
+    /** The library beside the picked game's detail: [LIBRARY_PANE_DP] of pane next to a grid that still holds cartridges. */
     val libraryPane get() = width == SizeClass.Expanded && !short
 
     /** The game's detail as two columns, the cartridge on the left. */
     val twoColumnDetail get() = roomy
 
-    /** The library's list view as a table with time played and last played; a phone on its side keeps its rows. */
-    val tableList get() = roomy
+    /** The width the library's grid gets: the window less the rail, the pane beside it and the grid's margins. */
+    val libraryListDp get() = widthDp - railWidthDp(this) - (if (libraryPane) LIBRARY_PANE_DP else 0f) - 2 * contentSideDp(this)
+
+    /**
+     * The library's list view as a table with time played and last played, while its column still has room for
+     * the title; a phone on its side, or a list squeezed beside the pane, keeps the rows with the title alone.
+     */
+    val tableList get() = roomy && libraryListDp >= TABLE_MIN_DP
 
     /**
      * The settings list's width beside its detail: 400dp on a wide tablet, 320dp otherwise, and never more
-     * than half of what the rail leaves, or a 600dp window keeps only about 200dp for the detail.
+     * than half of what the rail leaves, so an 840dp window shares it evenly with the detail.
      */
-    val settingsListDp get() = minOf(if (width == SizeClass.Expanded) 400f else 320f, (widthDp - railWidthDp(this)) / 2f)
+    val settingsListDp get() = minOf(if (width == SizeClass.Expanded) 400f else SETTINGS_LIST_DP, (widthDp - railWidthDp(this)) / 2f)
 
     companion object {
         fun of(widthDp: Float, heightDp: Float, posture: Posture = Posture.Flat, fold: Fold? = null, density: Float = 1f) =
             WindowLayout(widthDp, heightDp, SizeClass.widthOf(widthDp), SizeClass.heightOf(heightDp), posture, fold, density)
     }
 }
+
+/** The settings list beside its detail on a tablet held upright. */
+const val SETTINGS_LIST_DP = 320f
+
+/** The narrowest settings detail that reads like the boards: the 8" tablet's, 744dp less the rail and the list. */
+const val SETTINGS_MIN_DETAIL_DP = 340f
+
+/** The game's detail beside the library on a wide tablet. */
+const val LIBRARY_PANE_DP = 440f
+
+/** A table row's art, time played, last played and star with their gaps (300dp), plus 160dp for the title. */
+const val TABLE_MIN_DP = 460f
 
 /**
  * The strip around a fold that nothing tappable, no text and no image may

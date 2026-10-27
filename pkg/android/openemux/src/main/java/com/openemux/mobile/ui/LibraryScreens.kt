@@ -846,7 +846,7 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
     }
     val pickedRom = picked?.takeIf { key -> roms.any { it.key == key } }
     ListDetailScaffold(
-        listWidth = null, detailWidth = 440.dp,
+        listWidth = null, detailWidth = LIBRARY_PANE_DP.dp,
         selected = picked != null, onClear = { picked = null },
         list = grid,
         detail = { focusInDetail ->
