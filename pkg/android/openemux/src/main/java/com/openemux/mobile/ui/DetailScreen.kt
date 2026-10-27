@@ -41,6 +41,9 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -386,9 +389,10 @@ fun RomDetail(key: String, style: DetailStyle, active: Boolean = true, onClose: 
                     Box(Modifier.padding(top = 26.dp)) { statesSection(detailStatesCount(right.value), 78.dp) }
                     Text(stringResource(R.string.detail_settings_for_game), style = Type.Section, modifier = Modifier.padding(top = 26.dp, bottom = 10.dp))
                     settingsCard(Modifier)
-                    val size = remember(rom) { rom.file.length() }
+                    // A stat of the file: off the main thread, like the other reads of this screen.
+                    val size by produceState<Long?>(null, rom) { value = withContext(Dispatchers.IO) { rom.file.length() } }
                     Text(
-                        listOfNotNull(rom.file.name, Formatter.formatShortFileSize(context, size), rom.file.parentFile?.name).joinToString(" · "),
+                        listOfNotNull(rom.file.name, size?.let { Formatter.formatShortFileSize(context, it) }, rom.file.parentFile?.name).joinToString(" · "),
                         style = Type.Small, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 14.dp),
                     )
                     Spacer(Modifier.height(hintBarInset))

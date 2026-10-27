@@ -40,6 +40,7 @@ import androidx.compose.foundation.lazy.staggeredgrid.LazyVerticalStaggeredGrid
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.foundation.lazy.staggeredgrid.items
+import androidx.compose.foundation.lazy.staggeredgrid.rememberLazyStaggeredGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
@@ -780,9 +781,12 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
     // As many columns as the width holds, never fewer than a phone shows.
     val spec = when (shown) { ViewMode.Carts -> GridSpec.Carts; ViewMode.Covers -> GridSpec.Covers; ViewMode.List -> GridSpec.List }
     // Staggered, so each box art keeps its own proportions in the covers mode.
+    // Held out here: crossing into or out of the pane moves the grid to another place in the tree, and it keeps its scroll.
+    val gridState = rememberLazyStaggeredGridState()
     val grid: @Composable () -> Unit = { MarginFocusScroll(trailing = FocusMargin + TabBarHeight + hintBarInset) { LazyVerticalStaggeredGrid(
         AdaptiveCells(spec),
         Modifier.fillMaxSize().statusBarsPadding().holdFocusAtEnd(FocusDirection.Down),
+        state = gridState,
         // A tablet's wider margins line the grid up with the shelf.
         contentPadding = contentSideDp(LocalWindowLayout.current).dp.let { side ->
             androidx.compose.foundation.layout.PaddingValues(start = side, end = side, top = FocusOutset, bottom = TabBarHeight + hintBarInset + 24.dp)
@@ -847,7 +851,8 @@ fun LibraryScreen(filter: String, entry: NavBackStackEntry? = null) {
     val pickedRom = picked?.takeIf { key -> roms.any { it.key == key } }
     ListDetailScaffold(
         listWidth = null, detailWidth = LIBRARY_PANE_DP.dp,
-        selected = picked != null, onClear = { picked = null },
+        // A pick whose game is gone (removed on its own screen) shows the placeholder, and Back must not stop there.
+        selected = pickedRom != null, onClear = { picked = null },
         list = grid,
         detail = { focusInDetail ->
             if (pickedRom == null) PanePlaceholder(Icons.Cart, stringResource(R.string.library_pick_hint), Modifier.padding(bottom = TabBarHeight))
